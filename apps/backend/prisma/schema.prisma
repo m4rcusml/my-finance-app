@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                          String                       @id @default(uuid())
+  email                       String                       @unique
+  passwordHash                String                       @map("password_hash")
+  name                        String?
+  createdAt                   DateTime                     @default(now()) @map("created_at")
+  updatedAt                   DateTime                     @updatedAt @map("updated_at")
+  accounts                    Account[]
+  categories                  Category[]
+  creditCards                 CreditCard[]
+  fixedTransactionOccurrences FixedTransactionOccurrence[]
+  fixedTransactions           FixedTransaction[]
+  goals                       Goal[]
+  importedFiles               ImportedFile[]
+  investments                 Investment[]
+  marketAssets                MarketAsset[]
+  transactions                Transaction[]
+
+  @@map("users")
+}
+
+model Account {
+  id             String        @id @default(uuid())
+  userId         String        @map("user_id")
+  name           String
+  institution    String
+  type           String
+  initialBalance Decimal       @map("initial_balance") @db.Decimal(15, 2)
+  isActive       Boolean       @default(true) @map("is_active")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goals          Goal[]
+  transactions   Transaction[]
+
+  @@map("accounts")
+}
+
+model CreditCard {
+  id           String        @id @default(uuid())
+  userId       String        @map("user_id")
+  name         String
+  institution  String
+  limitTotal   Decimal       @map("limit_total") @db.Decimal(15, 2)
+  closingDay   Int?          @map("closing_day")
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("credit_cards")
+}
+
+model Category {
+  id                String             @id @default(uuid())
+  userId            String             @map("user_id")
+  name              String
+  type              String
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fixedTransactions FixedTransaction[]
+  goals             Goal[]
+  transactions      Transaction[]
+
+  @@map("categories")
+}
+
+model Transaction {
+  id                         String                       @id @default(uuid())
+  userId                     String                       @map("user_id")
+  type                       String
+  value                      Decimal                      @db.Decimal(15, 2)
+  date                       DateTime
+  accountId                  String?                      @map("account_id")
+  creditCardId               String?                      @map("credit_card_id")
+  categoryId                 String?                      @map("category_id")
+  description                String?
+  source                     String                       @default("manual")
+  externalId                 String?                      @map("external_id")
+  createdAt                  DateTime                     @default(now()) @map("created_at")
+  updatedAt                  DateTime                     @updatedAt @map("updated_at")
+  fixedTransactionOccurrence FixedTransactionOccurrence[]
+  account                    Account?                     @relation(fields: [accountId], references: [id])
+  category                   Category?                    @relation(fields: [categoryId], references: [id])
+  creditCard                 CreditCard?                  @relation(fields: [creditCardId], references: [id])
+  user                       User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model FixedTransaction {
+  id           String                       @id @default(uuid())
+  userId       String                       @map("user_id")
+  type         String
+  value        Decimal                      @db.Decimal(15, 2)
+  referenceDay Int                          @map("reference_day")
+  marginDays   Int                          @default(0) @map("margin_days")
+  accountId    String?                      @map("account_id")
+  creditCardId String?                      @map("credit_card_id")
+  categoryId   String                       @map("category_id")
+  description  String
+  isActive     Boolean                      @default(true) @map("is_active")
+  createdAt    DateTime                     @default(now()) @map("created_at")
+  updatedAt    DateTime                     @updatedAt @map("updated_at")
+  occurrences  FixedTransactionOccurrence[]
+  category     Category                     @relation(fields: [categoryId], references: [id])
+  user         User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("fixed_transactions")
+}
+
+model FixedTransactionOccurrence {
+  id                 String           @id @default(uuid())
+  fixedTransactionId String           @map("fixed_transaction_id")
+  userId             String           @map("user_id")
+  periodYear         Int              @map("period_year")
+  periodMonth        Int              @map("period_month")
+  status             String           @default("pending")
+  realDate           DateTime?        @map("real_date")
+  transactionId      String?          @map("transaction_id")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  fixedTransaction   FixedTransaction @relation(fields: [fixedTransactionId], references: [id], onDelete: Cascade)
+  transaction        Transaction?     @relation(fields: [transactionId], references: [id])
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([fixedTransactionId, periodYear, periodMonth])
+  @@map("fixed_transaction_occurrences")
+}
+
+model MarketAsset {
+  id          String       @id @default(uuid())
+  userId      String?      @map("user_id")
+  symbol      String
+  type        String
+  exchange    String
+  name        String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  investments Investment[]
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([symbol, exchange])
+  @@map("market_assets")
+}
+
+model Investment {
+  id             String       @id @default(uuid())
+  userId         String       @map("user_id")
+  marketAssetId  String?      @map("market_asset_id")
+  broker         String
+  type           String
+  quantity       Decimal      @db.Decimal(15, 8)
+  buyPrice       Decimal      @map("buy_price") @db.Decimal(15, 2)
+  investedAmount Decimal      @map("invested_amount") @db.Decimal(15, 2)
+  buyDate        DateTime     @map("buy_date")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  marketAsset    MarketAsset? @relation(fields: [marketAssetId], references: [id])
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("investments")
+}
+
+model Goal {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  name              String
+  type              String
+  targetAmount      Decimal   @map("target_amount") @db.Decimal(15, 2)
+  currentAmount     Decimal?  @map("current_amount") @db.Decimal(15, 2)
+  deadline          DateTime?
+  relatedCategoryId String?   @map("related_category_id")
+  relatedAccountId  String?   @map("related_account_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  relatedAccount    Account?  @relation(fields: [relatedAccountId], references: [id])
+  relatedCategory   Category? @relation(fields: [relatedCategoryId], references: [id])
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}
+
+model ImportedFile {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  origin       String
+  fileName     String   @map("file_name")
+  fileType     String   @map("file_type")
+  status       String   @default("processing")
+  importedAt   DateTime @map("imported_at")
+  totalRecords Int      @default(0) @map("total_records")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("imported_files")
+}
