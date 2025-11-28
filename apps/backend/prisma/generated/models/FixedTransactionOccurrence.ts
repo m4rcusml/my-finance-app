@@ -9,8 +9,8 @@
  * 🟢 You can import this file directly.
  */
 import type * as runtime from "@prisma/client/runtime/client"
-import type * as $Enums from "../enums.js"
-import type * as Prisma from "../internal/prismaNamespace.js"
+import type * as $Enums from "../enums"
+import type * as Prisma from "../internal/prismaNamespace"
 
 /**
  * Model FixedTransactionOccurrence
@@ -261,8 +261,8 @@ export type FixedTransactionOccurrenceWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"FixedTransactionOccurrence"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FixedTransactionOccurrence"> | Date | string
   fixedTransaction?: Prisma.XOR<Prisma.FixedTransactionScalarRelationFilter, Prisma.FixedTransactionWhereInput>
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   transaction?: Prisma.XOR<Prisma.TransactionNullableScalarRelationFilter, Prisma.TransactionWhereInput> | null
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
 export type FixedTransactionOccurrenceOrderByWithRelationInput = {
@@ -277,8 +277,8 @@ export type FixedTransactionOccurrenceOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   fixedTransaction?: Prisma.FixedTransactionOrderByWithRelationInput
-  user?: Prisma.UserOrderByWithRelationInput
   transaction?: Prisma.TransactionOrderByWithRelationInput
+  user?: Prisma.UserOrderByWithRelationInput
 }
 
 export type FixedTransactionOccurrenceWhereUniqueInput = Prisma.AtLeast<{
@@ -297,8 +297,8 @@ export type FixedTransactionOccurrenceWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"FixedTransactionOccurrence"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FixedTransactionOccurrence"> | Date | string
   fixedTransaction?: Prisma.XOR<Prisma.FixedTransactionScalarRelationFilter, Prisma.FixedTransactionWhereInput>
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   transaction?: Prisma.XOR<Prisma.TransactionNullableScalarRelationFilter, Prisma.TransactionWhereInput> | null
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id" | "fixedTransactionId_periodYear_periodMonth">
 
 export type FixedTransactionOccurrenceOrderByWithAggregationInput = {
@@ -344,8 +344,8 @@ export type FixedTransactionOccurrenceCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   fixedTransaction: Prisma.FixedTransactionCreateNestedOneWithoutOccurrencesInput
-  user: Prisma.UserCreateNestedOneWithoutFixedTransactionOccurrencesInput
   transaction?: Prisma.TransactionCreateNestedOneWithoutFixedTransactionOccurrenceInput
+  user: Prisma.UserCreateNestedOneWithoutFixedTransactionOccurrencesInput
 }
 
 export type FixedTransactionOccurrenceUncheckedCreateInput = {
@@ -370,8 +370,8 @@ export type FixedTransactionOccurrenceUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fixedTransaction?: Prisma.FixedTransactionUpdateOneRequiredWithoutOccurrencesNestedInput
-  user?: Prisma.UserUpdateOneRequiredWithoutFixedTransactionOccurrencesNestedInput
   transaction?: Prisma.TransactionUpdateOneWithoutFixedTransactionOccurrenceNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutFixedTransactionOccurrencesNestedInput
 }
 
 export type FixedTransactionOccurrenceUncheckedUpdateInput = {
@@ -742,8 +742,8 @@ export type FixedTransactionOccurrenceCreateWithoutFixedTransactionInput = {
   realDate?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutFixedTransactionOccurrencesInput
   transaction?: Prisma.TransactionCreateNestedOneWithoutFixedTransactionOccurrenceInput
+  user: Prisma.UserCreateNestedOneWithoutFixedTransactionOccurrencesInput
 }
 
 export type FixedTransactionOccurrenceUncheckedCreateWithoutFixedTransactionInput = {
@@ -900,8 +900,8 @@ export type FixedTransactionOccurrenceUpdateWithoutFixedTransactionInput = {
   realDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutFixedTransactionOccurrencesNestedInput
   transaction?: Prisma.TransactionUpdateOneWithoutFixedTransactionOccurrenceNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutFixedTransactionOccurrencesNestedInput
 }
 
 export type FixedTransactionOccurrenceUncheckedUpdateWithoutFixedTransactionInput = {
@@ -942,8 +942,8 @@ export type FixedTransactionOccurrenceSelect<ExtArgs extends runtime.Types.Exten
   createdAt?: boolean
   updatedAt?: boolean
   fixedTransaction?: boolean | Prisma.FixedTransactionDefaultArgs<ExtArgs>
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   transaction?: boolean | Prisma.FixedTransactionOccurrence$transactionArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["fixedTransactionOccurrence"]>
 
 export type FixedTransactionOccurrenceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -958,8 +958,8 @@ export type FixedTransactionOccurrenceSelectCreateManyAndReturn<ExtArgs extends 
   createdAt?: boolean
   updatedAt?: boolean
   fixedTransaction?: boolean | Prisma.FixedTransactionDefaultArgs<ExtArgs>
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   transaction?: boolean | Prisma.FixedTransactionOccurrence$transactionArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["fixedTransactionOccurrence"]>
 
 export type FixedTransactionOccurrenceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -974,8 +974,8 @@ export type FixedTransactionOccurrenceSelectUpdateManyAndReturn<ExtArgs extends 
   createdAt?: boolean
   updatedAt?: boolean
   fixedTransaction?: boolean | Prisma.FixedTransactionDefaultArgs<ExtArgs>
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   transaction?: boolean | Prisma.FixedTransactionOccurrence$transactionArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["fixedTransactionOccurrence"]>
 
 export type FixedTransactionOccurrenceSelectScalar = {
@@ -994,26 +994,26 @@ export type FixedTransactionOccurrenceSelectScalar = {
 export type FixedTransactionOccurrenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fixedTransactionId" | "userId" | "periodYear" | "periodMonth" | "status" | "realDate" | "transactionId" | "createdAt" | "updatedAt", ExtArgs["result"]["fixedTransactionOccurrence"]>
 export type FixedTransactionOccurrenceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   fixedTransaction?: boolean | Prisma.FixedTransactionDefaultArgs<ExtArgs>
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   transaction?: boolean | Prisma.FixedTransactionOccurrence$transactionArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type FixedTransactionOccurrenceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   fixedTransaction?: boolean | Prisma.FixedTransactionDefaultArgs<ExtArgs>
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   transaction?: boolean | Prisma.FixedTransactionOccurrence$transactionArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type FixedTransactionOccurrenceIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   fixedTransaction?: boolean | Prisma.FixedTransactionDefaultArgs<ExtArgs>
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   transaction?: boolean | Prisma.FixedTransactionOccurrence$transactionArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $FixedTransactionOccurrencePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "FixedTransactionOccurrence"
   objects: {
     fixedTransaction: Prisma.$FixedTransactionPayload<ExtArgs>
-    user: Prisma.$UserPayload<ExtArgs>
     transaction: Prisma.$TransactionPayload<ExtArgs> | null
+    user: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1421,8 +1421,8 @@ readonly fields: FixedTransactionOccurrenceFieldRefs;
 export interface Prisma__FixedTransactionOccurrenceClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   fixedTransaction<T extends Prisma.FixedTransactionDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FixedTransactionDefaultArgs<ExtArgs>>): Prisma.Prisma__FixedTransactionClient<runtime.Types.Result.GetResult<Prisma.$FixedTransactionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   transaction<T extends Prisma.FixedTransactionOccurrence$transactionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FixedTransactionOccurrence$transactionArgs<ExtArgs>>): Prisma.Prisma__TransactionClient<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

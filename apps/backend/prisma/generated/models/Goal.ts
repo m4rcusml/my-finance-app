@@ -9,8 +9,8 @@
  * 🟢 You can import this file directly.
  */
 import type * as runtime from "@prisma/client/runtime/client"
-import type * as $Enums from "../enums.js"
-import type * as Prisma from "../internal/prismaNamespace.js"
+import type * as $Enums from "../enums"
+import type * as Prisma from "../internal/prismaNamespace"
 
 /**
  * Model Goal
@@ -268,9 +268,9 @@ export type GoalWhereInput = {
   relatedAccountId?: Prisma.StringNullableFilter<"Goal"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Goal"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Goal"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  relatedCategory?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
   relatedAccount?: Prisma.XOR<Prisma.AccountNullableScalarRelationFilter, Prisma.AccountWhereInput> | null
+  relatedCategory?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
 export type GoalOrderByWithRelationInput = {
@@ -285,9 +285,9 @@ export type GoalOrderByWithRelationInput = {
   relatedAccountId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  user?: Prisma.UserOrderByWithRelationInput
-  relatedCategory?: Prisma.CategoryOrderByWithRelationInput
   relatedAccount?: Prisma.AccountOrderByWithRelationInput
+  relatedCategory?: Prisma.CategoryOrderByWithRelationInput
+  user?: Prisma.UserOrderByWithRelationInput
 }
 
 export type GoalWhereUniqueInput = Prisma.AtLeast<{
@@ -305,9 +305,9 @@ export type GoalWhereUniqueInput = Prisma.AtLeast<{
   relatedAccountId?: Prisma.StringNullableFilter<"Goal"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Goal"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Goal"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  relatedCategory?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
   relatedAccount?: Prisma.XOR<Prisma.AccountNullableScalarRelationFilter, Prisma.AccountWhereInput> | null
+  relatedCategory?: Prisma.XOR<Prisma.CategoryNullableScalarRelationFilter, Prisma.CategoryWhereInput> | null
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id">
 
 export type GoalOrderByWithAggregationInput = {
@@ -355,9 +355,9 @@ export type GoalCreateInput = {
   deadline?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutGoalsInput
-  relatedCategory?: Prisma.CategoryCreateNestedOneWithoutGoalsInput
   relatedAccount?: Prisma.AccountCreateNestedOneWithoutGoalsInput
+  relatedCategory?: Prisma.CategoryCreateNestedOneWithoutGoalsInput
+  user: Prisma.UserCreateNestedOneWithoutGoalsInput
 }
 
 export type GoalUncheckedCreateInput = {
@@ -383,9 +383,9 @@ export type GoalUpdateInput = {
   deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutGoalsNestedInput
-  relatedCategory?: Prisma.CategoryUpdateOneWithoutGoalsNestedInput
   relatedAccount?: Prisma.AccountUpdateOneWithoutGoalsNestedInput
+  relatedCategory?: Prisma.CategoryUpdateOneWithoutGoalsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutGoalsNestedInput
 }
 
 export type GoalUncheckedUpdateInput = {
@@ -646,8 +646,8 @@ export type GoalCreateWithoutUserInput = {
   deadline?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  relatedCategory?: Prisma.CategoryCreateNestedOneWithoutGoalsInput
   relatedAccount?: Prisma.AccountCreateNestedOneWithoutGoalsInput
+  relatedCategory?: Prisma.CategoryCreateNestedOneWithoutGoalsInput
 }
 
 export type GoalUncheckedCreateWithoutUserInput = {
@@ -715,8 +715,8 @@ export type GoalCreateWithoutRelatedAccountInput = {
   deadline?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutGoalsInput
   relatedCategory?: Prisma.CategoryCreateNestedOneWithoutGoalsInput
+  user: Prisma.UserCreateNestedOneWithoutGoalsInput
 }
 
 export type GoalUncheckedCreateWithoutRelatedAccountInput = {
@@ -767,8 +767,8 @@ export type GoalCreateWithoutRelatedCategoryInput = {
   deadline?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutGoalsInput
   relatedAccount?: Prisma.AccountCreateNestedOneWithoutGoalsInput
+  user: Prisma.UserCreateNestedOneWithoutGoalsInput
 }
 
 export type GoalUncheckedCreateWithoutRelatedCategoryInput = {
@@ -832,8 +832,8 @@ export type GoalUpdateWithoutUserInput = {
   deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  relatedCategory?: Prisma.CategoryUpdateOneWithoutGoalsNestedInput
   relatedAccount?: Prisma.AccountUpdateOneWithoutGoalsNestedInput
+  relatedCategory?: Prisma.CategoryUpdateOneWithoutGoalsNestedInput
 }
 
 export type GoalUncheckedUpdateWithoutUserInput = {
@@ -884,8 +884,8 @@ export type GoalUpdateWithoutRelatedAccountInput = {
   deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutGoalsNestedInput
   relatedCategory?: Prisma.CategoryUpdateOneWithoutGoalsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutGoalsNestedInput
 }
 
 export type GoalUncheckedUpdateWithoutRelatedAccountInput = {
@@ -936,8 +936,8 @@ export type GoalUpdateWithoutRelatedCategoryInput = {
   deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutGoalsNestedInput
   relatedAccount?: Prisma.AccountUpdateOneWithoutGoalsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutGoalsNestedInput
 }
 
 export type GoalUncheckedUpdateWithoutRelatedCategoryInput = {
@@ -980,9 +980,9 @@ export type GoalSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   relatedAccountId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
   relatedAccount?: boolean | Prisma.Goal$relatedAccountArgs<ExtArgs>
+  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["goal"]>
 
 export type GoalSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -997,9 +997,9 @@ export type GoalSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   relatedAccountId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
   relatedAccount?: boolean | Prisma.Goal$relatedAccountArgs<ExtArgs>
+  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["goal"]>
 
 export type GoalSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1014,9 +1014,9 @@ export type GoalSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   relatedAccountId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
   relatedAccount?: boolean | Prisma.Goal$relatedAccountArgs<ExtArgs>
+  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["goal"]>
 
 export type GoalSelectScalar = {
@@ -1035,27 +1035,27 @@ export type GoalSelectScalar = {
 
 export type GoalOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "type" | "targetAmount" | "currentAmount" | "deadline" | "relatedCategoryId" | "relatedAccountId" | "createdAt" | "updatedAt", ExtArgs["result"]["goal"]>
 export type GoalInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
   relatedAccount?: boolean | Prisma.Goal$relatedAccountArgs<ExtArgs>
+  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type GoalIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
   relatedAccount?: boolean | Prisma.Goal$relatedAccountArgs<ExtArgs>
+  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type GoalIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
   relatedAccount?: boolean | Prisma.Goal$relatedAccountArgs<ExtArgs>
+  relatedCategory?: boolean | Prisma.Goal$relatedCategoryArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $GoalPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Goal"
   objects: {
-    user: Prisma.$UserPayload<ExtArgs>
-    relatedCategory: Prisma.$CategoryPayload<ExtArgs> | null
     relatedAccount: Prisma.$AccountPayload<ExtArgs> | null
+    relatedCategory: Prisma.$CategoryPayload<ExtArgs> | null
+    user: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1463,9 +1463,9 @@ readonly fields: GoalFieldRefs;
  */
 export interface Prisma__GoalClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  relatedCategory<T extends Prisma.Goal$relatedCategoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Goal$relatedCategoryArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   relatedAccount<T extends Prisma.Goal$relatedAccountArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Goal$relatedAccountArgs<ExtArgs>>): Prisma.Prisma__AccountClient<runtime.Types.Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  relatedCategory<T extends Prisma.Goal$relatedCategoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Goal$relatedCategoryArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1902,25 +1902,6 @@ export type GoalDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
 }
 
 /**
- * Goal.relatedCategory
- */
-export type Goal$relatedCategoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Category
-   */
-  select?: Prisma.CategorySelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Category
-   */
-  omit?: Prisma.CategoryOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.CategoryInclude<ExtArgs> | null
-  where?: Prisma.CategoryWhereInput
-}
-
-/**
  * Goal.relatedAccount
  */
 export type Goal$relatedAccountArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1937,6 +1918,25 @@ export type Goal$relatedAccountArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   include?: Prisma.AccountInclude<ExtArgs> | null
   where?: Prisma.AccountWhereInput
+}
+
+/**
+ * Goal.relatedCategory
+ */
+export type Goal$relatedCategoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Category
+   */
+  select?: Prisma.CategorySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Category
+   */
+  omit?: Prisma.CategoryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CategoryInclude<ExtArgs> | null
+  where?: Prisma.CategoryWhereInput
 }
 
 /**

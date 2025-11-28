@@ -9,8 +9,8 @@
  * 🟢 You can import this file directly.
  */
 import type * as runtime from "@prisma/client/runtime/client"
-import type * as $Enums from "../enums.js"
-import type * as Prisma from "../internal/prismaNamespace.js"
+import type * as $Enums from "../enums"
+import type * as Prisma from "../internal/prismaNamespace"
 
 /**
  * Model Investment
@@ -272,8 +272,8 @@ export type InvestmentWhereInput = {
   buyDate?: Prisma.DateTimeFilter<"Investment"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"Investment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Investment"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   marketAsset?: Prisma.XOR<Prisma.MarketAssetNullableScalarRelationFilter, Prisma.MarketAssetWhereInput> | null
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
 export type InvestmentOrderByWithRelationInput = {
@@ -288,8 +288,8 @@ export type InvestmentOrderByWithRelationInput = {
   buyDate?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  user?: Prisma.UserOrderByWithRelationInput
   marketAsset?: Prisma.MarketAssetOrderByWithRelationInput
+  user?: Prisma.UserOrderByWithRelationInput
 }
 
 export type InvestmentWhereUniqueInput = Prisma.AtLeast<{
@@ -307,8 +307,8 @@ export type InvestmentWhereUniqueInput = Prisma.AtLeast<{
   buyDate?: Prisma.DateTimeFilter<"Investment"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"Investment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Investment"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   marketAsset?: Prisma.XOR<Prisma.MarketAssetNullableScalarRelationFilter, Prisma.MarketAssetWhereInput> | null
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id">
 
 export type InvestmentOrderByWithAggregationInput = {
@@ -357,8 +357,8 @@ export type InvestmentCreateInput = {
   buyDate: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutInvestmentsInput
   marketAsset?: Prisma.MarketAssetCreateNestedOneWithoutInvestmentsInput
+  user: Prisma.UserCreateNestedOneWithoutInvestmentsInput
 }
 
 export type InvestmentUncheckedCreateInput = {
@@ -385,8 +385,8 @@ export type InvestmentUpdateInput = {
   buyDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutInvestmentsNestedInput
   marketAsset?: Prisma.MarketAssetUpdateOneWithoutInvestmentsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutInvestmentsNestedInput
 }
 
 export type InvestmentUncheckedUpdateInput = {
@@ -830,8 +830,8 @@ export type InvestmentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   buyDate?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   marketAsset?: boolean | Prisma.Investment$marketAssetArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["investment"]>
 
 export type InvestmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -846,8 +846,8 @@ export type InvestmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   buyDate?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   marketAsset?: boolean | Prisma.Investment$marketAssetArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["investment"]>
 
 export type InvestmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -862,8 +862,8 @@ export type InvestmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   buyDate?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   marketAsset?: boolean | Prisma.Investment$marketAssetArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["investment"]>
 
 export type InvestmentSelectScalar = {
@@ -882,23 +882,23 @@ export type InvestmentSelectScalar = {
 
 export type InvestmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "marketAssetId" | "broker" | "type" | "quantity" | "buyPrice" | "investedAmount" | "buyDate" | "createdAt" | "updatedAt", ExtArgs["result"]["investment"]>
 export type InvestmentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   marketAsset?: boolean | Prisma.Investment$marketAssetArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type InvestmentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   marketAsset?: boolean | Prisma.Investment$marketAssetArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type InvestmentIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   marketAsset?: boolean | Prisma.Investment$marketAssetArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $InvestmentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Investment"
   objects: {
-    user: Prisma.$UserPayload<ExtArgs>
     marketAsset: Prisma.$MarketAssetPayload<ExtArgs> | null
+    user: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1306,8 +1306,8 @@ readonly fields: InvestmentFieldRefs;
  */
 export interface Prisma__InvestmentClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   marketAsset<T extends Prisma.Investment$marketAssetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Investment$marketAssetArgs<ExtArgs>>): Prisma.Prisma__MarketAssetClient<runtime.Types.Result.GetResult<Prisma.$MarketAssetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

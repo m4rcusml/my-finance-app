@@ -9,8 +9,8 @@
  * 🟢 You can import this file directly.
  */
 import type * as runtime from "@prisma/client/runtime/client"
-import type * as $Enums from "../enums.js"
-import type * as Prisma from "../internal/prismaNamespace.js"
+import type * as $Enums from "../enums"
+import type * as Prisma from "../internal/prismaNamespace"
 
 /**
  * Model User
@@ -191,15 +191,15 @@ export type UserWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   accounts?: Prisma.AccountListRelationFilter
-  creditCards?: Prisma.CreditCardListRelationFilter
   categories?: Prisma.CategoryListRelationFilter
-  transactions?: Prisma.TransactionListRelationFilter
-  fixedTransactions?: Prisma.FixedTransactionListRelationFilter
+  creditCards?: Prisma.CreditCardListRelationFilter
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceListRelationFilter
-  investments?: Prisma.InvestmentListRelationFilter
+  fixedTransactions?: Prisma.FixedTransactionListRelationFilter
   goals?: Prisma.GoalListRelationFilter
   importedFiles?: Prisma.ImportedFileListRelationFilter
+  investments?: Prisma.InvestmentListRelationFilter
   marketAssets?: Prisma.MarketAssetListRelationFilter
+  transactions?: Prisma.TransactionListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -210,15 +210,15 @@ export type UserOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   accounts?: Prisma.AccountOrderByRelationAggregateInput
-  creditCards?: Prisma.CreditCardOrderByRelationAggregateInput
   categories?: Prisma.CategoryOrderByRelationAggregateInput
-  transactions?: Prisma.TransactionOrderByRelationAggregateInput
-  fixedTransactions?: Prisma.FixedTransactionOrderByRelationAggregateInput
+  creditCards?: Prisma.CreditCardOrderByRelationAggregateInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceOrderByRelationAggregateInput
-  investments?: Prisma.InvestmentOrderByRelationAggregateInput
+  fixedTransactions?: Prisma.FixedTransactionOrderByRelationAggregateInput
   goals?: Prisma.GoalOrderByRelationAggregateInput
   importedFiles?: Prisma.ImportedFileOrderByRelationAggregateInput
+  investments?: Prisma.InvestmentOrderByRelationAggregateInput
   marketAssets?: Prisma.MarketAssetOrderByRelationAggregateInput
+  transactions?: Prisma.TransactionOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -232,15 +232,15 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   accounts?: Prisma.AccountListRelationFilter
-  creditCards?: Prisma.CreditCardListRelationFilter
   categories?: Prisma.CategoryListRelationFilter
-  transactions?: Prisma.TransactionListRelationFilter
-  fixedTransactions?: Prisma.FixedTransactionListRelationFilter
+  creditCards?: Prisma.CreditCardListRelationFilter
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceListRelationFilter
-  investments?: Prisma.InvestmentListRelationFilter
+  fixedTransactions?: Prisma.FixedTransactionListRelationFilter
   goals?: Prisma.GoalListRelationFilter
   importedFiles?: Prisma.ImportedFileListRelationFilter
+  investments?: Prisma.InvestmentListRelationFilter
   marketAssets?: Prisma.MarketAssetListRelationFilter
+  transactions?: Prisma.TransactionListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -275,15 +275,15 @@ export type UserCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -294,15 +294,15 @@ export type UserUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -313,15 +313,15 @@ export type UserUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -332,15 +332,15 @@ export type UserUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -568,15 +568,15 @@ export type UserCreateWithoutAccountsInput = {
   name?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -586,15 +586,15 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   name?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -620,15 +620,15 @@ export type UserUpdateWithoutAccountsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -638,15 +638,15 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCreditCardsInput = {
@@ -658,13 +658,13 @@ export type UserCreateWithoutCreditCardsInput = {
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCreditCardsInput = {
@@ -676,13 +676,13 @@ export type UserUncheckedCreateWithoutCreditCardsInput = {
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCreditCardsInput = {
@@ -710,13 +710,13 @@ export type UserUpdateWithoutCreditCardsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCreditCardsInput = {
@@ -728,13 +728,13 @@ export type UserUncheckedUpdateWithoutCreditCardsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCategoriesInput = {
@@ -746,13 +746,13 @@ export type UserCreateWithoutCategoriesInput = {
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCategoriesInput = {
@@ -764,13 +764,13 @@ export type UserUncheckedCreateWithoutCategoriesInput = {
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCategoriesInput = {
@@ -798,13 +798,13 @@ export type UserUpdateWithoutCategoriesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCategoriesInput = {
@@ -816,13 +816,13 @@ export type UserUncheckedUpdateWithoutCategoriesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutTransactionsInput = {
@@ -833,13 +833,13 @@ export type UserCreateWithoutTransactionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
 }
 
@@ -851,13 +851,13 @@ export type UserUncheckedCreateWithoutTransactionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -885,13 +885,13 @@ export type UserUpdateWithoutTransactionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
 }
 
@@ -903,13 +903,13 @@ export type UserUncheckedUpdateWithoutTransactionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -921,14 +921,14 @@ export type UserCreateWithoutFixedTransactionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFixedTransactionsInput = {
@@ -939,14 +939,14 @@ export type UserUncheckedCreateWithoutFixedTransactionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFixedTransactionsInput = {
@@ -973,14 +973,14 @@ export type UserUpdateWithoutFixedTransactionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFixedTransactionsInput = {
@@ -991,14 +991,14 @@ export type UserUncheckedUpdateWithoutFixedTransactionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFixedTransactionOccurrencesInput = {
@@ -1009,14 +1009,14 @@ export type UserCreateWithoutFixedTransactionOccurrencesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFixedTransactionOccurrencesInput = {
@@ -1027,14 +1027,14 @@ export type UserUncheckedCreateWithoutFixedTransactionOccurrencesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFixedTransactionOccurrencesInput = {
@@ -1061,14 +1061,14 @@ export type UserUpdateWithoutFixedTransactionOccurrencesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFixedTransactionOccurrencesInput = {
@@ -1079,14 +1079,14 @@ export type UserUncheckedUpdateWithoutFixedTransactionOccurrencesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutMarketAssetsInput = {
@@ -1097,14 +1097,14 @@ export type UserCreateWithoutMarketAssetsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutMarketAssetsInput = {
@@ -1115,14 +1115,14 @@ export type UserUncheckedCreateWithoutMarketAssetsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutMarketAssetsInput = {
@@ -1149,14 +1149,14 @@ export type UserUpdateWithoutMarketAssetsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutMarketAssetsInput = {
@@ -1167,14 +1167,14 @@ export type UserUncheckedUpdateWithoutMarketAssetsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutInvestmentsInput = {
@@ -1185,14 +1185,14 @@ export type UserCreateWithoutInvestmentsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutInvestmentsInput = {
@@ -1203,14 +1203,14 @@ export type UserUncheckedCreateWithoutInvestmentsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutInvestmentsInput = {
@@ -1237,14 +1237,14 @@ export type UserUpdateWithoutInvestmentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutInvestmentsInput = {
@@ -1255,14 +1255,14 @@ export type UserUncheckedUpdateWithoutInvestmentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutGoalsInput = {
@@ -1273,14 +1273,14 @@ export type UserCreateWithoutGoalsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutGoalsInput = {
@@ -1291,14 +1291,14 @@ export type UserUncheckedCreateWithoutGoalsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   importedFiles?: Prisma.ImportedFileUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutGoalsInput = {
@@ -1325,14 +1325,14 @@ export type UserUpdateWithoutGoalsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutGoalsInput = {
@@ -1343,14 +1343,14 @@ export type UserUncheckedUpdateWithoutGoalsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   importedFiles?: Prisma.ImportedFileUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutImportedFilesInput = {
@@ -1361,14 +1361,14 @@ export type UserCreateWithoutImportedFilesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutImportedFilesInput = {
@@ -1379,14 +1379,14 @@ export type UserUncheckedCreateWithoutImportedFilesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
-  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutUserInput
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
+  creditCards?: Prisma.CreditCardUncheckedCreateNestedManyWithoutUserInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedCreateNestedManyWithoutUserInput
-  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutUserInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutUserInput
+  investments?: Prisma.InvestmentUncheckedCreateNestedManyWithoutUserInput
   marketAssets?: Prisma.MarketAssetUncheckedCreateNestedManyWithoutUserInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutImportedFilesInput = {
@@ -1413,14 +1413,14 @@ export type UserUpdateWithoutImportedFilesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutImportedFilesInput = {
@@ -1431,14 +1431,14 @@ export type UserUncheckedUpdateWithoutImportedFilesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
-  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutUserNestedInput
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
-  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
+  creditCards?: Prisma.CreditCardUncheckedUpdateManyWithoutUserNestedInput
   fixedTransactionOccurrences?: Prisma.FixedTransactionOccurrenceUncheckedUpdateManyWithoutUserNestedInput
-  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
+  fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutUserNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutUserNestedInput
+  investments?: Prisma.InvestmentUncheckedUpdateManyWithoutUserNestedInput
   marketAssets?: Prisma.MarketAssetUncheckedUpdateManyWithoutUserNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1448,28 +1448,28 @@ export type UserUncheckedUpdateWithoutImportedFilesInput = {
 
 export type UserCountOutputType = {
   accounts: number
-  creditCards: number
   categories: number
-  transactions: number
-  fixedTransactions: number
+  creditCards: number
   fixedTransactionOccurrences: number
-  investments: number
+  fixedTransactions: number
   goals: number
   importedFiles: number
+  investments: number
   marketAssets: number
+  transactions: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | UserCountOutputTypeCountAccountsArgs
-  creditCards?: boolean | UserCountOutputTypeCountCreditCardsArgs
   categories?: boolean | UserCountOutputTypeCountCategoriesArgs
-  transactions?: boolean | UserCountOutputTypeCountTransactionsArgs
-  fixedTransactions?: boolean | UserCountOutputTypeCountFixedTransactionsArgs
+  creditCards?: boolean | UserCountOutputTypeCountCreditCardsArgs
   fixedTransactionOccurrences?: boolean | UserCountOutputTypeCountFixedTransactionOccurrencesArgs
-  investments?: boolean | UserCountOutputTypeCountInvestmentsArgs
+  fixedTransactions?: boolean | UserCountOutputTypeCountFixedTransactionsArgs
   goals?: boolean | UserCountOutputTypeCountGoalsArgs
   importedFiles?: boolean | UserCountOutputTypeCountImportedFilesArgs
+  investments?: boolean | UserCountOutputTypeCountInvestmentsArgs
   marketAssets?: boolean | UserCountOutputTypeCountMarketAssetsArgs
+  transactions?: boolean | UserCountOutputTypeCountTransactionsArgs
 }
 
 /**
@@ -1492,13 +1492,6 @@ export type UserCountOutputTypeCountAccountsArgs<ExtArgs extends runtime.Types.E
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountCreditCardsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.CreditCardWhereInput
-}
-
-/**
- * UserCountOutputType without action
- */
 export type UserCountOutputTypeCountCategoriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.CategoryWhereInput
 }
@@ -1506,15 +1499,8 @@ export type UserCountOutputTypeCountCategoriesArgs<ExtArgs extends runtime.Types
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.TransactionWhereInput
-}
-
-/**
- * UserCountOutputType without action
- */
-export type UserCountOutputTypeCountFixedTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.FixedTransactionWhereInput
+export type UserCountOutputTypeCountCreditCardsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CreditCardWhereInput
 }
 
 /**
@@ -1527,8 +1513,8 @@ export type UserCountOutputTypeCountFixedTransactionOccurrencesArgs<ExtArgs exte
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountInvestmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.InvestmentWhereInput
+export type UserCountOutputTypeCountFixedTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FixedTransactionWhereInput
 }
 
 /**
@@ -1548,8 +1534,22 @@ export type UserCountOutputTypeCountImportedFilesArgs<ExtArgs extends runtime.Ty
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountInvestmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InvestmentWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountMarketAssetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.MarketAssetWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TransactionWhereInput
 }
 
 
@@ -1561,15 +1561,15 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   updatedAt?: boolean
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
-  creditCards?: boolean | Prisma.User$creditCardsArgs<ExtArgs>
   categories?: boolean | Prisma.User$categoriesArgs<ExtArgs>
-  transactions?: boolean | Prisma.User$transactionsArgs<ExtArgs>
-  fixedTransactions?: boolean | Prisma.User$fixedTransactionsArgs<ExtArgs>
+  creditCards?: boolean | Prisma.User$creditCardsArgs<ExtArgs>
   fixedTransactionOccurrences?: boolean | Prisma.User$fixedTransactionOccurrencesArgs<ExtArgs>
-  investments?: boolean | Prisma.User$investmentsArgs<ExtArgs>
+  fixedTransactions?: boolean | Prisma.User$fixedTransactionsArgs<ExtArgs>
   goals?: boolean | Prisma.User$goalsArgs<ExtArgs>
   importedFiles?: boolean | Prisma.User$importedFilesArgs<ExtArgs>
+  investments?: boolean | Prisma.User$investmentsArgs<ExtArgs>
   marketAssets?: boolean | Prisma.User$marketAssetsArgs<ExtArgs>
+  transactions?: boolean | Prisma.User$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1603,15 +1603,15 @@ export type UserSelectScalar = {
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "name" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
-  creditCards?: boolean | Prisma.User$creditCardsArgs<ExtArgs>
   categories?: boolean | Prisma.User$categoriesArgs<ExtArgs>
-  transactions?: boolean | Prisma.User$transactionsArgs<ExtArgs>
-  fixedTransactions?: boolean | Prisma.User$fixedTransactionsArgs<ExtArgs>
+  creditCards?: boolean | Prisma.User$creditCardsArgs<ExtArgs>
   fixedTransactionOccurrences?: boolean | Prisma.User$fixedTransactionOccurrencesArgs<ExtArgs>
-  investments?: boolean | Prisma.User$investmentsArgs<ExtArgs>
+  fixedTransactions?: boolean | Prisma.User$fixedTransactionsArgs<ExtArgs>
   goals?: boolean | Prisma.User$goalsArgs<ExtArgs>
   importedFiles?: boolean | Prisma.User$importedFilesArgs<ExtArgs>
+  investments?: boolean | Prisma.User$investmentsArgs<ExtArgs>
   marketAssets?: boolean | Prisma.User$marketAssetsArgs<ExtArgs>
+  transactions?: boolean | Prisma.User$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1621,15 +1621,15 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "User"
   objects: {
     accounts: Prisma.$AccountPayload<ExtArgs>[]
-    creditCards: Prisma.$CreditCardPayload<ExtArgs>[]
     categories: Prisma.$CategoryPayload<ExtArgs>[]
-    transactions: Prisma.$TransactionPayload<ExtArgs>[]
-    fixedTransactions: Prisma.$FixedTransactionPayload<ExtArgs>[]
+    creditCards: Prisma.$CreditCardPayload<ExtArgs>[]
     fixedTransactionOccurrences: Prisma.$FixedTransactionOccurrencePayload<ExtArgs>[]
-    investments: Prisma.$InvestmentPayload<ExtArgs>[]
+    fixedTransactions: Prisma.$FixedTransactionPayload<ExtArgs>[]
     goals: Prisma.$GoalPayload<ExtArgs>[]
     importedFiles: Prisma.$ImportedFilePayload<ExtArgs>[]
+    investments: Prisma.$InvestmentPayload<ExtArgs>[]
     marketAssets: Prisma.$MarketAssetPayload<ExtArgs>[]
+    transactions: Prisma.$TransactionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2033,15 +2033,15 @@ readonly fields: UserFieldRefs;
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   accounts<T extends Prisma.User$accountsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  creditCards<T extends Prisma.User$creditCardsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$creditCardsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CreditCardPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   categories<T extends Prisma.User$categoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$categoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  transactions<T extends Prisma.User$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  fixedTransactions<T extends Prisma.User$fixedTransactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$fixedTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FixedTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  creditCards<T extends Prisma.User$creditCardsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$creditCardsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CreditCardPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   fixedTransactionOccurrences<T extends Prisma.User$fixedTransactionOccurrencesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$fixedTransactionOccurrencesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FixedTransactionOccurrencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  investments<T extends Prisma.User$investmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$investmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InvestmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  fixedTransactions<T extends Prisma.User$fixedTransactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$fixedTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FixedTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   goals<T extends Prisma.User$goalsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$goalsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GoalPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   importedFiles<T extends Prisma.User$importedFilesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$importedFilesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ImportedFilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  investments<T extends Prisma.User$investmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$investmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InvestmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   marketAssets<T extends Prisma.User$marketAssetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$marketAssetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MarketAssetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  transactions<T extends Prisma.User$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2489,30 +2489,6 @@ export type User$accountsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 }
 
 /**
- * User.creditCards
- */
-export type User$creditCardsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the CreditCard
-   */
-  select?: Prisma.CreditCardSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the CreditCard
-   */
-  omit?: Prisma.CreditCardOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.CreditCardInclude<ExtArgs> | null
-  where?: Prisma.CreditCardWhereInput
-  orderBy?: Prisma.CreditCardOrderByWithRelationInput | Prisma.CreditCardOrderByWithRelationInput[]
-  cursor?: Prisma.CreditCardWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.CreditCardScalarFieldEnum | Prisma.CreditCardScalarFieldEnum[]
-}
-
-/**
  * User.categories
  */
 export type User$categoriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2537,51 +2513,27 @@ export type User$categoriesArgs<ExtArgs extends runtime.Types.Extensions.Interna
 }
 
 /**
- * User.transactions
+ * User.creditCards
  */
-export type User$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type User$creditCardsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the Transaction
+   * Select specific fields to fetch from the CreditCard
    */
-  select?: Prisma.TransactionSelect<ExtArgs> | null
+  select?: Prisma.CreditCardSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the Transaction
+   * Omit specific fields from the CreditCard
    */
-  omit?: Prisma.TransactionOmit<ExtArgs> | null
+  omit?: Prisma.CreditCardOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.TransactionInclude<ExtArgs> | null
-  where?: Prisma.TransactionWhereInput
-  orderBy?: Prisma.TransactionOrderByWithRelationInput | Prisma.TransactionOrderByWithRelationInput[]
-  cursor?: Prisma.TransactionWhereUniqueInput
+  include?: Prisma.CreditCardInclude<ExtArgs> | null
+  where?: Prisma.CreditCardWhereInput
+  orderBy?: Prisma.CreditCardOrderByWithRelationInput | Prisma.CreditCardOrderByWithRelationInput[]
+  cursor?: Prisma.CreditCardWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.TransactionScalarFieldEnum | Prisma.TransactionScalarFieldEnum[]
-}
-
-/**
- * User.fixedTransactions
- */
-export type User$fixedTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the FixedTransaction
-   */
-  select?: Prisma.FixedTransactionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the FixedTransaction
-   */
-  omit?: Prisma.FixedTransactionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.FixedTransactionInclude<ExtArgs> | null
-  where?: Prisma.FixedTransactionWhereInput
-  orderBy?: Prisma.FixedTransactionOrderByWithRelationInput | Prisma.FixedTransactionOrderByWithRelationInput[]
-  cursor?: Prisma.FixedTransactionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.FixedTransactionScalarFieldEnum | Prisma.FixedTransactionScalarFieldEnum[]
+  distinct?: Prisma.CreditCardScalarFieldEnum | Prisma.CreditCardScalarFieldEnum[]
 }
 
 /**
@@ -2609,27 +2561,27 @@ export type User$fixedTransactionOccurrencesArgs<ExtArgs extends runtime.Types.E
 }
 
 /**
- * User.investments
+ * User.fixedTransactions
  */
-export type User$investmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type User$fixedTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the Investment
+   * Select specific fields to fetch from the FixedTransaction
    */
-  select?: Prisma.InvestmentSelect<ExtArgs> | null
+  select?: Prisma.FixedTransactionSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the Investment
+   * Omit specific fields from the FixedTransaction
    */
-  omit?: Prisma.InvestmentOmit<ExtArgs> | null
+  omit?: Prisma.FixedTransactionOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.InvestmentInclude<ExtArgs> | null
-  where?: Prisma.InvestmentWhereInput
-  orderBy?: Prisma.InvestmentOrderByWithRelationInput | Prisma.InvestmentOrderByWithRelationInput[]
-  cursor?: Prisma.InvestmentWhereUniqueInput
+  include?: Prisma.FixedTransactionInclude<ExtArgs> | null
+  where?: Prisma.FixedTransactionWhereInput
+  orderBy?: Prisma.FixedTransactionOrderByWithRelationInput | Prisma.FixedTransactionOrderByWithRelationInput[]
+  cursor?: Prisma.FixedTransactionWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.InvestmentScalarFieldEnum | Prisma.InvestmentScalarFieldEnum[]
+  distinct?: Prisma.FixedTransactionScalarFieldEnum | Prisma.FixedTransactionScalarFieldEnum[]
 }
 
 /**
@@ -2681,6 +2633,30 @@ export type User$importedFilesArgs<ExtArgs extends runtime.Types.Extensions.Inte
 }
 
 /**
+ * User.investments
+ */
+export type User$investmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Investment
+   */
+  select?: Prisma.InvestmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Investment
+   */
+  omit?: Prisma.InvestmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InvestmentInclude<ExtArgs> | null
+  where?: Prisma.InvestmentWhereInput
+  orderBy?: Prisma.InvestmentOrderByWithRelationInput | Prisma.InvestmentOrderByWithRelationInput[]
+  cursor?: Prisma.InvestmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InvestmentScalarFieldEnum | Prisma.InvestmentScalarFieldEnum[]
+}
+
+/**
  * User.marketAssets
  */
 export type User$marketAssetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2702,6 +2678,30 @@ export type User$marketAssetsArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.MarketAssetScalarFieldEnum | Prisma.MarketAssetScalarFieldEnum[]
+}
+
+/**
+ * User.transactions
+ */
+export type User$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Transaction
+   */
+  select?: Prisma.TransactionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Transaction
+   */
+  omit?: Prisma.TransactionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TransactionInclude<ExtArgs> | null
+  where?: Prisma.TransactionWhereInput
+  orderBy?: Prisma.TransactionOrderByWithRelationInput | Prisma.TransactionOrderByWithRelationInput[]
+  cursor?: Prisma.TransactionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TransactionScalarFieldEnum | Prisma.TransactionScalarFieldEnum[]
 }
 
 /**

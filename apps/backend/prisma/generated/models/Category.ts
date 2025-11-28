@@ -9,8 +9,8 @@
  * 🟢 You can import this file directly.
  */
 import type * as runtime from "@prisma/client/runtime/client"
-import type * as $Enums from "../enums.js"
-import type * as Prisma from "../internal/prismaNamespace.js"
+import type * as $Enums from "../enums"
+import type * as Prisma from "../internal/prismaNamespace"
 
 /**
  * Model Category
@@ -191,9 +191,9 @@ export type CategoryWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Category"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Category"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  transactions?: Prisma.TransactionListRelationFilter
   fixedTransactions?: Prisma.FixedTransactionListRelationFilter
   goals?: Prisma.GoalListRelationFilter
+  transactions?: Prisma.TransactionListRelationFilter
 }
 
 export type CategoryOrderByWithRelationInput = {
@@ -204,9 +204,9 @@ export type CategoryOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
-  transactions?: Prisma.TransactionOrderByRelationAggregateInput
   fixedTransactions?: Prisma.FixedTransactionOrderByRelationAggregateInput
   goals?: Prisma.GoalOrderByRelationAggregateInput
+  transactions?: Prisma.TransactionOrderByRelationAggregateInput
 }
 
 export type CategoryWhereUniqueInput = Prisma.AtLeast<{
@@ -220,9 +220,9 @@ export type CategoryWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Category"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Category"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  transactions?: Prisma.TransactionListRelationFilter
   fixedTransactions?: Prisma.FixedTransactionListRelationFilter
   goals?: Prisma.GoalListRelationFilter
+  transactions?: Prisma.TransactionListRelationFilter
 }, "id">
 
 export type CategoryOrderByWithAggregationInput = {
@@ -256,9 +256,9 @@ export type CategoryCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCategoriesInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutCategoryInput
   fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutCategoryInput
   goals?: Prisma.GoalCreateNestedManyWithoutRelatedCategoryInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryUncheckedCreateInput = {
@@ -268,9 +268,9 @@ export type CategoryUncheckedCreateInput = {
   type: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCategoryInput
   fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutCategoryInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutRelatedCategoryInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryUpdateInput = {
@@ -280,9 +280,9 @@ export type CategoryUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCategoriesNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutCategoryNestedInput
   fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutCategoryNestedInput
   goals?: Prisma.GoalUpdateManyWithoutRelatedCategoryNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryUncheckedUpdateInput = {
@@ -292,9 +292,9 @@ export type CategoryUncheckedUpdateInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCategoryNestedInput
   fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutCategoryNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutRelatedCategoryNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryCreateManyInput = {
@@ -464,9 +464,9 @@ export type CategoryCreateWithoutUserInput = {
   type: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  transactions?: Prisma.TransactionCreateNestedManyWithoutCategoryInput
   fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutCategoryInput
   goals?: Prisma.GoalCreateNestedManyWithoutRelatedCategoryInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryUncheckedCreateWithoutUserInput = {
@@ -475,9 +475,9 @@ export type CategoryUncheckedCreateWithoutUserInput = {
   type: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCategoryInput
   fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutCategoryInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutRelatedCategoryInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryCreateOrConnectWithoutUserInput = {
@@ -585,8 +585,8 @@ export type CategoryCreateWithoutFixedTransactionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCategoriesInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutCategoryInput
   goals?: Prisma.GoalCreateNestedManyWithoutRelatedCategoryInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryUncheckedCreateWithoutFixedTransactionsInput = {
@@ -596,8 +596,8 @@ export type CategoryUncheckedCreateWithoutFixedTransactionsInput = {
   type: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCategoryInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutRelatedCategoryInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryCreateOrConnectWithoutFixedTransactionsInput = {
@@ -623,8 +623,8 @@ export type CategoryUpdateWithoutFixedTransactionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCategoriesNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutCategoryNestedInput
   goals?: Prisma.GoalUpdateManyWithoutRelatedCategoryNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryUncheckedUpdateWithoutFixedTransactionsInput = {
@@ -634,8 +634,8 @@ export type CategoryUncheckedUpdateWithoutFixedTransactionsInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCategoryNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutRelatedCategoryNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryCreateWithoutGoalsInput = {
@@ -645,8 +645,8 @@ export type CategoryCreateWithoutGoalsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCategoriesInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutCategoryInput
   fixedTransactions?: Prisma.FixedTransactionCreateNestedManyWithoutCategoryInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryUncheckedCreateWithoutGoalsInput = {
@@ -656,8 +656,8 @@ export type CategoryUncheckedCreateWithoutGoalsInput = {
   type: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCategoryInput
   fixedTransactions?: Prisma.FixedTransactionUncheckedCreateNestedManyWithoutCategoryInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryCreateOrConnectWithoutGoalsInput = {
@@ -683,8 +683,8 @@ export type CategoryUpdateWithoutGoalsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCategoriesNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutCategoryNestedInput
   fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutCategoryNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryUncheckedUpdateWithoutGoalsInput = {
@@ -694,8 +694,8 @@ export type CategoryUncheckedUpdateWithoutGoalsInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCategoryNestedInput
   fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutCategoryNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryCreateManyUserInput = {
@@ -712,9 +712,9 @@ export type CategoryUpdateWithoutUserInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactions?: Prisma.TransactionUpdateManyWithoutCategoryNestedInput
   fixedTransactions?: Prisma.FixedTransactionUpdateManyWithoutCategoryNestedInput
   goals?: Prisma.GoalUpdateManyWithoutRelatedCategoryNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryUncheckedUpdateWithoutUserInput = {
@@ -723,9 +723,9 @@ export type CategoryUncheckedUpdateWithoutUserInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCategoryNestedInput
   fixedTransactions?: Prisma.FixedTransactionUncheckedUpdateManyWithoutCategoryNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutRelatedCategoryNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryUncheckedUpdateManyWithoutUserInput = {
@@ -742,15 +742,15 @@ export type CategoryUncheckedUpdateManyWithoutUserInput = {
  */
 
 export type CategoryCountOutputType = {
-  transactions: number
   fixedTransactions: number
   goals: number
+  transactions: number
 }
 
 export type CategoryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  transactions?: boolean | CategoryCountOutputTypeCountTransactionsArgs
   fixedTransactions?: boolean | CategoryCountOutputTypeCountFixedTransactionsArgs
   goals?: boolean | CategoryCountOutputTypeCountGoalsArgs
+  transactions?: boolean | CategoryCountOutputTypeCountTransactionsArgs
 }
 
 /**
@@ -761,13 +761,6 @@ export type CategoryCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Ext
    * Select specific fields to fetch from the CategoryCountOutputType
    */
   select?: Prisma.CategoryCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * CategoryCountOutputType without action
- */
-export type CategoryCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.TransactionWhereInput
 }
 
 /**
@@ -784,6 +777,13 @@ export type CategoryCountOutputTypeCountGoalsArgs<ExtArgs extends runtime.Types.
   where?: Prisma.GoalWhereInput
 }
 
+/**
+ * CategoryCountOutputType without action
+ */
+export type CategoryCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TransactionWhereInput
+}
+
 
 export type CategorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -793,9 +793,9 @@ export type CategorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  transactions?: boolean | Prisma.Category$transactionsArgs<ExtArgs>
   fixedTransactions?: boolean | Prisma.Category$fixedTransactionsArgs<ExtArgs>
   goals?: boolean | Prisma.Category$goalsArgs<ExtArgs>
+  transactions?: boolean | Prisma.Category$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.CategoryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["category"]>
 
@@ -831,9 +831,9 @@ export type CategorySelectScalar = {
 export type CategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "type" | "createdAt" | "updatedAt", ExtArgs["result"]["category"]>
 export type CategoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  transactions?: boolean | Prisma.Category$transactionsArgs<ExtArgs>
   fixedTransactions?: boolean | Prisma.Category$fixedTransactionsArgs<ExtArgs>
   goals?: boolean | Prisma.Category$goalsArgs<ExtArgs>
+  transactions?: boolean | Prisma.Category$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.CategoryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CategoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -847,9 +847,9 @@ export type $CategoryPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "Category"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
-    transactions: Prisma.$TransactionPayload<ExtArgs>[]
     fixedTransactions: Prisma.$FixedTransactionPayload<ExtArgs>[]
     goals: Prisma.$GoalPayload<ExtArgs>[]
+    transactions: Prisma.$TransactionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1253,9 +1253,9 @@ readonly fields: CategoryFieldRefs;
 export interface Prisma__CategoryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  transactions<T extends Prisma.Category$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Category$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   fixedTransactions<T extends Prisma.Category$fixedTransactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Category$fixedTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FixedTransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   goals<T extends Prisma.Category$goalsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Category$goalsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GoalPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  transactions<T extends Prisma.Category$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Category$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1687,30 +1687,6 @@ export type CategoryDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
 }
 
 /**
- * Category.transactions
- */
-export type Category$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Transaction
-   */
-  select?: Prisma.TransactionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Transaction
-   */
-  omit?: Prisma.TransactionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.TransactionInclude<ExtArgs> | null
-  where?: Prisma.TransactionWhereInput
-  orderBy?: Prisma.TransactionOrderByWithRelationInput | Prisma.TransactionOrderByWithRelationInput[]
-  cursor?: Prisma.TransactionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.TransactionScalarFieldEnum | Prisma.TransactionScalarFieldEnum[]
-}
-
-/**
  * Category.fixedTransactions
  */
 export type Category$fixedTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1756,6 +1732,30 @@ export type Category$goalsArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.GoalScalarFieldEnum | Prisma.GoalScalarFieldEnum[]
+}
+
+/**
+ * Category.transactions
+ */
+export type Category$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Transaction
+   */
+  select?: Prisma.TransactionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Transaction
+   */
+  omit?: Prisma.TransactionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TransactionInclude<ExtArgs> | null
+  where?: Prisma.TransactionWhereInput
+  orderBy?: Prisma.TransactionOrderByWithRelationInput | Prisma.TransactionOrderByWithRelationInput[]
+  cursor?: Prisma.TransactionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TransactionScalarFieldEnum | Prisma.TransactionScalarFieldEnum[]
 }
 
 /**

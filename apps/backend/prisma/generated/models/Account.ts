@@ -9,8 +9,8 @@
  * 🟢 You can import this file directly.
  */
 import type * as runtime from "@prisma/client/runtime/client"
-import type * as $Enums from "../enums.js"
-import type * as Prisma from "../internal/prismaNamespace.js"
+import type * as $Enums from "../enums"
+import type * as Prisma from "../internal/prismaNamespace"
 
 /**
  * Model Account
@@ -249,8 +249,8 @@ export type AccountWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Account"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Account"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  transactions?: Prisma.TransactionListRelationFilter
   goals?: Prisma.GoalListRelationFilter
+  transactions?: Prisma.TransactionListRelationFilter
 }
 
 export type AccountOrderByWithRelationInput = {
@@ -264,8 +264,8 @@ export type AccountOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
-  transactions?: Prisma.TransactionOrderByRelationAggregateInput
   goals?: Prisma.GoalOrderByRelationAggregateInput
+  transactions?: Prisma.TransactionOrderByRelationAggregateInput
 }
 
 export type AccountWhereUniqueInput = Prisma.AtLeast<{
@@ -282,8 +282,8 @@ export type AccountWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Account"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Account"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  transactions?: Prisma.TransactionListRelationFilter
   goals?: Prisma.GoalListRelationFilter
+  transactions?: Prisma.TransactionListRelationFilter
 }, "id">
 
 export type AccountOrderByWithAggregationInput = {
@@ -328,8 +328,8 @@ export type AccountCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutAccountsInput
-  transactions?: Prisma.TransactionCreateNestedManyWithoutAccountInput
   goals?: Prisma.GoalCreateNestedManyWithoutRelatedAccountInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutAccountInput
 }
 
 export type AccountUncheckedCreateInput = {
@@ -342,8 +342,8 @@ export type AccountUncheckedCreateInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutAccountInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutRelatedAccountInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutAccountInput
 }
 
 export type AccountUpdateInput = {
@@ -356,8 +356,8 @@ export type AccountUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutAccountsNestedInput
-  transactions?: Prisma.TransactionUpdateManyWithoutAccountNestedInput
   goals?: Prisma.GoalUpdateManyWithoutRelatedAccountNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutAccountNestedInput
 }
 
 export type AccountUncheckedUpdateInput = {
@@ -370,8 +370,8 @@ export type AccountUncheckedUpdateInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutAccountNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutRelatedAccountNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutAccountNestedInput
 }
 
 export type AccountCreateManyInput = {
@@ -563,8 +563,8 @@ export type AccountCreateWithoutUserInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  transactions?: Prisma.TransactionCreateNestedManyWithoutAccountInput
   goals?: Prisma.GoalCreateNestedManyWithoutRelatedAccountInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutAccountInput
 }
 
 export type AccountUncheckedCreateWithoutUserInput = {
@@ -576,8 +576,8 @@ export type AccountUncheckedCreateWithoutUserInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutAccountInput
   goals?: Prisma.GoalUncheckedCreateNestedManyWithoutRelatedAccountInput
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutAccountInput
 }
 
 export type AccountCreateOrConnectWithoutUserInput = {
@@ -777,8 +777,8 @@ export type AccountUpdateWithoutUserInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactions?: Prisma.TransactionUpdateManyWithoutAccountNestedInput
   goals?: Prisma.GoalUpdateManyWithoutRelatedAccountNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutAccountNestedInput
 }
 
 export type AccountUncheckedUpdateWithoutUserInput = {
@@ -790,8 +790,8 @@ export type AccountUncheckedUpdateWithoutUserInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutAccountNestedInput
   goals?: Prisma.GoalUncheckedUpdateManyWithoutRelatedAccountNestedInput
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutAccountNestedInput
 }
 
 export type AccountUncheckedUpdateManyWithoutUserInput = {
@@ -811,13 +811,13 @@ export type AccountUncheckedUpdateManyWithoutUserInput = {
  */
 
 export type AccountCountOutputType = {
-  transactions: number
   goals: number
+  transactions: number
 }
 
 export type AccountCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  transactions?: boolean | AccountCountOutputTypeCountTransactionsArgs
   goals?: boolean | AccountCountOutputTypeCountGoalsArgs
+  transactions?: boolean | AccountCountOutputTypeCountTransactionsArgs
 }
 
 /**
@@ -833,15 +833,15 @@ export type AccountCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exte
 /**
  * AccountCountOutputType without action
  */
-export type AccountCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.TransactionWhereInput
+export type AccountCountOutputTypeCountGoalsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.GoalWhereInput
 }
 
 /**
  * AccountCountOutputType without action
  */
-export type AccountCountOutputTypeCountGoalsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.GoalWhereInput
+export type AccountCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TransactionWhereInput
 }
 
 
@@ -856,8 +856,8 @@ export type AccountSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  transactions?: boolean | Prisma.Account$transactionsArgs<ExtArgs>
   goals?: boolean | Prisma.Account$goalsArgs<ExtArgs>
+  transactions?: boolean | Prisma.Account$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.AccountCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["account"]>
 
@@ -902,8 +902,8 @@ export type AccountSelectScalar = {
 export type AccountOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "institution" | "type" | "initialBalance" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["account"]>
 export type AccountInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  transactions?: boolean | Prisma.Account$transactionsArgs<ExtArgs>
   goals?: boolean | Prisma.Account$goalsArgs<ExtArgs>
+  transactions?: boolean | Prisma.Account$transactionsArgs<ExtArgs>
   _count?: boolean | Prisma.AccountCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AccountIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -917,8 +917,8 @@ export type $AccountPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   name: "Account"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
-    transactions: Prisma.$TransactionPayload<ExtArgs>[]
     goals: Prisma.$GoalPayload<ExtArgs>[]
+    transactions: Prisma.$TransactionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1325,8 +1325,8 @@ readonly fields: AccountFieldRefs;
 export interface Prisma__AccountClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  transactions<T extends Prisma.Account$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Account$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   goals<T extends Prisma.Account$goalsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Account$goalsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GoalPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  transactions<T extends Prisma.Account$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Account$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1761,30 +1761,6 @@ export type AccountDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
 }
 
 /**
- * Account.transactions
- */
-export type Account$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Transaction
-   */
-  select?: Prisma.TransactionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Transaction
-   */
-  omit?: Prisma.TransactionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.TransactionInclude<ExtArgs> | null
-  where?: Prisma.TransactionWhereInput
-  orderBy?: Prisma.TransactionOrderByWithRelationInput | Prisma.TransactionOrderByWithRelationInput[]
-  cursor?: Prisma.TransactionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.TransactionScalarFieldEnum | Prisma.TransactionScalarFieldEnum[]
-}
-
-/**
  * Account.goals
  */
 export type Account$goalsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1806,6 +1782,30 @@ export type Account$goalsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.GoalScalarFieldEnum | Prisma.GoalScalarFieldEnum[]
+}
+
+/**
+ * Account.transactions
+ */
+export type Account$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Transaction
+   */
+  select?: Prisma.TransactionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Transaction
+   */
+  omit?: Prisma.TransactionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TransactionInclude<ExtArgs> | null
+  where?: Prisma.TransactionWhereInput
+  orderBy?: Prisma.TransactionOrderByWithRelationInput | Prisma.TransactionOrderByWithRelationInput[]
+  cursor?: Prisma.TransactionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TransactionScalarFieldEnum | Prisma.TransactionScalarFieldEnum[]
 }
 
 /**
