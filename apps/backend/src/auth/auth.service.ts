@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { User } from 'prisma/generated/client';
@@ -38,9 +38,15 @@ export class AuthService {
   }
 
   async register(email: string, password: string) {
-    await this.usersService.createUser({
+    const userExists = await this.usersService.findByEmail(email);
+
+    if (userExists) {
+      throw new ConflictException('User already exists');
+    }
+
+    return await this.usersService.createUser({
       email,
-      password
-    })
+      password,
+    });
   }
 }
