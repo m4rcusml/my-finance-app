@@ -14,9 +14,10 @@ import { jwtConstants } from './constants';
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
+      // @ts-expect-error
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: jwtConstants.expiresIn as any },
+        signOptions: { expiresIn: jwtConstants.expiresIn },
       }),
       inject: [ConfigService],
     }),
