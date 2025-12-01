@@ -1,18 +1,9 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { CurrentUser, UserPayload } from 'src/decorators/user.decorator';
 import { UsersService } from 'src/users/users.service';
+import { Public } from '../decorators/public.decorator';
 import { LoginDto, RegisterDto } from './auth.dto';
 import { AuthService } from './auth.service';
-import { Public } from './public.decorator';
-
-interface RequestWithUser extends Request {
-  user: {
-    sub: string;
-    email: string;
-    iat: number;
-    exp: number;
-  };
-}
 
 @Controller('auth')
 export class AuthController {
@@ -38,7 +29,7 @@ export class AuthController {
   }
 
   @Get('me')
-  getMe(@Req() req: RequestWithUser) {
-    return this.usersService.findById(req.user.sub);
+  getMe(@CurrentUser() user: UserPayload) {
+    return this.usersService.findById(user.sub);
   }
 }
