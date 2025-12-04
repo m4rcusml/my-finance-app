@@ -14,7 +14,7 @@ export class TransactionsController {
 
   @Get()
   async findAll(@CurrentUser() user: UserPayload, @Query() filters: ListTransactionsQueryDto) {
-    return await this.transactionService.findAll(user.sub, filters);
+    return await this.transactionService.findAllByUser(user.sub, filters);
   }
 
   @Get('uncategorized')

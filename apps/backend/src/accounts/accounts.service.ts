@@ -15,7 +15,7 @@ export class AccountsService {
     })
   }
 
-  async findAll(userId: string) {
+  async findAllByUser(userId: string) {
     return await this.prisma.account.findMany({
       where: { userId }
     })

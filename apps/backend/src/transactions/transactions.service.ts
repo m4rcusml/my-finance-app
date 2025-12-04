@@ -29,7 +29,7 @@ export class TransactionsService {
     })
   }
 
-  async findAll(userId: string, filters?: ListTransactionsQueryDto) {
+  async findAllByUser(userId: string, filters?: ListTransactionsQueryDto) {
     // biome-ignore lint/suspicious/noExplicitAny: <explanation> Must be any to be rewritable
     const where: any = {
       userId,

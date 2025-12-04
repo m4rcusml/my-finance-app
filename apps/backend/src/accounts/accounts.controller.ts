@@ -5,7 +5,7 @@ import { AccountsService } from './accounts.service';
 
 @Controller('accounts')
 export class AccountsController {
-  constructor(private readonly accountsService: AccountsService) {}
+  constructor(private readonly accountsService: AccountsService) { }
 
   @Post()
   create(@CurrentUser() user: UserPayload, @Body() body: CreateAccountDto) {
@@ -14,7 +14,7 @@ export class AccountsController {
 
   @Get()
   findAll(@CurrentUser() user: UserPayload) {
-    return this.accountsService.findAll(user.sub);
+    return this.accountsService.findAllByUser(user.sub);
   }
 
   @Get(':id')
