@@ -245,7 +245,7 @@ export type FixedTransactionGroupByOutputType = {
   accountId: string | null
   creditCardId: string | null
   categoryId: string
-  description: string
+  description: string | null
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -284,7 +284,7 @@ export type FixedTransactionWhereInput = {
   accountId?: Prisma.StringNullableFilter<"FixedTransaction"> | string | null
   creditCardId?: Prisma.StringNullableFilter<"FixedTransaction"> | string | null
   categoryId?: Prisma.StringFilter<"FixedTransaction"> | string
-  description?: Prisma.StringFilter<"FixedTransaction"> | string
+  description?: Prisma.StringNullableFilter<"FixedTransaction"> | string | null
   isActive?: Prisma.BoolFilter<"FixedTransaction"> | boolean
   createdAt?: Prisma.DateTimeFilter<"FixedTransaction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FixedTransaction"> | Date | string
@@ -303,7 +303,7 @@ export type FixedTransactionOrderByWithRelationInput = {
   accountId?: Prisma.SortOrderInput | Prisma.SortOrder
   creditCardId?: Prisma.SortOrderInput | Prisma.SortOrder
   categoryId?: Prisma.SortOrder
-  description?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -325,7 +325,7 @@ export type FixedTransactionWhereUniqueInput = Prisma.AtLeast<{
   accountId?: Prisma.StringNullableFilter<"FixedTransaction"> | string | null
   creditCardId?: Prisma.StringNullableFilter<"FixedTransaction"> | string | null
   categoryId?: Prisma.StringFilter<"FixedTransaction"> | string
-  description?: Prisma.StringFilter<"FixedTransaction"> | string
+  description?: Prisma.StringNullableFilter<"FixedTransaction"> | string | null
   isActive?: Prisma.BoolFilter<"FixedTransaction"> | boolean
   createdAt?: Prisma.DateTimeFilter<"FixedTransaction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FixedTransaction"> | Date | string
@@ -344,7 +344,7 @@ export type FixedTransactionOrderByWithAggregationInput = {
   accountId?: Prisma.SortOrderInput | Prisma.SortOrder
   creditCardId?: Prisma.SortOrderInput | Prisma.SortOrder
   categoryId?: Prisma.SortOrder
-  description?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -368,7 +368,7 @@ export type FixedTransactionScalarWhereWithAggregatesInput = {
   accountId?: Prisma.StringNullableWithAggregatesFilter<"FixedTransaction"> | string | null
   creditCardId?: Prisma.StringNullableWithAggregatesFilter<"FixedTransaction"> | string | null
   categoryId?: Prisma.StringWithAggregatesFilter<"FixedTransaction"> | string
-  description?: Prisma.StringWithAggregatesFilter<"FixedTransaction"> | string
+  description?: Prisma.StringNullableWithAggregatesFilter<"FixedTransaction"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"FixedTransaction"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"FixedTransaction"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"FixedTransaction"> | Date | string
@@ -382,7 +382,7 @@ export type FixedTransactionCreateInput = {
   marginDays?: number
   accountId?: string | null
   creditCardId?: string | null
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -401,7 +401,7 @@ export type FixedTransactionUncheckedCreateInput = {
   accountId?: string | null
   creditCardId?: string | null
   categoryId: string
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -416,7 +416,7 @@ export type FixedTransactionUpdateInput = {
   marginDays?: Prisma.IntFieldUpdateOperationsInput | number
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -435,7 +435,7 @@ export type FixedTransactionUncheckedUpdateInput = {
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -452,7 +452,7 @@ export type FixedTransactionCreateManyInput = {
   accountId?: string | null
   creditCardId?: string | null
   categoryId: string
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -466,7 +466,7 @@ export type FixedTransactionUpdateManyMutationInput = {
   marginDays?: Prisma.IntFieldUpdateOperationsInput | number
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -482,7 +482,7 @@ export type FixedTransactionUncheckedUpdateManyInput = {
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -677,7 +677,7 @@ export type FixedTransactionCreateWithoutUserInput = {
   marginDays?: number
   accountId?: string | null
   creditCardId?: string | null
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -694,7 +694,7 @@ export type FixedTransactionUncheckedCreateWithoutUserInput = {
   accountId?: string | null
   creditCardId?: string | null
   categoryId: string
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -740,7 +740,7 @@ export type FixedTransactionScalarWhereInput = {
   accountId?: Prisma.StringNullableFilter<"FixedTransaction"> | string | null
   creditCardId?: Prisma.StringNullableFilter<"FixedTransaction"> | string | null
   categoryId?: Prisma.StringFilter<"FixedTransaction"> | string
-  description?: Prisma.StringFilter<"FixedTransaction"> | string
+  description?: Prisma.StringNullableFilter<"FixedTransaction"> | string | null
   isActive?: Prisma.BoolFilter<"FixedTransaction"> | boolean
   createdAt?: Prisma.DateTimeFilter<"FixedTransaction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FixedTransaction"> | Date | string
@@ -754,7 +754,7 @@ export type FixedTransactionCreateWithoutCategoryInput = {
   marginDays?: number
   accountId?: string | null
   creditCardId?: string | null
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -771,7 +771,7 @@ export type FixedTransactionUncheckedCreateWithoutCategoryInput = {
   marginDays?: number
   accountId?: string | null
   creditCardId?: string | null
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -812,7 +812,7 @@ export type FixedTransactionCreateWithoutOccurrencesInput = {
   marginDays?: number
   accountId?: string | null
   creditCardId?: string | null
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -830,7 +830,7 @@ export type FixedTransactionUncheckedCreateWithoutOccurrencesInput = {
   accountId?: string | null
   creditCardId?: string | null
   categoryId: string
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -860,7 +860,7 @@ export type FixedTransactionUpdateWithoutOccurrencesInput = {
   marginDays?: Prisma.IntFieldUpdateOperationsInput | number
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -878,7 +878,7 @@ export type FixedTransactionUncheckedUpdateWithoutOccurrencesInput = {
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -893,7 +893,7 @@ export type FixedTransactionCreateManyUserInput = {
   accountId?: string | null
   creditCardId?: string | null
   categoryId: string
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -907,7 +907,7 @@ export type FixedTransactionUpdateWithoutUserInput = {
   marginDays?: Prisma.IntFieldUpdateOperationsInput | number
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -924,7 +924,7 @@ export type FixedTransactionUncheckedUpdateWithoutUserInput = {
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -940,7 +940,7 @@ export type FixedTransactionUncheckedUpdateManyWithoutUserInput = {
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -955,7 +955,7 @@ export type FixedTransactionCreateManyCategoryInput = {
   marginDays?: number
   accountId?: string | null
   creditCardId?: string | null
-  description: string
+  description?: string | null
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -969,7 +969,7 @@ export type FixedTransactionUpdateWithoutCategoryInput = {
   marginDays?: Prisma.IntFieldUpdateOperationsInput | number
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -986,7 +986,7 @@ export type FixedTransactionUncheckedUpdateWithoutCategoryInput = {
   marginDays?: Prisma.IntFieldUpdateOperationsInput | number
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1002,7 +1002,7 @@ export type FixedTransactionUncheckedUpdateManyWithoutCategoryInput = {
   marginDays?: Prisma.IntFieldUpdateOperationsInput | number
   accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creditCardId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  description?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1144,7 +1144,7 @@ export type $FixedTransactionPayload<ExtArgs extends runtime.Types.Extensions.In
     accountId: string | null
     creditCardId: string | null
     categoryId: string
-    description: string
+    description: string | null
     isActive: boolean
     createdAt: Date
     updatedAt: Date

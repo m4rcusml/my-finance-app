@@ -10,6 +10,8 @@ import { AccountsModule } from './accounts/accounts.module';
 import { CategoriesModule } from './categories/categories.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { FixedTransactionsModule } from './fixed-transactions/fixed-transactions.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
     CategoriesModule,
     TransactionsModule,
     DashboardModule,
+    FixedTransactionsModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
