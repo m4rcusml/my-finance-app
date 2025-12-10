@@ -18,7 +18,7 @@ export class FixedTransactionsService {
     await this.accountsService.findById(userId, accountId);
     await this.categoriesService.findById(userId, categoryId);
 
-    await this.prisma.fixedTransaction.create({
+    return await this.prisma.fixedTransaction.create({
       data: {
         ...dto,
         accountId,
@@ -56,6 +56,12 @@ export class FixedTransactionsService {
     return response;
   }
 
+  async findAllActive() {
+    return await this.prisma.fixedTransaction.findMany({
+      where: { isActive: true }
+    });
+  }
+
   async updateFixedTransaction(userId: string, fixedId: string, dto: UpdateFixedTransactionDto) {
     const response = await this.prisma.fixedTransaction.findUnique({
       where: { id: fixedId }
@@ -77,7 +83,7 @@ export class FixedTransactionsService {
       await this.accountsService.findById(userId, dto.accountId)
     }
 
-    return await this.prisma.transaction.update({
+    return await this.prisma.fixedTransaction.update({
       data: dto,
       where: { id: fixedId }
     })

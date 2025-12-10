@@ -6,7 +6,7 @@ import { FixedTransactionsService } from './fixed-transactions.service';
 interface ListOccurrencesFilter {
   year: number;
   month: number;
-  status: 'PENDING' | 'CONFIRMED' | 'SKIPPED';
+  status?: 'PENDING' | 'CONFIRMED' | 'SKIPPED';
 }
 
 @Injectable()
@@ -16,6 +16,21 @@ export class FixedTransactionsOccurrencesService {
     private readonly fixedTransactionsService: FixedTransactionsService,
     private readonly transactionsService: TransactionsService
   ) { }
+
+  async createOccurrence(userId: string, fixedTransactionId: string, year: number, month: number) {
+    return await this.prisma.fixedTransactionOccurrence.create({
+      data: {
+        userId,
+        fixedTransactionId,
+        periodYear: year,
+        periodMonth: month,
+        status: 'PENDING',
+        realDate: null,
+        transactionId: null,
+      },
+    });
+  }
+
 
   async listAllByUser(userId: string, { year, month, status }: ListOccurrencesFilter) {
     return await this.prisma.fixedTransactionOccurrence.findMany({
@@ -46,7 +61,7 @@ export class FixedTransactionsOccurrencesService {
     }
 
     const currentDate = new Date().toISOString();
-    const { type, value, accountId, categoryId, description } = await this.fixedTransactionsService.findById(userId, occurrenceId);
+    const { type, value, accountId, categoryId, description } = await this.fixedTransactionsService.findById(userId, response.fixedTransactionId);
     const { id: transactionId } = await this.transactionsService.create(userId, {
       // @ts-expect-error
       type, accountId, categoryId,
@@ -56,13 +71,13 @@ export class FixedTransactionsOccurrencesService {
     })
 
     return await this.prisma.fixedTransactionOccurrence.update({
-      data: { realDate: realDate ?? currentDate, status: 'CONFIRMED' },
-      where: { id: occurrenceId, transactionId }
+      data: { realDate: realDate ?? currentDate, transactionId, status: 'CONFIRMED' },
+      where: { id: occurrenceId }
     })
   }
 
   async skipOccurrence(userId: string, occurrenceId: string) {
-    const response = await this.prisma.fixedTransaction.findUnique({
+    const response = await this.prisma.fixedTransactionOccurrence.findUnique({
       where: { id: occurrenceId }
     })
 

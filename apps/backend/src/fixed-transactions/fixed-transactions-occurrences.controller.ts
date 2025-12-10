@@ -10,13 +10,13 @@ export class FixedTransactionsOccurrencesController {
   @Get()
   async getAllByUser(
     @CurrentUser() user: UserPayload,
-    @Query('year') year: number,
-    @Query('month') month: number,
+    @Query('year') year: string,
+    @Query('month') month: string,
     @Query('status') status: 'PENDING' | 'CONFIRMED' | 'SKIPPED'
   ) {
     return await this.fixedTransactionsOccurrencesService.listAllByUser(
       user.sub,
-      { year, month, status }
+      { year: Number(year), month: Number(month), status }
     );
   }
 
