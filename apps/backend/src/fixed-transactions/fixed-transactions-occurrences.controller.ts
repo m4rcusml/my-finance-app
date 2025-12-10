@@ -1,17 +1,32 @@
-import { Controller, Get, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { CurrentUser, UserPayload } from 'src/decorators/user.decorator';
-import { FixedTransactionsService } from './fixed-transactions.service';
+import { ConfirmOccurrenceDto } from './fixed-transactions.dto';
+import { FixedTransactionsOccurrencesService } from './fixed-transactions-occurrences.service';
 
 @Controller('fixed-transactions/occurrences')
 export class FixedTransactionsOccurrencesController {
-  constructor(private readonly fixedTransactionsService: FixedTransactionsService) { }
+  constructor(private readonly fixedTransactionsOccurrencesService: FixedTransactionsOccurrencesService) { }
 
   @Get()
-  getAllByUser(@CurrentUser() user: UserPayload) { }
+  async getAllByUser(
+    @CurrentUser() user: UserPayload,
+    @Query('year') year: number,
+    @Query('month') month: number,
+    @Query('status') status: 'PENDING' | 'CONFIRMED' | 'SKIPPED'
+  ) {
+    return await this.fixedTransactionsOccurrencesService.listAllByUser(
+      user.sub,
+      { year, month, status }
+    );
+  }
 
   @Patch(':id/confirm')
-  update(@CurrentUser() user: UserPayload) { }
+  async update(@CurrentUser() user: UserPayload, @Param('id') occurrenceId: string, @Body() dto: ConfirmOccurrenceDto) {
+    return await this.fixedTransactionsOccurrencesService.confirmOccurrence(user.sub, occurrenceId, dto.realDate);
+  }
 
   @Patch(':id/skip')
-  deactivate(@CurrentUser() user: UserPayload) { }
+  async deactivate(@CurrentUser() user: UserPayload, @Param('id') occurrenceId: string) {
+    return await this.fixedTransactionsOccurrencesService.skipOccurrence(user.sub, occurrenceId);
+  }
 }
