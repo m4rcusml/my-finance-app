@@ -19,19 +19,21 @@ export class FixedTransactionsJob {
 
     const fixedTransactions = await this.fixedTransactionsService.findAllActive()
 
-    fixedTransactions.forEach(async t => { // não usar forEach
-      const fromDay = t.referenceDay - t.marginDays;
-      const toDay = t.referenceDay + t.marginDays;
+    await Promise.all(
+      fixedTransactions.map(async (t) => {
+        const fromDay = t.referenceDay - t.marginDays;
+        const toDay = t.referenceDay + t.marginDays;
 
-      if (day >= fromDay && day <= toDay) {
-        const occurrences = await this.fixedTransactionsOccurrencesService.listAllByUser(t.userId, { month, year })
-        const filteredOccurrences = occurrences.filter(o => o.fixedTransactionId === t.id)
-        // criar um método existsForPeriod(fixedTransactionId, year, month)
+        if (day >= fromDay && day <= toDay) {
+          const occurrences = await this.fixedTransactionsOccurrencesService.listAllByUser(t.userId, { month, year });
+          const filteredOccurrences = occurrences.filter((o) => o.fixedTransactionId === t.id);
+          // talvez criar um método próprio pra simplificar as duas linhas acima
 
-        if (filteredOccurrences.length === 0) {
-          await this.fixedTransactionsOccurrencesService.createOccurrence(t.userId, t.id, year, month);
+          if (filteredOccurrences.length === 0) {
+            await this.fixedTransactionsOccurrencesService.createOccurrence(t.userId, t.id, year, month);
+          }
         }
-      }
-    })
+      }),
+    );
   }
 }

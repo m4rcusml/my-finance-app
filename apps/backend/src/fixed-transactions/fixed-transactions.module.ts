@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AccountsService } from 'src/accounts/accounts.service';
-import { CategoriesService } from 'src/categories/categories.service';
+import { AccountsModule } from 'src/accounts/accounts.module';
+import { CategoriesModule } from 'src/categories/categories.module';
 import { TransactionsModule } from 'src/transactions/transactions.module';
 import { FixedTransactionsController } from './fixed-transactions.controller';
 import { FixedTransactionsService } from './fixed-transactions.service';
@@ -8,7 +8,7 @@ import { FixedTransactionsOccurrencesController } from './fixed-transactions-occ
 import { FixedTransactionsOccurrencesService } from './fixed-transactions-occurrences.service';
 
 @Module({
-  imports: [TransactionsModule, AccountsService, CategoriesService],
+  imports: [TransactionsModule, AccountsModule, CategoriesModule],
   providers: [FixedTransactionsService, FixedTransactionsOccurrencesService],
   controllers: [FixedTransactionsController, FixedTransactionsOccurrencesController],
   exports: [FixedTransactionsService, FixedTransactionsOccurrencesService]
