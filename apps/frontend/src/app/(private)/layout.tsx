@@ -14,7 +14,7 @@ export default function PrivateLayout({
 
 function MainRoutesLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex h-full max-w-[1920px] gap-8 p-10">
+    <div className="flex h-full max-w-[1920px] gap-8 p-6">
       <div className="hidden lg:block">
         <Sidebar />
       </div>

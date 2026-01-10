@@ -1,59 +1,58 @@
-import { Lineicons } from '@lineiconshq/react-lineicons';
-import { ArrowLeftOutlined, ArrowRightOutlined } from '@lineiconshq/free-icons';
-import { Card } from './card';
-import { monthLabels } from '@/features/dashboard/utils';
+// import { monthLabels } from '@/features/dashboard/utils';
 import { sampleMonthlyNet } from '@/features/dashboard/sample-data';
+import { Button } from '@/components/ui/button';
 
 type AnnualBalanceProps = {
   monthlyNet?: number[];
 };
 
 export function AnnualBalance({ monthlyNet = sampleMonthlyNet }: AnnualBalanceProps) {
-  const maxValue = Math.max(...monthlyNet.map((value) => Math.abs(value)), 1);
+  const _maxValue = Math.max(...monthlyNet.map((value) => Math.abs(value)), 1);
 
   return (
-    <Card className="px-6 py-5">
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-layer02 text-sm text-muted-foreground"
-        >
-          <Lineicons icon={ArrowLeftOutlined} size={16} aria-hidden />
-        </button>
-        <h3 className="text-base font-medium text-foreground">Balanco anual</h3>
-        <button
-          type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-layer02 text-sm text-muted-foreground"
-        >
-          <Lineicons icon={ArrowRightOutlined} size={16} aria-hidden />
-        </button>
-      </div>
-      <div className="mt-6 flex h-56 items-end gap-3">
-        {monthlyNet.map((value, index) => {
-          const height = `${(Math.abs(value) / maxValue) * 100}%`;
-          const color = value >= 0 ? 'bg-green' : 'bg-red';
-          return (
-            <div key={monthLabels[index]} className="flex flex-1 flex-col items-center gap-2">
-              <div className={`w-full rounded-2xl ${color}`} style={{ height }} />
-              <span className="text-xs text-muted-foreground">{monthLabels[index]}</span>
-            </div>
-          );
-        })}
+    <div className="flex-1 flex flex-col">
+      <div className="bg-layer01 flex justify-between items-center px-4 py-2 rounded-4xl">
+        <Button tone="layer01" leftIcon="ArrowLeftOutlined" />
+
+        <span className="text-md">Balanço anual</span>
+
+        <Button tone="layer01" rightIcon="ArrowRightOutlined" />
       </div>
 
-      <div className="mt-6 rounded-2xl border border-foreground/10 bg-layer02 px-4 py-4 text-sm text-muted-foreground">
-        <p className="text-xs text-muted-foreground">Legenda</p>
-        <div className="mt-3 flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded bg-green" />
-            Saldo positivo
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded bg-red" />
-            Saldo negativo
-          </span>
+      <div className="flex-1">{/* gráficos */}</div>
+
+      <div className="bg-layer01 rounded-4xl overflow-hidden">
+        <div className="bg-layer02 flex items-center px-4 py-2">
+          <span className="flex-1 text-center">Jan</span>
+          <span className="flex-1 text-center">Fev</span>
+          <span className="flex-1 text-center">Mar</span>
+          <span className="flex-1 text-center">Abr</span>
+          <span className="flex-1 text-center">Mai</span>
+          <span className="flex-1 text-center">Jun</span>
+          <span className="flex-1 text-center">Jul</span>
+          <span className="flex-1 text-center">Ago</span>
+          <span className="flex-1 text-center">Set</span>
+          <span className="flex-1 text-center">Out</span>
+          <span className="flex-1 text-center">Nov</span>
+          <span className="flex-1 text-center">Dez</span>
+        </div>
+
+        <div className="px-6 py-4 flex flex-col gap-4">
+          <span className="text-md">Legenda</span>
+
+          <div className="flex items-center gap-2">
+            <div className="bg-green border border-layer02 w-4 h-4" />
+            <span>-</span>
+            <p>Saldo positivo (lucro)</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="bg-red border border-layer02 w-4 h-4" />
+            <span>-</span>
+            <p>Saldo negativo (prejuízo)</p>
+          </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

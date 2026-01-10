@@ -23,7 +23,7 @@ export function Sidebar() {
       <div className="flex items-center justify-between text-muted-foreground">
         <Button
           tone="layer01"
-          size="large"
+          size="xLarge"
           onClick={handleColapsed}
           leftIcon={isColapsed ? 'ShiftRightOutlined' : 'ShiftLeftOutlined'}
         />

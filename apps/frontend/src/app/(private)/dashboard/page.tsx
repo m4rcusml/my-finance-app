@@ -42,11 +42,11 @@ export default function DashboardPage() {
   if (!isMounted) return null;
 
   return (
-    <main className="flex-1 h-full space-y-6">
+    <main className="flex-1 h-full space-y-4">
       <TopBar userName={userName} />
 
       <div className="h-full flex items-stretch gap-6">
-        <div className="flex-1 space-y-6">
+        <div className="flex flex-col flex-1 space-y-6">
           <BalanceHero
             totalBalance={dashboard.totals.totalBalance}
             monthly={dashboard.totals.currentMonth}
@@ -54,8 +54,7 @@ export default function DashboardPage() {
           />
           <AnnualBalance />
         </div>
-
-        <div className="flex-1 space-y-6">
+        <div className="flex flex-col flex-1 space-y-6">
           <AccountsPanel accounts={dashboard.accounts} />
           <FixedTransactionsPanel />
           <RecentTransactionsPanel />

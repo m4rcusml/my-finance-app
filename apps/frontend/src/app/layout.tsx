@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="br">
-      <body className={`${urbanist.variable} font-sans`}>
+      <body className={`${urbanist.variable} font-sans`} suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>
