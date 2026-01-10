@@ -2,6 +2,8 @@ import { SummaryCard } from './summary-card';
 import { formatCurrency } from '@/features/dashboard/utils';
 import { Button } from '@/components/ui/button';
 
+import { Label } from '@/components/ui/label';
+
 type BalanceHeroProps = {
   totalBalance?: number;
   monthly?: {
@@ -24,7 +26,9 @@ export function BalanceHero({ totalBalance, monthly, isLoading }: BalanceHeroPro
             </span>
           </div>
         </div>
-        <span className="rounded-full bg-green/20 px-3 py-1 text-xs font-medium text-green">+12%</span>
+
+        <Label tone="neutral">--</Label>
+
         <div className="flex self-stretch flex-wrap gap-4">
           <Button className="flex-1" size="xLarge" leftIcon="ArrowUpwardOutlined">
             Pagar
@@ -36,14 +40,14 @@ export function BalanceHero({ totalBalance, monthly, isLoading }: BalanceHeroPro
       </div>
 
       <div className="grid gap-4">
-        <SummaryCard label="Receitas" value={monthly?.income} trend={12} tone="positive" />
-        <SummaryCard label="Despesas" value={monthly?.expense} trend={-12} tone="negative" />
+        <SummaryCard label="Receitas" value={monthly?.income} trend={undefined} tone="neutral" />
+        <SummaryCard label="Despesas" value={monthly?.expense} trend={undefined} tone="neutral" />
         <SummaryCard
           bgColor="layer02"
           label="Balanco"
           value={monthly?.net}
-          trend={12}
-          tone={monthly && monthly.net >= 0 ? 'positive' : 'negative'}
+          trend={undefined}
+          tone={!monthly?.net ? 'neutral' : monthly.net > 0 ? 'positive' : 'negative'}
         />
       </div>
     </div>

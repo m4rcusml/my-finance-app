@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import useEmblaCarousel from 'embla-carousel-react';
 
 import { useCallback } from 'react';
+import { Label } from '@/components/ui/label';
 
 export function FixedTransactionsPanel() {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'center' });
@@ -33,8 +34,7 @@ export function FixedTransactionsPanel() {
               <div className="m-auto flex items-center rounded-2xl border border-foreground/10 bg-layer01 px-4 py-4 w-4/5">
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full text-xs bg-green/20 px-2 py-1 text-green">Receita</span>
-                    <span className="rounded-full text-xs bg-layer01 px-2 py-1">{transaction.category}</span>
+                    <Label tone="layer02">{transaction.category}</Label>
                   </div>
                   <div className="mt-2 text-sm font-medium text-foreground">{transaction.title}</div>
                   <div className="mt-1 text-md font-semibold text-foreground">{formatCurrency(transaction.amount)}</div>
