@@ -111,6 +111,12 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@lineiconshq/free-icons':
+        specifier: ^1.0.3
+        version: 1.0.3
+      '@lineiconshq/react-lineicons':
+        specifier: ^1.0.5
+        version: 1.0.5(react@19.2.1)
       '@tailwindcss/postcss':
         specifier: ^4.1.17
         version: 4.1.17
@@ -871,6 +877,19 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
+
+  '@lineiconshq/free-icons@0.0.1':
+    resolution: {integrity: sha512-fnWSSjIv/4vojAKsBZXluhMRr1LIb5p85IzXK0Dh27KF9qXxz89HZJrnvXH71ZqMCP+NFzo/xh0dJsv8PT+3xg==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@lineiconshq/free-icons@1.0.3':
+    resolution: {integrity: sha512-VFilyDa9JBFRRwsMYeeigHREzzo8ZuoV5jyn6PC4UpMreUD/XckX212ypnnw9WtBXVIGrtm7mdHuJ9RIKluA5Q==}
+
+  '@lineiconshq/react-lineicons@1.0.5':
+    resolution: {integrity: sha512-GfUBSMLoL7siDOmVwDTTGwGCREu7Q/g7PAzqoMII+SF6ZWQS3ZfTLupNcQkTx4R6+mTibz5OIoWHCseVF8WsMQ==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   '@lukeed/csprng@1.1.0':
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
@@ -2751,6 +2770,9 @@ packages:
     resolution: {integrity: sha512-aisnrDP4GNe06UcKFnV5bfMNPBUw4jsLGaWwWfnH3v02GnBuXX2MCVn5RbrWo0j3pczUilYblq7fQ7Nw2t5XKw==}
     engines: {node: '>= 0.8'}
 
+  meilisearch@0.53.0:
+    resolution: {integrity: sha512-nG4VXbEOSzUmtbfsgOo+t6yX1ECEgXaT4hC0ap9MBpQGK5xwT+NWYDENYsKWR75cVaWaAqva+ok4zHlgtdXlLw==}
+
   memfs@3.5.3:
     resolution: {integrity: sha512-UERzLsxzllchadvbPs5aolHh65ISpKpM+ccLbOJ8/vvpBKmAWf+la7dXFy7Mr0ySHbdHrFv5kGFCUHHe6GFEmw==}
     engines: {node: '>= 4.0.0'}
@@ -4542,6 +4564,19 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@lineiconshq/free-icons@0.0.1(react@19.2.1)':
+    dependencies:
+      react: 19.2.1
+
+  '@lineiconshq/free-icons@1.0.3':
+    dependencies:
+      meilisearch: 0.53.0
+
+  '@lineiconshq/react-lineicons@1.0.5(react@19.2.1)':
+    dependencies:
+      '@lineiconshq/free-icons': 0.0.1(react@19.2.1)
+      react: 19.2.1
 
   '@lukeed/csprng@1.1.0': {}
 
@@ -6600,6 +6635,8 @@ snapshots:
   media-typer@0.3.0: {}
 
   media-typer@1.1.0: {}
+
+  meilisearch@0.53.0: {}
 
   memfs@3.5.3:
     dependencies:
