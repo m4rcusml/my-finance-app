@@ -1,8 +1,6 @@
-import { Lineicons } from '@lineiconshq/react-lineicons';
-import { ArrowLeftOutlined, ArrowRightOutlined } from '@lineiconshq/free-icons';
-import { Card } from './card';
 import { SummaryCard } from './summary-card';
 import { formatCurrency } from '@/features/dashboard/utils';
+import { Button } from '@/components/ui/button';
 
 type BalanceHeroProps = {
   totalBalance?: number;
@@ -17,36 +15,31 @@ type BalanceHeroProps = {
 export function BalanceHero({ totalBalance, monthly, isLoading }: BalanceHeroProps) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-      <Card className="px-6 py-6">
-        <p className="text-sm text-muted-foreground">Seu saldo total</p>
-        <div className="mt-2 flex flex-wrap items-end gap-3">
-          <span className="text-xxl font-semibold text-foreground">
-            {isLoading ? 'Carregando...' : formatCurrency(totalBalance)}
-          </span>
-          <span className="rounded-full bg-green/20 px-3 py-1 text-xs font-medium text-green">+12%</span>
+      <div className="flex flex-col items-start self-center gap-4">
+        <div>
+          <p className="text-md">Seu saldo total</p>
+          <div className="flex flex-wrap gap-3">
+            <span className="text-xxl font-semibold text-foreground">
+              {isLoading ? 'Carregando...' : formatCurrency(totalBalance)}
+            </span>
+          </div>
         </div>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            type="button"
-            className="flex min-w-[120px] items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-medium text-foreground transition hover:bg-muted-primary"
-          >
-            <Lineicons icon={ArrowLeftOutlined} size={16} aria-hidden />
+        <span className="rounded-full bg-green/20 px-3 py-1 text-xs font-medium text-green">+12%</span>
+        <div className="flex self-stretch flex-wrap gap-4">
+          <Button className="flex-1" size="xLarge" leftIcon="ArrowUpwardOutlined">
             Pagar
-          </button>
-          <button
-            type="button"
-            className="flex min-w-[120px] items-center justify-center gap-2 rounded-full bg-layer02 px-4 py-2 text-xs font-medium text-muted-foreground transition hover:bg-layer01 hover:text-foreground"
-          >
-            <Lineicons icon={ArrowRightOutlined} size={16} aria-hidden />
+          </Button>
+          <Button className="flex-1" size="xLarge" tone="layer02" rightIcon="ArrowDownwardOutlined">
             Receber
-          </button>
+          </Button>
         </div>
-      </Card>
+      </div>
 
       <div className="grid gap-4">
         <SummaryCard label="Receitas" value={monthly?.income} trend={12} tone="positive" />
         <SummaryCard label="Despesas" value={monthly?.expense} trend={-12} tone="negative" />
         <SummaryCard
+          bgColor="layer02"
           label="Balanco"
           value={monthly?.net}
           trend={12}

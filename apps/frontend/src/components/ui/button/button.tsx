@@ -23,9 +23,9 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const sizeStyles: Record<ButtonSize, { container: string; icon: number }> = {
-  xLarge: { container: 'h-12 px-6 text-md gap-3', icon: 40 },
+  xLarge: { container: 'h-12 px-6 text-md gap-3', icon: 32 },
   large: { container: 'h-10 px-4 text-sm gap-2.5', icon: 32 },
-  regular: { container: 'h-8 px-2 text-xs gap-2', icon: 24 },
+  regular: { container: 'h-8 px-2 text-xs gap-2', icon: 28 },
 };
 
 const toneStyles: Record<ButtonTone, string> = {

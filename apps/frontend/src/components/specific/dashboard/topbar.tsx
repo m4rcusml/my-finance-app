@@ -1,25 +1,24 @@
-import { Lineicons } from '@lineiconshq/react-lineicons';
-import { User4Outlined } from '@lineiconshq/free-icons';
 import { formatFullDate } from '@/features/dashboard/utils';
+import { Icon } from '@/components/ui/icon';
 
 type TopBarProps = {
   userName?: string | null;
+  referenceDate?: string;
 };
 
-export function TopBar({ userName }: TopBarProps) {
+export function TopBar({ userName, referenceDate }: TopBarProps) {
   return (
     <div className="flex items-center justify-between gap-6">
       <div>
-        <p className="text-sm text-muted-foreground">Bem vindo{userName ? ',' : ''}</p>
-        <h1 className="text-lg font-semibold text-foreground">{userName ?? 'Seu painel'}</h1>
+        <h1 className="text-4xl font-semibold text-foreground">Bem vindo{userName ? `, ${userName}!` : '!'}</h1>
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="rounded-full border border-foreground/10 bg-layer01 px-4 py-2 text-xs text-muted-foreground">
-          {formatFullDate(new Date())}
+        <div className="rounded-full border border-foreground/10 bg-layer01 px-4 py-2 text-muted-foreground">
+          {formatFullDate(referenceDate ? new Date(referenceDate) : new Date())}
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-foreground/10 bg-layer01 text-sm text-muted-foreground">
-          <Lineicons icon={User4Outlined} size={18} aria-hidden />
+        <div className="flex p-2 items-center justify-center rounded-full border border-foreground/10 bg-layer01 text-sm text-muted-foreground">
+          <Icon name="User4Outlined" />
         </div>
       </div>
     </div>

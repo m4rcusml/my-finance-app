@@ -15,6 +15,7 @@ import {
   ShiftRightOutlined,
   SlidersHorizontalSquare2Outlined,
   Wallet1Outlined,
+  User4Outlined,
 } from '@lineiconshq/free-icons';
 
 const icons = {
@@ -33,6 +34,7 @@ const icons = {
   ShiftRightOutlined,
   SlidersHorizontalSquare2Outlined,
   Wallet1Outlined,
+  User4Outlined,
 };
 
 export type IconName = keyof typeof icons;
@@ -41,8 +43,8 @@ interface IconProps extends Omit<React.ComponentProps<typeof Lineicons>, 'icon'>
   name: IconName;
 }
 
-export function Icon({ name, ...props }: IconProps) {
+export function Icon({ name, size = 32, ...props }: IconProps) {
   const icon = icons[name];
 
-  return <Lineicons icon={icon} {...props} />;
+  return <Lineicons icon={icon} size={size} {...props} />;
 }
