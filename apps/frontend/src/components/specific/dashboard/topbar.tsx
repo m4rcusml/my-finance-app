@@ -10,12 +10,8 @@ export function TopBar({ userName }: TopBarProps) {
   return (
     <div className="flex items-center justify-between gap-6">
       <div>
-        <p className="text-sm text-muted-foreground">
-          Bem vindo{userName ? ',' : ''}
-        </p>
-        <h1 className="text-lg font-semibold text-foreground">
-          {userName ?? 'Seu painel'}
-        </h1>
+        <p className="text-sm text-muted-foreground">Bem vindo{userName ? ',' : ''}</p>
+        <h1 className="text-lg font-semibold text-foreground">{userName ?? 'Seu painel'}</h1>
       </div>
 
       <div className="flex items-center gap-4">

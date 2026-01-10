@@ -1,8 +1,5 @@
 import { Lineicons } from '@lineiconshq/react-lineicons';
-import {
-  ArrowRightOutlined,
-  CreditCardMultipleOutlined,
-} from '@lineiconshq/free-icons';
+import { ArrowRightOutlined, CreditCardMultipleOutlined } from '@lineiconshq/free-icons';
 import type { DashboardResponse } from '@/shared/lib/api/dashboard';
 import { Card } from './card';
 import { formatCurrency } from '@/features/dashboard/utils';
@@ -45,9 +42,7 @@ export function AccountsPanel({ accounts }: AccountsPanelProps) {
                 </div>
               </div>
               <div className="mt-4 text-xs text-muted-foreground">Saldo atual</div>
-              <div className="text-lg font-semibold text-foreground">
-                {formatCurrency(account.balance)}
-              </div>
+              <div className="text-lg font-semibold text-foreground">{formatCurrency(account.balance)}</div>
             </div>
           ))
         )}

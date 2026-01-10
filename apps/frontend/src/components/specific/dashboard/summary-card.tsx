@@ -22,22 +22,14 @@ export function SummaryCard({ label, value, trend, tone }: SummaryCardProps) {
     <Card className="flex items-center justify-between px-5 py-4">
       <div>
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-semibold text-foreground">
-          {formatCurrency(value)}
-        </p>
+        <p className="text-lg font-semibold text-foreground">{formatCurrency(value)}</p>
       </div>
-      <span
-        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${toneStyles}`}
-      >
+      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${toneStyles}`}>
         {trend === undefined ? (
           '--'
         ) : (
           <>
-            <Lineicons
-              icon={trend >= 0 ? ArrowUpwardOutlined : ArrowDownwardOutlined}
-              size={14}
-              aria-hidden
-            />
+            <Lineicons icon={trend >= 0 ? ArrowUpwardOutlined : ArrowDownwardOutlined} size={14} aria-hidden />
             {`${trend > 0 ? '+' : ''}${trend.toFixed(0)}%`}
           </>
         )}

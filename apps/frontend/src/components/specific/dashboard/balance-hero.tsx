@@ -23,9 +23,7 @@ export function BalanceHero({ totalBalance, monthly, isLoading }: BalanceHeroPro
           <span className="text-xxl font-semibold text-foreground">
             {isLoading ? 'Carregando...' : formatCurrency(totalBalance)}
           </span>
-          <span className="rounded-full bg-green/20 px-3 py-1 text-xs font-medium text-green">
-            +12%
-          </span>
+          <span className="rounded-full bg-green/20 px-3 py-1 text-xs font-medium text-green">+12%</span>
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
           <button
@@ -46,18 +44,8 @@ export function BalanceHero({ totalBalance, monthly, isLoading }: BalanceHeroPro
       </Card>
 
       <div className="grid gap-4">
-        <SummaryCard
-          label="Receitas"
-          value={monthly?.income}
-          trend={12}
-          tone="positive"
-        />
-        <SummaryCard
-          label="Despesas"
-          value={monthly?.expense}
-          trend={-12}
-          tone="negative"
-        />
+        <SummaryCard label="Receitas" value={monthly?.income} trend={12} tone="positive" />
+        <SummaryCard label="Despesas" value={monthly?.expense} trend={-12} tone="negative" />
         <SummaryCard
           label="Balanco"
           value={monthly?.net}

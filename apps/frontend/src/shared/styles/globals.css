@@ -11,6 +11,8 @@
   --color-layer00: #05051E;
   --color-layer01: #14172F;
   --color-layer02: #272B40;
+  --color-success: #039155;
+  --color-danger: #DE2D2D;
   --font-sans: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
   --text-xxl: 48px;
   --text-xxl--line-height: 1.1;

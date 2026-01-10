@@ -34,13 +34,8 @@ export function AnnualBalance({ monthlyNet = sampleMonthlyNet }: AnnualBalancePr
           const color = value >= 0 ? 'bg-green' : 'bg-red';
           return (
             <div key={monthLabels[index]} className="flex flex-1 flex-col items-center gap-2">
-              <div
-                className={`w-full rounded-2xl ${color}`}
-                style={{ height }}
-              />
-              <span className="text-xs text-muted-foreground">
-                {monthLabels[index]}
-              </span>
+              <div className={`w-full rounded-2xl ${color}`} style={{ height }} />
+              <span className="text-xs text-muted-foreground">{monthLabels[index]}</span>
             </div>
           );
         })}

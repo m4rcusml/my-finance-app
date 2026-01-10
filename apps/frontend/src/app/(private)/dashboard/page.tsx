@@ -3,13 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDashboardQuery } from '@/features/dashboard/queries';
-import { Sidebar } from '@/features/dashboard/components/sidebar';
-import { TopBar } from '@/features/dashboard/components/topbar';
-import { BalanceHero } from '@/features/dashboard/components/balance-hero';
-import { AccountsPanel } from '@/features/dashboard/components/accounts-panel';
-import { AnnualBalance } from '@/features/dashboard/components/annual-balance';
-import { FixedTransactionsPanel } from '@/features/dashboard/components/fixed-transactions-panel';
-import { RecentTransactionsPanel } from '@/features/dashboard/components/recent-transactions-panel';
+import { TopBar } from '@/components/specific/dashboard/topbar';
+import { BalanceHero } from '@/components/specific/dashboard/balance-hero';
+import { AccountsPanel } from '@/components/specific/dashboard/accounts-panel';
+import { AnnualBalance } from '@/components/specific/dashboard/annual-balance';
+import { FixedTransactionsPanel } from '@/components/specific/dashboard/fixed-transactions-panel';
+import { RecentTransactionsPanel } from '@/components/specific/dashboard/recent-transactions-panel';
 import { useAuthStore } from '@/shared/stores/auth-store';
 import { emptyDashboardFallback } from '@/features/dashboard/sample-data';
 

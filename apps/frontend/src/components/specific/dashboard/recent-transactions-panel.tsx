@@ -30,23 +30,15 @@ export function RecentTransactionsPanel() {
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span
                   className={`rounded-full px-2 py-1 ${
-                    transaction.type === 'income'
-                      ? 'bg-green/20 text-green'
-                      : 'bg-red/20 text-red'
+                    transaction.type === 'income' ? 'bg-green/20 text-green' : 'bg-red/20 text-red'
                   }`}
                 >
                   {transaction.type === 'income' ? 'Receita' : 'Despesa'}
                 </span>
-                <span className="rounded-full bg-layer01 px-2 py-1">
-                  {transaction.category}
-                </span>
+                <span className="rounded-full bg-layer01 px-2 py-1">{transaction.category}</span>
               </div>
-              <div className="mt-2 text-sm font-medium text-foreground">
-                {transaction.title}
-              </div>
-              <div className="text-base font-semibold text-foreground">
-                {formatCurrency(transaction.amount)}
-              </div>
+              <div className="mt-2 text-sm font-medium text-foreground">{transaction.title}</div>
+              <div className="text-base font-semibold text-foreground">{formatCurrency(transaction.amount)}</div>
             </div>
             <button className="rounded-full bg-layer01 px-3 py-2 text-xs text-muted-foreground">
               <Lineicons icon={MenuMeatballs1Outlined} size={14} aria-hidden />

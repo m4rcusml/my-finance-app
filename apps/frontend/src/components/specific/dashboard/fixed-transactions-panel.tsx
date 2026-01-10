@@ -14,9 +14,7 @@ export function FixedTransactionsPanel() {
         >
           <Lineicons icon={ArrowLeftOutlined} size={16} aria-hidden />
         </button>
-        <h3 className="text-base font-medium text-foreground">
-          Transacoes fixas - mes atual
-        </h3>
+        <h3 className="text-base font-medium text-foreground">Transacoes fixas - mes atual</h3>
         <button
           type="button"
           className="flex h-8 w-8 items-center justify-center rounded-full bg-layer02 text-sm text-muted-foreground"
@@ -26,27 +24,14 @@ export function FixedTransactionsPanel() {
       </div>
       <div className="mt-4 space-y-4">
         {sampleFixedTransactions.map((transaction) => (
-          <div
-            key={transaction.id}
-            className="rounded-2xl border border-foreground/10 bg-layer02 px-4 py-4"
-          >
+          <div key={transaction.id} className="rounded-2xl border border-foreground/10 bg-layer02 px-4 py-4">
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full bg-green/20 px-2 py-1 text-green">
-                Receita
-              </span>
-              <span className="rounded-full bg-layer01 px-2 py-1">
-                {transaction.category}
-              </span>
+              <span className="rounded-full bg-green/20 px-2 py-1 text-green">Receita</span>
+              <span className="rounded-full bg-layer01 px-2 py-1">{transaction.category}</span>
             </div>
-            <div className="mt-2 text-sm font-medium text-foreground">
-              {transaction.title}
-            </div>
-            <div className="mt-1 text-base font-semibold text-foreground">
-              {formatCurrency(transaction.amount)}
-            </div>
-            <div className="mt-2 text-xs text-muted-foreground">
-              {transaction.due}
-            </div>
+            <div className="mt-2 text-sm font-medium text-foreground">{transaction.title}</div>
+            <div className="mt-1 text-base font-semibold text-foreground">{formatCurrency(transaction.amount)}</div>
+            <div className="mt-2 text-xs text-muted-foreground">{transaction.due}</div>
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
