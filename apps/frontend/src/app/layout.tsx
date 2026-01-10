@@ -1,16 +1,12 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Urbanist } from 'next/font/google';
 import Providers from './providers';
 import '@/shared/styles/globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const urbanist = Urbanist({
+  variable: '--font-urbanist',
   subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+  weight: ['400', '500', '600'],
 });
 
 export const metadata: Metadata = {
@@ -25,7 +21,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="br">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.lineicons.com/4.0/lineicons.css"
+        />
+      </head>
+      <body className={`${urbanist.variable} font-sans`}>
         <Providers>{children}</Providers>
       </body>
     </html>

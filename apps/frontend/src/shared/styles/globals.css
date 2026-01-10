@@ -1,15 +1,29 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-placeholder: #C0C2D6;
+  --color-foreground: #FFFFFF;
+  --color-muted-foreground: #C0C2D6;
+  --color-primary: #6747ED;
+  --color-muted-primary: #8970DD;
+  --color-green: #039155;
+  --color-red: #DE2D2D;
+  --color-layer00: #05051E;
+  --color-layer01: #14172F;
+  --color-layer02: #272B40;
+  --font-sans: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
+  --text-xxl: 48px;
+  --text-xxl--line-height: 1.1;
+  --text-xl: 36px;
+  --text-xl--line-height: 1.15;
+  --text-lg: 24px;
+  --text-lg--line-height: 1.4;
+  --text-md: 20px;
+  --text-md--line-height: 1.5;
+  --text-sm: 16px;
+  --text-sm--line-height: 1.5;
+  --text-xs: 12px;
+  --text-xs--line-height: 1.4;
 }
 
 html,
@@ -19,15 +33,9 @@ body {
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-foreground);
+  background: var(--color-layer00);
+  font-family: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
 }
