@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 
 export function RecentTransactionsPanel() {
   return (
-    <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-      <div className="flex justify-between items-center">
+    <div className="flex-1 flex flex-col gap-4 min-h-0">
+      <div className="flex justify-between items-center shrink-0">
         <span className="text-md">Últimas transações</span>
 
         <Button tone="layer02" rightIcon="ArrowAngularTopRightOutlined">
@@ -13,11 +13,11 @@ export function RecentTransactionsPanel() {
         </Button>
       </div>
 
-      <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4">
         {sampleRecentTransactions.map((transaction) => (
           <div
             key={transaction.id}
-            className="flex items-center gap-4 rounded-2xl border border-foreground/10 bg-layer01 px-4 py-4"
+            className="flex items-center gap-4 rounded-2xl border border-foreground/10 bg-layer01 px-4 py-4 shrink-0"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-layer01 text-xs text-muted-foreground">
               {transaction.type === 'income' ? 'IN' : 'OUT'}
