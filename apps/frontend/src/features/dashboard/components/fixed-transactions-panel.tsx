@@ -1,3 +1,5 @@
+import { Lineicons } from '@lineiconshq/react-lineicons';
+import { ArrowLeftOutlined, ArrowRightOutlined } from '@lineiconshq/free-icons';
 import { Card } from './card';
 import { formatCurrency } from '@/features/dashboard/utils';
 import { sampleFixedTransactions } from '@/features/dashboard/sample-data';
@@ -10,7 +12,7 @@ export function FixedTransactionsPanel() {
           type="button"
           className="flex h-8 w-8 items-center justify-center rounded-full bg-layer02 text-sm text-muted-foreground"
         >
-          <i className="lni lni-arrow-left" aria-hidden />
+          <Lineicons icon={ArrowLeftOutlined} size={16} aria-hidden />
         </button>
         <h3 className="text-base font-medium text-foreground">
           Transacoes fixas - mes atual
@@ -19,7 +21,7 @@ export function FixedTransactionsPanel() {
           type="button"
           className="flex h-8 w-8 items-center justify-center rounded-full bg-layer02 text-sm text-muted-foreground"
         >
-          <i className="lni lni-arrow-right" aria-hidden />
+          <Lineicons icon={ArrowRightOutlined} size={16} aria-hidden />
         </button>
       </div>
       <div className="mt-4 space-y-4">

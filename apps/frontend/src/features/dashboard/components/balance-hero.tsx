@@ -1,3 +1,5 @@
+import { Lineicons } from '@lineiconshq/react-lineicons';
+import { ArrowLeftOutlined, ArrowRightOutlined } from '@lineiconshq/free-icons';
 import { Card } from './card';
 import { SummaryCard } from './summary-card';
 import { formatCurrency } from '@/features/dashboard/utils';
@@ -30,14 +32,14 @@ export function BalanceHero({ totalBalance, monthly, isLoading }: BalanceHeroPro
             type="button"
             className="flex min-w-[120px] items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-medium text-foreground transition hover:bg-muted-primary"
           >
-            <i className="lni lni-arrow-left" aria-hidden />
+            <Lineicons icon={ArrowLeftOutlined} size={16} aria-hidden />
             Pagar
           </button>
           <button
             type="button"
             className="flex min-w-[120px] items-center justify-center gap-2 rounded-full bg-layer02 px-4 py-2 text-xs font-medium text-muted-foreground transition hover:bg-layer01 hover:text-foreground"
           >
-            <i className="lni lni-arrow-right" aria-hidden />
+            <Lineicons icon={ArrowRightOutlined} size={16} aria-hidden />
             Receber
           </button>
         </div>

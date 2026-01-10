@@ -21,12 +21,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="br">
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.lineicons.com/4.0/lineicons.css"
-        />
-      </head>
       <body className={`${urbanist.variable} font-sans`}>
         <Providers>{children}</Providers>
       </body>

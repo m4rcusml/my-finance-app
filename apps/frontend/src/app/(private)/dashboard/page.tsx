@@ -16,9 +16,7 @@ import { emptyDashboardFallback } from '@/features/dashboard/sample-data';
 export default function DashboardPage() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(
-    useAuthStore.persist.hasHydrated()
-  );
+  const [isHydrated, setIsHydrated] = useState(useAuthStore.persist?.hasHydrated());
   const accessToken = useAuthStore((s) => s.accessToken);
   const userName = useAuthStore((s) => s.user?.name);
 
@@ -40,47 +38,36 @@ export default function DashboardPage() {
     if (!accessToken) router.replace('/login');
   }, [accessToken, isHydrated, isMounted, router]);
 
-  const dashboard = useMemo(
-    () => dashboardQuery.data ?? emptyDashboardFallback,
-    [dashboardQuery.data]
-  );
+  const dashboard = useMemo(() => dashboardQuery.data ?? emptyDashboardFallback, [dashboardQuery.data]);
 
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-layer00 text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-[1400px] gap-8 px-6 py-8">
-        <div className="hidden w-[220px] lg:block">
-          <Sidebar />
+    <main className="flex-1 space-y-8">
+      <TopBar userName={userName ?? 'MFA'} />
+
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-6">
+          <BalanceHero
+            totalBalance={dashboard.totals.totalBalance}
+            monthly={dashboard.totals.currentMonth}
+            isLoading={dashboardQuery.isLoading}
+          />
+          <AnnualBalance />
         </div>
 
-        <main className="flex-1 space-y-8">
-          <TopBar userName={userName ?? 'MFA'} />
-
-          <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-            <div className="space-y-6">
-              <BalanceHero
-                totalBalance={dashboard.totals.totalBalance}
-                monthly={dashboard.totals.currentMonth}
-                isLoading={dashboardQuery.isLoading}
-              />
-              <AnnualBalance />
-            </div>
-
-            <div className="space-y-6">
-              <AccountsPanel accounts={dashboard.accounts} />
-              <FixedTransactionsPanel />
-              <RecentTransactionsPanel />
-            </div>
-          </div>
-
-          {dashboardQuery.isError ? (
-            <div className="rounded-2xl border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">
-              Falha ao carregar o dashboard. Verifique sua conexao.
-            </div>
-          ) : null}
-        </main>
+        <div className="space-y-6">
+          <AccountsPanel accounts={dashboard.accounts} />
+          <FixedTransactionsPanel />
+          <RecentTransactionsPanel />
+        </div>
       </div>
-    </div>
+
+      {dashboardQuery.isError ? (
+        <div className="rounded-2xl border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">
+          Falha ao carregar o dashboard. Verifique sua conexao.
+        </div>
+      ) : null}
+    </main>
   );
 }

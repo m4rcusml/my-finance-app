@@ -1,3 +1,5 @@
+import { Lineicons } from '@lineiconshq/react-lineicons';
+import { ArrowRightOutlined, MenuMeatballs1Outlined } from '@lineiconshq/free-icons';
 import { Card } from './card';
 import { SectionHeader } from './section-header';
 import { formatCurrency } from '@/features/dashboard/utils';
@@ -11,7 +13,7 @@ export function RecentTransactionsPanel() {
         rightSlot={
           <button className="inline-flex items-center gap-2 rounded-full bg-layer02 px-3 py-1 text-xs text-muted-foreground">
             Ver mais
-            <i className="lni lni-arrow-right" aria-hidden />
+            <Lineicons icon={ArrowRightOutlined} size={12} aria-hidden />
           </button>
         }
       />
@@ -47,7 +49,7 @@ export function RecentTransactionsPanel() {
               </div>
             </div>
             <button className="rounded-full bg-layer01 px-3 py-2 text-xs text-muted-foreground">
-              <i className="lni lni-more-alt" aria-hidden />
+              <Lineicons icon={MenuMeatballs1Outlined} size={14} aria-hidden />
             </button>
           </div>
         ))}

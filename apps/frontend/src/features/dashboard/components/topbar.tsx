@@ -1,3 +1,5 @@
+import { Lineicons } from '@lineiconshq/react-lineicons';
+import { User4Outlined } from '@lineiconshq/free-icons';
 import { formatFullDate } from '@/features/dashboard/utils';
 
 type TopBarProps = {
@@ -21,7 +23,7 @@ export function TopBar({ userName }: TopBarProps) {
           {formatFullDate(new Date())}
         </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-foreground/10 bg-layer01 text-sm text-muted-foreground">
-          <i className="lni lni-user" aria-hidden />
+          <Lineicons icon={User4Outlined} size={18} aria-hidden />
         </div>
       </div>
     </div>

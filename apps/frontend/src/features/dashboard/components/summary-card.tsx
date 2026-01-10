@@ -1,3 +1,5 @@
+import { Lineicons } from '@lineiconshq/react-lineicons';
+import { ArrowDownwardOutlined, ArrowUpwardOutlined } from '@lineiconshq/free-icons';
 import { formatCurrency } from '@/features/dashboard/utils';
 import { Card } from './card';
 
@@ -31,8 +33,9 @@ export function SummaryCard({ label, value, trend, tone }: SummaryCardProps) {
           '--'
         ) : (
           <>
-            <i
-              className={trend >= 0 ? 'lni lni-arrow-up' : 'lni lni-arrow-down'}
+            <Lineicons
+              icon={trend >= 0 ? ArrowUpwardOutlined : ArrowDownwardOutlined}
+              size={14}
               aria-hidden
             />
             {`${trend > 0 ? '+' : ''}${trend.toFixed(0)}%`}

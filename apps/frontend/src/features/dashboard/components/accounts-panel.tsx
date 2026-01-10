@@ -1,3 +1,8 @@
+import { Lineicons } from '@lineiconshq/react-lineicons';
+import {
+  ArrowRightOutlined,
+  CreditCardMultipleOutlined,
+} from '@lineiconshq/free-icons';
 import type { DashboardResponse } from '@/shared/lib/api/dashboard';
 import { Card } from './card';
 import { formatCurrency } from '@/features/dashboard/utils';
@@ -15,7 +20,7 @@ export function AccountsPanel({ accounts }: AccountsPanelProps) {
         rightSlot={
           <button className="inline-flex items-center gap-2 rounded-full bg-layer02 px-3 py-1 text-xs text-muted-foreground">
             Ver mais
-            <i className="lni lni-arrow-right" aria-hidden />
+            <Lineicons icon={ArrowRightOutlined} size={12} aria-hidden />
           </button>
         }
       />
@@ -32,7 +37,7 @@ export function AccountsPanel({ accounts }: AccountsPanelProps) {
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-layer01 text-sm text-muted-foreground">
-                  <i className="lni lni-credit-cards" aria-hidden />
+                  <Lineicons icon={CreditCardMultipleOutlined} size={20} aria-hidden />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">{account.institution}</p>
