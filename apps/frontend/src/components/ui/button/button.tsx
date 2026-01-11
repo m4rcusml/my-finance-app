@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Icon, type IconName } from '@/components/ui/icon/icon';
 
-type ButtonSize = 'xLarge' | 'large' | 'regular';
+type ButtonSize = 'xLarge' | 'large' | 'regular' | 'small';
 type ButtonTone =
   | 'primary'
   | 'muted'
@@ -26,6 +26,7 @@ const sizeStyles: Record<ButtonSize, { container: string; icon: number }> = {
   xLarge: { container: 'h-12 px-4 text-md gap-3', icon: 32 },
   large: { container: 'h-10 px-4 text-sm gap-2.5', icon: 28 },
   regular: { container: 'h-8 px-2 text-xs gap-2', icon: 24 },
+  small: { container: 'h-6 px-1.5 text-xs gap-1.5', icon: 16 },
 };
 
 const toneStyles: Record<ButtonTone, string> = {
