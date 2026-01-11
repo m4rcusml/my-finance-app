@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDashboardQuery } from '@/features/dashboard/queries';
 import { TopBar } from '@/components/specific/dashboard/topbar';
@@ -10,7 +10,6 @@ import { AnnualBalance } from '@/components/specific/dashboard/annual-balance';
 import { FixedTransactionsPanel } from '@/components/specific/dashboard/fixed-transactions-panel';
 import { RecentTransactionsPanel } from '@/components/specific/dashboard/recent-transactions-panel';
 import { useAuthStore } from '@/shared/stores/auth-store';
-import { emptyDashboardFallback } from '@/features/dashboard/sample-data';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -37,7 +36,7 @@ export default function DashboardPage() {
     if (!accessToken) router.replace('/login');
   }, [accessToken, isHydrated, isMounted, router]);
 
-  const dashboard = useMemo(() => dashboardQuery.data ?? emptyDashboardFallback, [dashboardQuery.data]);
+  const dashboard = dashboardQuery.data;
 
   if (!isMounted) return null;
 
@@ -48,16 +47,16 @@ export default function DashboardPage() {
       <div className="flex-1 min-h-0 flex items-stretch gap-6">
         <div className="flex flex-col flex-1 space-y-6">
           <BalanceHero
-            totalBalance={dashboard.totals.totalBalance}
-            monthly={dashboard.totals.currentMonth}
+            totalBalance={dashboard?.totals.totalBalance ?? 0}
+            monthly={dashboard?.totals.currentMonth ?? { income: 0, expense: 0, net: 0 }}
             isLoading={dashboardQuery.isLoading}
           />
-          <AnnualBalance />
+          <AnnualBalance monthlyNet={[]} />
         </div>
         <div className="flex flex-col flex-1 space-y-6 min-h-0">
-          <AccountsPanel accounts={dashboard.accounts} />
-          <FixedTransactionsPanel />
-          <RecentTransactionsPanel />
+          <AccountsPanel accounts={dashboard?.accounts ?? []} />
+          <FixedTransactionsPanel transactions={[]} />
+          <RecentTransactionsPanel transactions={[]} />
         </div>
       </div>
 

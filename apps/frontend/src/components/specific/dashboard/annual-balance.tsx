@@ -5,10 +5,9 @@ type AnnualBalanceProps = {
   monthlyNet?: number[];
 };
 
-const sampleMonthlyNet = new Array(12).fill(0);
-
-export function AnnualBalance({ monthlyNet = sampleMonthlyNet }: AnnualBalanceProps) {
-  const _maxValue = Math.max(...monthlyNet.map((value) => Math.abs(value)), 1);
+export function AnnualBalance({ monthlyNet = [] }: AnnualBalanceProps) {
+  const hasData = monthlyNet.length > 0 && monthlyNet.some((val) => val !== 0);
+  const _maxValue = hasData ? Math.max(...monthlyNet.map((value) => Math.abs(value)), 1) : 1;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -22,17 +21,29 @@ export function AnnualBalance({ monthlyNet = sampleMonthlyNet }: AnnualBalancePr
 
       <div className="flex-1">
         <div className=" relative h-full flex items-end px-4 py-2">
-          {monthlyNet.map((value, index) => (
-            <div key={monthLabels[index]} className="flex-1 flex items-end justify-center h-full px-1">
-              <div
-                className={`w-full rounded-t-xl ${value > 0 ? 'bg-green' : value < 0 ? 'bg-red' : 'bg-layer02/70'}`}
-                style={{ height: `${Math.max(_maxValue === 1 ? 40 : 5, (Math.abs(value) / _maxValue) * 100)}%` }}
-              />
+          {monthlyNet.length > 0 ? (
+            monthlyNet.map((value, index) => (
+              <div key={monthLabels[index]} className="flex-1 flex items-end justify-center h-full px-1">
+                <div
+                  className={`w-full rounded-t-xl ${value > 0 ? 'bg-green' : value < 0 ? 'bg-red' : 'bg-layer02/70'}`}
+                  style={{ height: `${Math.max(_maxValue === 1 ? 40 : 5, (Math.abs(value) / _maxValue) * 100)}%` }}
+                />
+              </div>
+            ))
+          ) : (
+            <div className="flex w-full h-full items-end justify-between px-1">
+              {monthLabels.map((label, index) => (
+                <div key={label} className="flex-1 h-full px-1 flex items-end">
+                  <div className="w-full bg-layer02/80 rounded-t-xl" style={{ height: `${20 + (index % 3) * 15}%` }} />
+                </div>
+              ))}
             </div>
-          ))}
+          )}
 
-          {_maxValue === 1 && (
-            <span className="absolute left-1/2 bottom-1/2 -translate-1/2">Nenhum dado disponível</span>
+          {!hasData && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl">
+              <span className="text-foreground text-sm font-medium">Nenhum dado disponível</span>
+            </div>
           )}
         </div>
       </div>
