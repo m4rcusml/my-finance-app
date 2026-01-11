@@ -16,3 +16,10 @@ export function useLoginMutation() {
     },
   });
 }
+
+export function useRegisterMutation() {
+  return useMutation({
+    mutationFn: (params: { email: string; password: string }) =>
+      authApi.register(params.email, params.password),
+  });
+}

@@ -5,29 +5,31 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ApiError } from '@/shared/lib/api/errors';
 import { useAuthStore } from '@/shared/stores/auth-store';
-import { useLoginMutation } from '@/features/auth/mutations';
+import { useLoginMutation, useRegisterMutation } from '@/features/auth/mutations';
 import { Button } from '@/components/ui/button/button';
 import { Label } from '@/components/ui/label/label';
 
-export default function LoginClient() {
+export default function RegisterClient() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const accessToken = useAuthStore((s) => s.accessToken);
   const loginMutation = useLoginMutation();
+  const registerMutation = useRegisterMutation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const isSubmitting = loginMutation.isPending;
+  const isSubmitting = registerMutation.isPending || loginMutation.isPending;
   const isDisabled = isSubmitting || !email || !password;
 
   const errorMessage = useMemo(() => {
-    if (!loginMutation.error) return null;
-    if (loginMutation.error instanceof ApiError) {
-      return loginMutation.error.message;
+    const error = registerMutation.error || loginMutation.error;
+    if (!error) return null;
+    if (error instanceof ApiError) {
+      return error.message;
     }
-    return 'Não foi possível entrar. Tente novamente.';
-  }, [loginMutation.error]);
+    return 'Ocorreu um erro. Tente novamente.';
+  }, [registerMutation.error, loginMutation.error]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -39,10 +41,16 @@ export default function LoginClient() {
     }
   }, [accessToken, router]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isDisabled) return;
-    loginMutation.mutate({ email, password });
+
+    try {
+      await registerMutation.mutateAsync({ email, password });
+      await loginMutation.mutateAsync({ email, password });
+    } catch {
+      // Errors are handled by the query state
+    }
   }
 
   if (!isMounted) return null;
@@ -67,32 +75,28 @@ export default function LoginClient() {
               My Finance App
             </Label>
             <h1 className="text-xl font-semibold tracking-tight text-foreground md:text-xxl">
-              Visualize seu dinheiro com clareza e aja com confiança.
+              Comece a controlar sua vida financeira hoje.
             </h1>
             <p className="max-w-xl text-sm text-muted-foreground sm:text-md">
-              Acompanhe contas, transações e pagamentos recorrentes com um painel feito para focar. Entre para manter
-              seu fluxo de caixa sincronizado.
+              Crie sua conta gratuita e tenha acesso a um painel completo para gerenciar suas receitas, despesas e
+              objetivos.
             </p>
             <div className="grid max-w-xl gap-4 text-sm text-muted-foreground sm:grid-cols-2">
+              <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">Cadastro rápido e simples.</div>
               <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Visão mensal limpa com receitas, despesas e saldo.
+                Segurança total dos seus dados.
               </div>
+              <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">Acesse de qualquer lugar.</div>
               <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Transações recorrentes gerenciadas com automação diária.
-              </div>
-              <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Autenticação segura com JWT e dados isolados por usuário.
-              </div>
-              <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Feito para finanças pessoais, não planilhas genéricas.
+                Ferramentas poderosas de análise.
               </div>
             </div>
           </div>
 
           <div className="rounded-3xl border border-foreground/10 bg-layer01 p-8 shadow-2xl shadow-layer00/60">
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold text-foreground">Bem-vindo de volta</h2>
-              <p className="text-sm text-muted-foreground">Use suas credenciais para acessar o painel.</p>
+              <h2 className="text-lg font-semibold text-foreground">Crie sua conta</h2>
+              <p className="text-sm text-muted-foreground">Preencha os dados abaixo para começar.</p>
             </div>
 
             <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
@@ -115,12 +119,13 @@ export default function LoginClient() {
                 <input
                   type="password"
                   name="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   className="w-full rounded-xl border border-foreground/10 bg-layer02 px-4 py-3 text-sm text-foreground placeholder:text-placeholder focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                   placeholder="Sua senha segura"
                   required
+                  minLength={6}
                 />
               </label>
 
@@ -131,18 +136,18 @@ export default function LoginClient() {
               ) : null}
 
               <Button type="submit" disabled={isDisabled} size="large" className="w-full">
-                {isSubmitting ? 'Entrando...' : 'Entrar'}
+                {registerMutation.isPending
+                  ? 'Criando conta...'
+                  : loginMutation.isPending
+                    ? 'Entrando...'
+                    : 'Criar conta'}
               </Button>
             </form>
 
-            <div className="mt-6 text-xs text-muted-foreground">
-              Dica: Use uma senha forte e mantenha seu dispositivo seguro.
-            </div>
-
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              Não tem uma conta?{' '}
-              <Link href="/register" className="font-semibold text-primary hover:text-muted-primary hover:underline">
-                Crie agora
+              Já tem uma conta?{' '}
+              <Link href="/login" className="font-semibold text-primary hover:text-muted-primary hover:underline">
+                Entre agora
               </Link>
             </div>
           </div>
