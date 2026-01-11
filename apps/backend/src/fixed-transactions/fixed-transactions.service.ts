@@ -56,10 +56,16 @@ export class FixedTransactionsService {
     return response;
   }
 
-  async findAllActive() {
-    return await this.prisma.fixedTransaction.findMany({
+  async findAllActive(userId?: string) {
+    const response = await this.prisma.fixedTransaction.findMany({
       where: { isActive: true }
     });
+
+    if (!userId) {
+      return response;
+    }
+
+    return response.filter(t => t.userId === userId)
   }
 
   async updateFixedTransaction(userId: string, fixedId: string, dto: UpdateFixedTransactionDto) {

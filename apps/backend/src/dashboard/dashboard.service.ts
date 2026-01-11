@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { endOfMonth, parseISO, startOfMonth } from 'date-fns';
 import { AccountsService } from 'src/accounts/accounts.service';
+import { FixedTransactionsService } from 'src/fixed-transactions/fixed-transactions.service';
 import { TransactionsService } from 'src/transactions/transactions.service';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class DashboardService {
   constructor(
     private readonly accountsService: AccountsService,
     private readonly transactionsService: TransactionsService,
+    private readonly fixedTransactionsService: FixedTransactionsService
   ) { }
 
   async getOverview(userId: string, referenceDate?: string) {
@@ -15,7 +17,7 @@ export class DashboardService {
     const start = startOfMonth(date);
     const end = endOfMonth(date);
 
-    // saldo por mes
+    // entradas e saídas do mes
     const accounts = await this.accountsService.findAllByUser(userId);
     const monthlyTransactions = await this.transactionsService.findAllByUser(
       userId,
@@ -60,6 +62,12 @@ export class DashboardService {
     // 3 - saldo total
     const totalBalance = accountsWithBalance.reduce((acc, account) => acc + account.balance, 0);
 
+    // 4 - últimas transações
+    const latestTransactions = allTransactions.slice(-5);
+
+    // 5- transações fixas abertas do mês
+    const fixedTransactions = await this.fixedTransactionsService.findAllActive(userId);
+
     return {
       period: {
         referenceDate: date.toISOString(),
@@ -68,13 +76,26 @@ export class DashboardService {
       },
       totals: {
         totalBalance,
+        trending: 0,
         currentMonth: {
-          income: totalIncome,
-          expense: totalExpense,
-          net,
+          income: {
+            value: totalIncome,
+            trending: 0,
+          },
+          expense: {
+            value: totalExpense,
+            trending: 0,
+          },
+          net: {
+            value: net,
+            trending: 0,
+          },
         }
       },
-      accounts: accountsWithBalance
+      accounts: accountsWithBalance,
+      latestTransactions,
+      fixedTransactions,
+      annualBalance: []
     };
   }
 }
