@@ -4,14 +4,20 @@ import { ApiError, type ApiErrorBody } from './errors';
 type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
 export type TokenGetter = () => string | null | undefined;
+export type UnauthorizedCallback = () => void;
 
 let tokenGetter: TokenGetter | null = null;
+let onUnauthorized: UnauthorizedCallback | null = null;
 
 /**
  * Call this once at app startup (client-side) to wire auth store into the API client.
  */
 export function setTokenGetter(getter: TokenGetter) {
   tokenGetter = getter;
+}
+
+export function setUnauthorizedCallback(callback: UnauthorizedCallback) {
+  onUnauthorized = callback;
 }
 
 type RequestOptions = {
@@ -91,6 +97,10 @@ export async function request<T>(
   }
 
   const errBody = (await parseJsonSafe(res)) as ApiErrorBody;
+
+  if (res.status === 401) {
+    onUnauthorized?.();
+  }
 
   // Fallback message if backend didn't send JSON
   const message =
