@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ApiError } from '@/shared/lib/api/errors';
 import { useAuthStore } from '@/shared/stores/auth-store';
 import { useLoginMutation } from '@/features/auth/mutations';
+import { Button } from '@/components/ui/button/button';
+import { Label } from '@/components/ui/label/label';
 
 export default function LoginClient() {
   const [isMounted, setIsMounted] = useState(false);
@@ -23,7 +25,7 @@ export default function LoginClient() {
     if (loginMutation.error instanceof ApiError) {
       return loginMutation.error.message;
     }
-    return 'Unable to sign in. Please try again.';
+    return 'Não foi possível entrar. Tente novamente.';
   }, [loginMutation.error]);
 
   useEffect(() => {
@@ -57,41 +59,44 @@ export default function LoginClient() {
       <div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-6 py-12">
         <div className="grid w-full items-center gap-10 lg:grid-cols-[1.2fr_1fr]">
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-3 rounded-full border border-foreground/10 bg-layer01 px-4 py-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+            <Label
+              tone="layer01"
+              className="border border-foreground/10 uppercase tracking-[0.3em] text-muted-foreground"
+            >
               My Finance App
-            </div>
+            </Label>
             <h1 className="text-xl font-semibold tracking-tight text-foreground md:text-xxl">
-              See your money clearly and act with confidence.
+              Visualize seu dinheiro com clareza e aja com confiança.
             </h1>
             <p className="max-w-xl text-sm text-muted-foreground sm:text-md">
-              Track accounts, transactions, and recurring payments with a dashboard built for focus. Sign in to keep
-              your cash flow in sync.
+              Acompanhe contas, transações e pagamentos recorrentes com um painel feito para focar. Entre para manter
+              seu fluxo de caixa sincronizado.
             </p>
             <div className="grid max-w-xl gap-4 text-sm text-muted-foreground sm:grid-cols-2">
               <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Clean monthly overview with income, expense, and net.
+                Visão mensal limpa com receitas, despesas e saldo.
               </div>
               <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Recurring transactions handled with daily automation.
+                Transações recorrentes gerenciadas com automação diária.
               </div>
               <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Secure auth with JWT and user-scoped data.
+                Autenticação segura com JWT e dados isolados por usuário.
               </div>
               <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Purpose-built for personal finance, not generic spreadsheets.
+                Feito para finanças pessoais, não planilhas genéricas.
               </div>
             </div>
           </div>
 
           <div className="rounded-3xl border border-foreground/10 bg-layer01 p-8 shadow-2xl shadow-layer00/60">
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold text-foreground">Welcome back</h2>
-              <p className="text-sm text-muted-foreground">Use your credentials to access your dashboard.</p>
+              <h2 className="text-lg font-semibold text-foreground">Bem-vindo de volta</h2>
+              <p className="text-sm text-muted-foreground">Use suas credenciais para acessar o painel.</p>
             </div>
 
             <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
               <label className="block space-y-2 text-sm text-muted-foreground">
-                Email
+                E-mail
                 <input
                   type="email"
                   name="email"
@@ -99,13 +104,13 @@ export default function LoginClient() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   className="w-full rounded-xl border border-foreground/10 bg-layer02 px-4 py-3 text-sm text-foreground placeholder:text-placeholder focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="you@email.com"
+                  placeholder="voce@email.com"
                   required
                 />
               </label>
 
               <label className="block space-y-2 text-sm text-muted-foreground">
-                Password
+                Senha
                 <input
                   type="password"
                   name="password"
@@ -113,7 +118,7 @@ export default function LoginClient() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   className="w-full rounded-xl border border-foreground/10 bg-layer02 px-4 py-3 text-sm text-foreground placeholder:text-placeholder focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="Your secure password"
+                  placeholder="Sua senha segura"
                   required
                 />
               </label>
@@ -124,17 +129,13 @@ export default function LoginClient() {
                 </div>
               ) : null}
 
-              <button
-                type="submit"
-                disabled={isDisabled}
-                className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted-primary disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSubmitting ? 'Signing in...' : 'Sign in'}
-              </button>
+              <Button type="submit" disabled={isDisabled} size="large" className="w-full">
+                {isSubmitting ? 'Entrando...' : 'Entrar'}
+              </Button>
             </form>
 
             <div className="mt-6 text-xs text-muted-foreground">
-              Tip: Use a strong password and keep your device secure.
+              Dica: Use uma senha forte e mantenha seu dispositivo seguro.
             </div>
           </div>
         </div>
