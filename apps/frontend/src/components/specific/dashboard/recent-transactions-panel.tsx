@@ -2,14 +2,7 @@ import { formatCurrency } from '@/features/dashboard/utils';
 import { Button } from '@/components/ui/button';
 
 import { Label } from '@/components/ui/label';
-
-type Transaction = {
-  id: string;
-  title: string;
-  category: string;
-  amount: number;
-  type: 'income' | 'expense';
-};
+import { Transaction } from '@/shared/lib/api/dashboard';
 
 type RecentTransactionsPanelProps = {
   transactions?: Transaction[];
@@ -42,18 +35,20 @@ export function RecentTransactionsPanel({ transactions = [] }: RecentTransaction
                     {transaction.type === 'income' ? 'Receita' : 'Despesa'}
                   </Label>
                   <Label tone="layer02" size="small">
-                    {transaction.category}
+                    {typeof transaction.category === 'object' ? transaction.category.name : 'Sem categoria'}
                   </Label>
                 </div>
-                <div className="mt-2 text-sm font-medium text-foreground">{transaction.title}</div>
-                <div className="text-base font-semibold text-foreground">{formatCurrency(transaction.amount)}</div>
+                <div className="mt-2 text-sm font-medium text-foreground">{transaction.description}</div>
+                <div className="text-base font-semibold text-foreground">
+                  {formatCurrency(Number(transaction.value))}
+                </div>
               </div>
               <Button tone="layer01" leftIcon="MenuMeatballs1Outlined" />
             </div>
           ))
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2 min-h-[100px] border border-dashed border-layer02 rounded-2xl">
-            <p className="text-sm">Nenhuma transação recente</p>
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2 min-h-[100px] border border-dashed border-foreground/10 bg-layer02/50 rounded-2xl">
+            <p className="text-sm">Não há transações recentes.</p>
           </div>
         )}
       </div>

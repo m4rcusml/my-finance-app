@@ -12,7 +12,15 @@ import { Label } from '@/components/ui/label';
 
 export function SummaryCard({ label, value, trend, tone, bgColor = 'layer01' }: SummaryCardProps) {
   const labelTone =
-    tone === 'positive' ? 'success' : tone === 'negative' ? 'danger' : bgColor === 'layer01' ? 'layer02' : 'layer01';
+    trend === 0
+      ? 'neutral'
+      : tone === 'positive'
+        ? 'success'
+        : tone === 'negative'
+          ? 'danger'
+          : bgColor === 'layer01'
+            ? 'layer02'
+            : 'layer01';
 
   return (
     <div className={`flex items-center justify-between px-6 py-2 rounded-3xl border border-foreground/5 bg-${bgColor}`}>

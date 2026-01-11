@@ -46,17 +46,13 @@ export default function DashboardPage() {
 
       <div className="flex-1 min-h-0 flex items-stretch gap-6">
         <div className="flex flex-col flex-1 space-y-6">
-          <BalanceHero
-            totalBalance={dashboard?.totals.totalBalance ?? 0}
-            monthly={dashboard?.totals.currentMonth ?? { income: 0, expense: 0, net: 0 }}
-            isLoading={dashboardQuery.isLoading}
-          />
+          <BalanceHero totals={dashboard?.totals} isLoading={dashboardQuery.isLoading} />
           <AnnualBalance monthlyNet={[]} />
         </div>
         <div className="flex flex-col flex-1 space-y-6 min-h-0">
           <AccountsPanel accounts={dashboard?.accounts ?? []} />
-          <FixedTransactionsPanel transactions={[]} />
-          <RecentTransactionsPanel transactions={[]} />
+          <FixedTransactionsPanel transactions={dashboard?.fixedTransactions ?? []} />
+          <RecentTransactionsPanel transactions={dashboard?.latestTransactions ?? []} />
         </div>
       </div>
 

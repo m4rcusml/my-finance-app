@@ -4,18 +4,10 @@ import useEmblaCarousel from 'embla-carousel-react';
 
 import { useCallback } from 'react';
 import { Label } from '@/components/ui/label';
-
-type FixedTransaction = {
-  id: string;
-  title: string;
-  category: string;
-  amount: number;
-  due: string;
-  status: string;
-};
+import { Transaction } from '@/shared/lib/api/dashboard';
 
 type FixedTransactionsPanelProps = {
-  transactions?: FixedTransaction[];
+  transactions?: Transaction[];
 };
 
 export function FixedTransactionsPanel({ transactions = [] }: FixedTransactionsPanelProps) {
@@ -52,13 +44,17 @@ export function FixedTransactionsPanel({ transactions = [] }: FixedTransactionsP
                 <div className="m-auto flex items-center rounded-2xl border border-foreground/10 bg-layer01 px-4 py-4 w-4/5">
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Label tone="layer02">{transaction.category}</Label>
+                      <Label tone="layer02">
+                        {typeof transaction.category === 'object' ? transaction.category.name : 'Sem categoria'}
+                      </Label>
                     </div>
-                    <div className="mt-2 text-sm font-medium text-foreground">{transaction.title}</div>
+                    <div className="mt-2 text-sm font-medium text-foreground">{transaction.description}</div>
                     <div className="mt-1 text-md font-semibold text-foreground">
-                      {formatCurrency(transaction.amount)}
+                      {formatCurrency(Number(transaction.value))}
                     </div>
-                    <div className="mt-2 text-xs text-muted-foreground">{transaction.due}</div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {transaction.referenceDay ? `Dia ${transaction.referenceDay}` : transaction.due}
+                    </div>
                   </div>
 
                   <div className="flex-1 flex flex-col gap-2">
@@ -72,7 +68,7 @@ export function FixedTransactionsPanel({ transactions = [] }: FixedTransactionsP
             ))
           ) : (
             <div className="flex-[0_0_100%] min-w-0">
-              <div className="m-auto flex items-center justify-center rounded-2xl border border-dashed border-layer02 bg-layer01/50 px-4 py-8 w-4/5">
+              <div className="m-auto flex items-center justify-center rounded-2xl border border-dashed border-foreground/10 bg-layer02/50 px-4 py-8 w-4/5">
                 <span className="text-muted-foreground text-sm">Nenhuma transação fixa encontrada</span>
               </div>
             </div>

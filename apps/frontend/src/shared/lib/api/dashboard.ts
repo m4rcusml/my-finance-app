@@ -1,5 +1,18 @@
 import { request } from "./http";
 
+export type Transaction = {
+  id: string;
+  description: string; // Was title
+  categoryId?: string;
+  category?: { name: string; icon: string }; // Optional if populated later
+  value: number | string; // JSON shows string "5000" for transactions
+  type: 'income' | 'expense';
+  date?: string;
+  status?: string;
+  referenceDay?: number; // For fixed transactions
+  due?: string; // Legacy or alternative
+};
+
 export type DashboardResponse = {
   period: {
     referenceDate?: string;
@@ -8,10 +21,20 @@ export type DashboardResponse = {
   };
   totals: {
     totalBalance: number;
+    trending: number;
     currentMonth: {
-      income: number;
-      expense: number;
-      net: number;
+      income: {
+        value: number;
+        trending: number;
+      };
+      expense: {
+        value: number;
+        trending: number;
+      };
+      net: {
+        value: number;
+        trending: number;
+      };
     };
   };
   accounts: Array<{
@@ -21,7 +44,9 @@ export type DashboardResponse = {
     initialBalance: number;
     balance: number;
   }>;
-  // add fixed-transactions block etc.
+  latestTransactions: Transaction[];
+  fixedTransactions: Transaction[];
+  annualBalance: any[]; // User requested to skip annual balance for now
 };
 
 export const dashboardApi = {

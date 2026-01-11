@@ -19,8 +19,8 @@ export function AccountsPanel({ accounts }: AccountsPanelProps) {
 
       <div className="mt-4 flex gap-4 overflow-x-auto pb-2">
         {accounts.length === 0 ? (
-          <div className="rounded-2xl border border-foreground/10 bg-layer02 px-4 py-6 text-sm text-muted-foreground">
-            Nenhuma conta cadastrada ainda.
+          <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-foreground/10 bg-layer02/50 py-8 text-center text-muted-foreground">
+            <p className="text-sm">Nenhuma conta encontrada</p>
           </div>
         ) : (
           accounts.map((account) => (
