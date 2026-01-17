@@ -8,7 +8,7 @@ import { Button } from '../button';
 const navItems: { label: string; href: string; icon: IconName }[] = [
   { label: 'Dashboard', href: '/dashboard', icon: 'DashboardSquare1Outlined' },
   { label: 'Contas', href: '/accounts', icon: 'Wallet1Outlined' },
-  { label: 'Transacoes', href: '/transactions', icon: 'RefreshDollar1Outlined' },
+  { label: 'Transações', href: '/transactions', icon: 'RefreshDollar1Outlined' },
 ];
 
 export function Sidebar() {

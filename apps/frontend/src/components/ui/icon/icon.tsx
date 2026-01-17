@@ -16,6 +16,9 @@ import {
   SlidersHorizontalSquare2Outlined,
   Wallet1Outlined,
   User4Outlined,
+  Pencil1Outlined,
+  Trash3Outlined,
+  FilePlusCircleOutlined,
 } from '@lineiconshq/free-icons';
 
 const icons = {
@@ -35,6 +38,9 @@ const icons = {
   SlidersHorizontalSquare2Outlined,
   Wallet1Outlined,
   User4Outlined,
+  Pencil1Outlined,
+  Trash3Outlined,
+  FilePlusCircleOutlined,
 };
 
 export type IconName = keyof typeof icons;
