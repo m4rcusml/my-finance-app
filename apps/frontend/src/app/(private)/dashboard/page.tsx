@@ -10,6 +10,7 @@ import { AnnualBalance } from '@/components/specific/dashboard/annual-balance';
 import { FixedTransactionsPanel } from '@/components/specific/dashboard/fixed-transactions-panel';
 import { RecentTransactionsPanel } from '@/components/specific/dashboard/recent-transactions-panel';
 import { useAuthStore } from '@/shared/stores/auth-store';
+import { CreateTransactionModal } from '@/components/specific/modals/create-transaction-modal';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -21,6 +22,9 @@ export default function DashboardPage() {
   const dashboardQuery = useDashboardQuery(undefined, {
     enabled: Boolean(accessToken),
   });
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [initialTransactionType, setInitialTransactionType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE');
 
   useEffect(() => {
     setIsMounted(true);
@@ -38,6 +42,11 @@ export default function DashboardPage() {
 
   const dashboard = dashboardQuery.data;
 
+  function handleOpenTransactionModal(type: 'INCOME' | 'EXPENSE') {
+    setInitialTransactionType(type);
+    setIsCreateModalOpen(true);
+  }
+
   if (!isMounted) return null;
 
   return (
@@ -46,7 +55,11 @@ export default function DashboardPage() {
 
       <div className="flex-1 min-h-0 flex items-stretch gap-6">
         <div className="flex flex-col flex-1 space-y-6">
-          <BalanceHero totals={dashboard?.totals} isLoading={dashboardQuery.isLoading} />
+          <BalanceHero
+            totals={dashboard?.totals}
+            isLoading={dashboardQuery.isLoading}
+            onOpenNewTransaction={handleOpenTransactionModal}
+          />
           <AnnualBalance monthlyNet={[]} />
         </div>
         <div className="flex flex-col flex-1 space-y-6 min-h-0">
@@ -55,6 +68,12 @@ export default function DashboardPage() {
           <RecentTransactionsPanel transactions={dashboard?.latestTransactions ?? []} />
         </div>
       </div>
+
+      <CreateTransactionModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        initialType={initialTransactionType}
+      />
 
       {dashboardQuery.isError ? (
         <div className="rounded-2xl border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">

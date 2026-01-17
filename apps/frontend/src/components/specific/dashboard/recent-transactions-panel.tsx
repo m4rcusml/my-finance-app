@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 
 import { Label } from '@/components/ui/label';
 import { Transaction } from '@/shared/lib/api/dashboard';
+import Link from 'next/link';
 
 type RecentTransactionsPanelProps = {
   transactions?: Transaction[];
@@ -14,9 +15,11 @@ export function RecentTransactionsPanel({ transactions = [] }: RecentTransaction
       <div className="flex justify-between items-center shrink-0">
         <span className="text-md">Últimas transações</span>
 
-        <Button tone="layer02" rightIcon="ArrowAngularTopRightOutlined">
-          Ver mais
-        </Button>
+        <Link href="/transactions">
+          <Button tone="layer02" rightIcon="ArrowAngularTopRightOutlined">
+            Ver mais
+          </Button>
+        </Link>
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth flex flex-col gap-4">
@@ -27,12 +30,12 @@ export function RecentTransactionsPanel({ transactions = [] }: RecentTransaction
               className="flex items-center gap-4 rounded-2xl border border-foreground/10 bg-layer01 px-4 py-4 shrink-0"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-layer01 text-xs text-muted-foreground">
-                {transaction.type === 'income' ? 'IN' : 'OUT'}
+                {transaction.type === 'INCOME' ? 'IN' : 'OUT'}
               </div>
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <Label tone={transaction.type === 'income' ? 'success' : 'danger'} size="small">
-                    {transaction.type === 'income' ? 'Receita' : 'Despesa'}
+                  <Label tone={transaction.type === 'INCOME' ? 'success' : 'danger'} size="small">
+                    {transaction.type === 'INCOME' ? 'Receita' : 'Despesa'}
                   </Label>
                   <Label tone="layer02" size="small">
                     {typeof transaction.category === 'object' ? transaction.category.name : 'Sem categoria'}

@@ -42,7 +42,7 @@ export function AnnualBalance({ monthlyNet = [] }: AnnualBalanceProps) {
 
           {!hasData && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl">
-              <span className="text-foreground text-sm font-medium">Nenhum dado disponível</span>
+              <span className="text-foreground text-sm font-medium">Indisponível no momento</span>
             </div>
           )}
         </div>

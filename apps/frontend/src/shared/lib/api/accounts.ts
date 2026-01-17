@@ -7,6 +7,7 @@ export type Account = {
   institution: string;
   type: string;
   initialBalance: number;
+  balance: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

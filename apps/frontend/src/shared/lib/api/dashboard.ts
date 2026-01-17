@@ -6,7 +6,7 @@ export type Transaction = {
   categoryId?: string;
   category?: { name: string; icon: string }; // Optional if populated later
   value: number | string; // JSON shows string "5000" for transactions
-  type: 'income' | 'expense';
+  type: 'INCOME' | 'EXPENSE';
   date?: string;
   status?: string;
   referenceDay?: number; // For fixed transactions

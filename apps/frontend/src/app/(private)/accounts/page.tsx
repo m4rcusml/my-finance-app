@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { useAccountsQuery } from '@/features/accounts/queries';
 import { CreateAccountModal } from '@/components/specific/modals/create-account-modal';
+import { EditAccountModal } from '@/components/specific/modals/edit-account-modal';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { formatCurrency } from '@/shared/lib/utils';
+import { Account } from '@/shared/lib/api/accounts';
 
 export default function AccountsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const { data: accounts, isLoading } = useAccountsQuery();
 
   return (
@@ -34,8 +37,17 @@ export default function AccountsPage() {
             >
               <div className="flex items-center justify-between space-y-0 pb-2">
                 <div className="font-medium text-sm text-muted-foreground">{account.institution}</div>
-                <div className="p-2 bg-layer02 rounded-full">
-                  <Icon name="CreditCardMultipleOutlined" className="h-4 w-4 text-foreground" />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingAccount(account)}
+                    className="p-2 transition-colors hover:text-foreground text-muted-foreground"
+                  >
+                    <Icon name="Pencil1Outlined" className="h-4 w-4" />
+                  </button>
+                  <div className="p-2 bg-layer02 rounded-full">
+                    <Icon name="CreditCardMultipleOutlined" className="h-4 w-4 text-foreground" />
+                  </div>
                 </div>
               </div>
               <div className="mt-4">
@@ -47,8 +59,8 @@ export default function AccountsPage() {
                     Ideally we should have a 'balance' field computed. 
                     Given the task constraints, I will display what is available. 
                 */}
-                <div className="mt-4 text-2xl font-bold text-foreground">{formatCurrency(account.initialBalance)}</div>
-                <p className="text-xs text-muted-foreground">Saldo inicial</p>
+                <div className="mt-4 text-2xl font-bold text-foreground">{formatCurrency(account.balance)}</div>
+                <p className="text-xs text-muted-foreground">Saldo atual</p>
               </div>
             </div>
           ))
@@ -69,6 +81,7 @@ export default function AccountsPage() {
       </div>
 
       <CreateAccountModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <EditAccountModal isOpen={!!editingAccount} onClose={() => setEditingAccount(null)} account={editingAccount} />
     </main>
   );
 }

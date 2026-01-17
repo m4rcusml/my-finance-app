@@ -8,9 +8,10 @@ import { DashboardResponse } from '@/shared/lib/api/dashboard';
 type BalanceHeroProps = {
   totals?: DashboardResponse['totals'];
   isLoading?: boolean;
+  onOpenNewTransaction?: (type: 'INCOME' | 'EXPENSE') => void;
 };
 
-export function BalanceHero({ totals, isLoading }: BalanceHeroProps) {
+export function BalanceHero({ totals, isLoading, onOpenNewTransaction }: BalanceHeroProps) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
       <div className="flex flex-col items-start self-center gap-4">
@@ -30,10 +31,21 @@ export function BalanceHero({ totals, isLoading }: BalanceHeroProps) {
         </Label>
 
         <div className="flex self-stretch flex-wrap gap-4">
-          <Button className="flex-1" size="xLarge" leftIcon="ArrowUpwardOutlined">
+          <Button
+            className="flex-1"
+            size="xLarge"
+            leftIcon="ArrowUpwardOutlined"
+            onClick={() => onOpenNewTransaction?.('EXPENSE')}
+          >
             Pagar
           </Button>
-          <Button className="flex-1" size="xLarge" tone="layer02" rightIcon="ArrowDownwardOutlined">
+          <Button
+            className="flex-1"
+            size="xLarge"
+            tone="layer02"
+            rightIcon="ArrowDownwardOutlined"
+            onClick={() => onOpenNewTransaction?.('INCOME')}
+          >
             Receber
           </Button>
         </div>

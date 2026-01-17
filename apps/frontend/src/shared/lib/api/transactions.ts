@@ -6,7 +6,7 @@ export type Transaction = {
   accountId: string;
   categoryId?: string;
   type: 'INCOME' | 'EXPENSE';
-  amount: number; // backend says 'value', need to double check DTO
+  value: number;
   date: string;
   description?: string;
   createdAt: string;
@@ -26,7 +26,7 @@ export type Transaction = {
 // Step 24 says: type: 'income' | 'expense';
 
 export type CreateTransactionDto = {
-  type: 'income' | 'expense';
+  type: 'INCOME' | 'EXPENSE';
   value: number;
   date: string;
   accountId: string;
@@ -37,7 +37,7 @@ export type CreateTransactionDto = {
 export type UpdateTransactionDto = Partial<CreateTransactionDto>;
 
 export type ListTransactionsFilters = {
-  type?: 'income' | 'expense';
+  type?: 'INCOME' | 'EXPENSE';
   fromDate?: string;
   toDate?: string;
   accountId?: string;

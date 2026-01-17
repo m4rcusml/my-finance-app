@@ -3,6 +3,7 @@ import type { DashboardResponse } from '@/shared/lib/api/dashboard';
 import { formatCurrency } from '@/shared/lib/utils';
 import { CreateAccountModal } from '@/components/specific/modals/create-account-modal';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 type AccountsPanelProps = {
   accounts: DashboardResponse['accounts'];
@@ -21,9 +22,11 @@ export function AccountsPanel({ accounts }: AccountsPanelProps) {
             <Button tone="layer02" size="regular" onClick={() => setIsModalOpen(true)}>
               Nova conta
             </Button>
-            <Button tone="layer02" size="regular" rightIcon="ArrowAngularTopRightOutlined">
-              Ver mais
-            </Button>
+            <Link href="/accounts">
+              <Button tone="layer02" size="regular" rightIcon="ArrowAngularTopRightOutlined">
+                Ver mais
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -36,7 +39,7 @@ export function AccountsPanel({ accounts }: AccountsPanelProps) {
               </Button>
             </div>
           ) : (
-            accounts.map((account) => (
+            accounts.slice(0, 3).map((account) => (
               <div
                 key={account.id}
                 className="rounded-2xl border border-foreground/10 bg-layer02 p-4 text-muted-foreground min-w-[200px]"

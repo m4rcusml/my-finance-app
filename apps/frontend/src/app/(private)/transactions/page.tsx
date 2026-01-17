@@ -5,10 +5,14 @@ import { useTransactionsQuery } from '@/features/transactions/queries';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { formatCurrency } from '@/shared/lib/utils';
-import { ListTransactionsFilters } from '@/shared/lib/api/transactions';
+import { ListTransactionsFilters, Transaction } from '@/shared/lib/api/transactions';
+import { CreateTransactionModal } from '@/components/specific/modals/create-transaction-modal';
+import { EditTransactionModal } from '@/components/specific/modals/edit-transaction-modal';
 
 export default function TransactionsPage() {
   const [filters, setFilters] = useState<ListTransactionsFilters>({});
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const { data: transactions, isLoading } = useTransactionsQuery(filters);
 
   return (
@@ -20,7 +24,7 @@ export default function TransactionsPage() {
         </div>
         <div className="flex items-center space-x-2">
           {/* <Button variant="outline">Importar</Button> */}
-          <Button onClick={() => alert('Feature em desenvolvimento: Modal de Criar Transação')}>Nova Transação</Button>
+          <Button onClick={() => setIsCreateModalOpen(true)}>Nova Transação</Button>
         </div>
       </div>
 
@@ -34,16 +38,16 @@ export default function TransactionsPage() {
           Todas
         </Button>
         <Button
-          tone={filters.type === 'income' ? 'layer02' : 'layer01'}
+          tone={filters.type === 'INCOME' ? 'layer02' : 'layer01'}
           size="small"
-          onClick={() => setFilters((prev) => ({ ...prev, type: 'income' }))}
+          onClick={() => setFilters((prev) => ({ ...prev, type: 'INCOME' }))}
         >
           Receitas
         </Button>
         <Button
-          tone={filters.type === 'expense' ? 'layer02' : 'layer01'}
+          tone={filters.type === 'EXPENSE' ? 'layer02' : 'layer01'}
           size="small"
-          onClick={() => setFilters((prev) => ({ ...prev, type: 'expense' }))}
+          onClick={() => setFilters((prev) => ({ ...prev, type: 'EXPENSE' }))}
         >
           Despesas
         </Button>
@@ -91,11 +95,11 @@ export default function TransactionsPage() {
                         transaction.type === 'INCOME' ? 'text-green-500' : 'text-red-500'
                       }`}
                     >
-                      {transaction.type === 'INCOME' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                      {transaction.type === 'INCOME' ? '+' : '-'} {formatCurrency(Number(transaction.value))}
                     </td>
                     <td className="p-4 align-middle text-right">
                       <div className="flex justify-end gap-2">
-                        <Button tone="layer01" size="small">
+                        <Button tone="layer01" size="small" onClick={() => setEditingTransaction(transaction)}>
                           <Icon name="Pencil1Outlined" className="h-4 w-4" />
                         </Button>
                         <Button tone="layer01" size="small">
@@ -117,6 +121,13 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
+
+      <CreateTransactionModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      <EditTransactionModal
+        isOpen={!!editingTransaction}
+        onClose={() => setEditingTransaction(null)}
+        transaction={editingTransaction}
+      />
     </main>
   );
 }

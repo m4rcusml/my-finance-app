@@ -14,15 +14,15 @@ export function useCreateAccountMutation() {
   });
 }
 
-export function useUpdateAccountMutation(accountId: string) {
+export function useUpdateAccountMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (dto: UpdateAccountDto) => accountsApi.update(accountId, dto),
-    onSuccess: () => {
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateAccountDto }) => accountsApi.update(id, dto),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() })
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.accounts.detail(accountId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts.detail(id) })
     },
   });
 }

@@ -16,12 +16,12 @@ export function useCreateTransactionMutation() {
   });
 }
 
-export function useUpdateTransactionMutation(id: string) {
+export function useUpdateTransactionMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (dto: UpdateTransactionDto) => transactionsApi.update(id, dto),
-    onSuccess: () => {
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateTransactionDto }) => transactionsApi.update(id, dto),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
