@@ -1,17 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { accountsApi } from '@/shared/lib/api';
+import { queryKeys } from '@/shared/lib/query/keys';
 
-export function useAccountsQuery(accountId?: string) {
+export function useAccountsQuery() {
   return useQuery({
-    queryKey: ['accounts', accountId ?? 'all'],
-    queryFn: () => {
-      if (accountId) {
-        const response = accountsApi.getById(accountId)
+    queryKey: queryKeys.accounts.all(),
+    queryFn: () => accountsApi.list(),
+  });
+}
 
-        return new Array(1).fill(response);
-      }
-
-      return accountsApi.list();
-    }
-  })
+export function useAccountQuery(id: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.accounts.detail(id),
+    queryFn: () => accountsApi.getById(id),
+    enabled: options?.enabled,
+  });
 }
