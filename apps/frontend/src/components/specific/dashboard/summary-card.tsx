@@ -1,4 +1,4 @@
-import { formatCurrency } from '@/features/dashboard/utils';
+import { formatCurrency } from '@/shared/lib/utils';
 
 type SummaryCardProps = {
   label: string;

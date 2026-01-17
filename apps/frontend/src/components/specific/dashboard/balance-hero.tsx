@@ -1,5 +1,5 @@
 import { SummaryCard } from './summary-card';
-import { formatCurrency } from '@/features/dashboard/utils';
+import { formatCurrency } from '@/shared/lib/utils';
 import { Button } from '@/components/ui/button';
 
 import { Label } from '@/components/ui/label';

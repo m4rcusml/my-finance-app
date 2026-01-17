@@ -1,4 +1,4 @@
-import { formatFullDate } from '@/features/dashboard/utils';
+import { formatFullDate } from '@/shared/lib/utils';
 import { Icon } from '@/components/ui/icon';
 
 type TopBarProps = {

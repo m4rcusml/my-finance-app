@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DashboardResponse } from '@/shared/lib/api/dashboard';
-import { formatCurrency } from '@/features/dashboard/utils';
+import { formatCurrency } from '@/shared/lib/utils';
 import { CreateAccountModal } from '@/components/specific/modals/create-account-modal';
 import { Button } from '@/components/ui/button';
 

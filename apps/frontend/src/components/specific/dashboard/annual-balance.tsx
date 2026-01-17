@@ -1,4 +1,4 @@
-import { monthLabels } from '@/features/dashboard/utils';
+import { monthLabels } from '@/shared/lib/utils';
 import { Button } from '@/components/ui/button';
 
 type AnnualBalanceProps = {

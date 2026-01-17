@@ -1,4 +1,4 @@
-import { formatCurrency } from '@/features/dashboard/utils';
+import { formatCurrency } from '@/shared/lib/utils';
 import { Button } from '@/components/ui/button';
 import useEmblaCarousel from 'embla-carousel-react';
 
