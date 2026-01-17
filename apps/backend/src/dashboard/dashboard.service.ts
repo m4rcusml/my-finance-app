@@ -17,56 +17,36 @@ export class DashboardService {
     const start = startOfMonth(date);
     const end = endOfMonth(date);
 
-    // entradas e saídas do mes
-    const accounts = await this.accountsService.findAllByUser(userId);
-    const monthlyTransactions = await this.transactionsService.findAllByUser(
-      userId,
-      {
+    // 1. Fetch data in parallel
+    const [accounts, monthlyTransactions, allTransactions, fixedTransactions] = await Promise.all([
+      this.accountsService.findAllByUser(userId),
+      this.transactionsService.findAllByUser(userId, {
         fromDate: start.toISOString(),
         toDate: end.toISOString(),
-      }
-    );
+      }),
+      this.transactionsService.findAllByUser(userId),
+      this.fixedTransactionsService.findAllActive(userId),
+    ]);
 
+    // 2. Calculate monthly totals
     const totalIncome = monthlyTransactions
-      .filter(t => t.type === 'income')
-      .reduce((acc, t) => acc + t.value.toNumber(), 0);
+      .filter(t => t.type === 'INCOME' || t.type === 'income') // Handle both cases just in case
+      .reduce((acc, t) => acc + Number(t.value), 0);
 
     const totalExpense = monthlyTransactions
-      .filter(t => t.type === 'expense')
-      .reduce((acc, t) => acc + t.value.toNumber(), 0);
+      .filter(t => t.type === 'EXPENSE' || t.type === 'expense')
+      .reduce((acc, t) => acc + Number(t.value), 0);
 
     const net = totalIncome - totalExpense;
 
-    // 2 - saldo por conta
-    const allTransactions = await this.transactionsService.findAllByUser(userId);
+    // 3. Accounts are already returned with calculated balance from AccountsService
+    const accountsWithBalance = accounts;
 
-    const accountsWithBalance = accounts.map(account => {
-      const accountTransactions = allTransactions.filter(t => t.accountId === account.id);
-
-      const income = accountTransactions
-        .filter(t => t.type === 'income')
-        .reduce((acc, t) => acc + t.value.toNumber(), 0);
-
-      const expense = accountTransactions
-        .filter(t => t.type === 'expense')
-        .reduce((acc, t) => acc + t.value.toNumber(), 0);
-
-      const balance = account.initialBalance.toNumber() + income - expense;
-
-      return {
-        ...account,
-        balance,
-      };
-    });
-
-    // 3 - saldo total
+    // 4. Total balance
     const totalBalance = accountsWithBalance.reduce((acc, account) => acc + account.balance, 0);
 
-    // 4 - últimas transações
-    const latestTransactions = allTransactions.slice(-5);
-
-    // 5- transações fixas abertas do mês
-    const fixedTransactions = await this.fixedTransactionsService.findAllActive(userId);
+    // 5. Latest transactions
+    const latestTransactions = allTransactions.slice(0, 5); // Using slice 0, 5 for top 5 if sorted descending
 
     return {
       period: {

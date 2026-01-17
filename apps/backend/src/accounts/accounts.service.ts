@@ -16,14 +16,40 @@ export class AccountsService {
   }
 
   async findAllByUser(userId: string) {
-    return await this.prisma.account.findMany({
-      where: { userId }
-    })
+    const accounts = await this.prisma.account.findMany({
+      where: { userId },
+      include: {
+        transactions: {
+          select: {
+            type: true,
+            value: true,
+          }
+        }
+      }
+    });
+
+    return accounts.map(account => {
+      const balance = this.calculateAccountBalance(account);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { transactions: _, ...accountRest } = account;
+      return {
+        ...accountRest,
+        balance
+      };
+    });
   }
 
   async findById(userId: string, accountId: string) {
     const response = await this.prisma.account.findUnique({
-      where: { id: accountId }
+      where: { id: accountId },
+      include: {
+        transactions: {
+          select: {
+            type: true,
+            value: true,
+          }
+        }
+      }
     })
 
     if (!response) {
@@ -34,7 +60,13 @@ export class AccountsService {
       throw new ForbiddenException();
     }
 
-    return response;
+    const balance = this.calculateAccountBalance(response);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { transactions: _, ...accountRest } = response;
+    return {
+      ...accountRest,
+      balance
+    };
   }
 
   async updateAccount(userId: string, accountId: string, dto: UpdateAccountDto) {
@@ -50,10 +82,26 @@ export class AccountsService {
       throw new ForbiddenException();
     }
 
-    return await this.prisma.account.update({
+    const updated = await this.prisma.account.update({
       data: dto,
-      where: { id: accountId }
+      where: { id: accountId },
+      include: {
+        transactions: {
+          select: {
+            type: true,
+            value: true,
+          }
+        }
+      }
     })
+
+    const balance = this.calculateAccountBalance(updated);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { transactions: _, ...accountRest } = updated;
+    return {
+      ...accountRest,
+      balance
+    };
   }
 
   async deleteAccount(userId: string, accountId: string) {
@@ -72,5 +120,26 @@ export class AccountsService {
     await this.prisma.account.delete({
       where: { id: accountId }
     })
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: poggers
+  private calculateAccountBalance(account: any) {
+    const initialBalance = Number(account.initialBalance);
+
+    // Calculate sums locally to avoid DB complexity
+    const transactionsSum = account.transactions.reduce((acc: number, t: { type: string; value: typeof account.initialBalance }) => {
+      // Normalize type to lowercase for comparison
+      const type = t.type.toLowerCase();
+      const value = Number(t.value);
+
+      if (type === 'income') {
+        return acc + value;
+      } else if (type === 'expense') {
+        return acc - value;
+      }
+      return acc;
+    }, 0);
+
+    return Number((initialBalance + transactionsSum).toFixed(2));
   }
 }
