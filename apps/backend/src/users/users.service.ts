@@ -19,6 +19,15 @@ export class UsersService {
   findByEmail(email: string) {
     const response = this.prisma.user.findUnique({
       where: { email },
+      omit: { passwordHash: true },
+    });
+
+    return response;
+  }
+
+  findByEmailWithPassword(email: string) {
+    const response = this.prisma.user.findUnique({
+      where: { email },
     });
 
     return response;
@@ -52,6 +61,20 @@ export class UsersService {
       where,
       orderBy,
       omit: { passwordHash: true },
+    });
+  }
+
+  async updateUser(userId: string, data: Prisma.UserUpdateInput) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+      omit: { passwordHash: true },
+    });
+  }
+
+  async deleteUser(userId: string) {
+    return this.prisma.user.delete({
+      where: { id: userId },
     });
   }
 }

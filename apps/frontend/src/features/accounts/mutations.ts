@@ -27,11 +27,11 @@ export function useUpdateAccountMutation() {
   });
 }
 
-export function useDeleteAccountMutation(accountId: string) {
+export function useDeleteAccountMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => accountsApi.remove(accountId),
+    mutationFn: (id: string) => accountsApi.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() })
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all() })

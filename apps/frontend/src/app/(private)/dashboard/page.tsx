@@ -6,6 +6,7 @@ import { useDashboardQuery } from '@/features/dashboard/queries';
 import { TopBar } from '@/components/specific/dashboard/topbar';
 import { BalanceHero } from '@/components/specific/dashboard/balance-hero';
 import { AccountsPanel } from '@/components/specific/dashboard/accounts-panel';
+import { CreditCardsPanel } from '@/components/specific/dashboard/credit-cards-panel';
 import { AnnualBalance } from '@/components/specific/dashboard/annual-balance';
 import { FixedTransactionsPanel } from '@/components/specific/dashboard/fixed-transactions-panel';
 import { RecentTransactionsPanel } from '@/components/specific/dashboard/recent-transactions-panel';
@@ -60,10 +61,11 @@ export default function DashboardPage() {
             isLoading={dashboardQuery.isLoading}
             onOpenNewTransaction={handleOpenTransactionModal}
           />
-          <AnnualBalance monthlyNet={[]} />
+          <AnnualBalance monthlyNet={dashboard?.annualBalance?.map((b) => b.net) ?? []} />
         </div>
         <div className="flex flex-col flex-1 space-y-6 min-h-0">
           <AccountsPanel accounts={dashboard?.accounts ?? []} />
+          <CreditCardsPanel creditCards={dashboard?.creditCards ?? []} />
           <FixedTransactionsPanel transactions={dashboard?.fixedTransactions ?? []} />
           <RecentTransactionsPanel transactions={dashboard?.latestTransactions ?? []} />
         </div>

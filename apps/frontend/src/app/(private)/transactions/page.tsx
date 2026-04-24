@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useTransactionsQuery } from '@/features/transactions/queries';
+import { useDeleteTransactionMutation } from '@/features/transactions/mutations';
+import { useCategoriesQuery } from '@/features/categories/queries';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { formatCurrency } from '@/shared/lib/utils';
@@ -14,6 +16,20 @@ export default function TransactionsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const { data: transactions, isLoading } = useTransactionsQuery(filters);
+  const { data: categories } = useCategoriesQuery();
+  const deleteMutation = useDeleteTransactionMutation();
+
+  function getCategoryName(categoryId?: string | null) {
+    if (!categoryId) return 'Sem Categoria';
+    const category = categories?.find((c) => c.id === categoryId);
+    return category?.name ?? 'Categoria';
+  }
+
+  function handleDelete(transaction: Transaction) {
+    if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
+      deleteMutation.mutate(transaction.id);
+    }
+  }
 
   return (
     <main className="flex-1 flex flex-col space-y-6 h-full p-4 md:p-8 pt-6 overflow-y-auto">
@@ -23,31 +39,29 @@ export default function TransactionsPage() {
           <p className="text-muted-foreground">Visualize e gerencie suas receitas e despesas.</p>
         </div>
         <div className="flex items-center space-x-2">
-          {/* <Button variant="outline">Importar</Button> */}
           <Button onClick={() => setIsCreateModalOpen(true)}>Nova Transação</Button>
         </div>
       </div>
 
       <div className="flex items-center gap-2 py-4">
-        {/* Simple Filter Placeholders - Functionality can be expanded later */}
         <Button
-          tone={!filters.type ? 'layer02' : 'layer01'}
+          tone={!filters.type ? 'primary' : 'layer01'}
           size="small"
           onClick={() => setFilters((prev) => ({ ...prev, type: undefined }))}
         >
           Todas
         </Button>
         <Button
-          tone={filters.type === 'INCOME' ? 'layer02' : 'layer01'}
+          tone={filters.type === 'income' ? 'green' : 'layer01'}
           size="small"
-          onClick={() => setFilters((prev) => ({ ...prev, type: 'INCOME' }))}
+          onClick={() => setFilters((prev) => ({ ...prev, type: 'income' }))}
         >
           Receitas
         </Button>
         <Button
-          tone={filters.type === 'EXPENSE' ? 'layer02' : 'layer01'}
+          tone={filters.type === 'expense' ? 'red' : 'layer01'}
           size="small"
-          onClick={() => setFilters((prev) => ({ ...prev, type: 'EXPENSE' }))}
+          onClick={() => setFilters((prev) => ({ ...prev, type: 'expense' }))}
         >
           Despesas
         </Button>
@@ -78,31 +92,24 @@ export default function TransactionsPage() {
                       {transaction.description || 'Sem descrição'}
                     </td>
                     <td className="p-4 align-middle text-muted-foreground">
-                      {/* We might need to fetch category name or it comes populated? 
-                          Transactions API response usually has categoryId. 
-                          If we want names, backend should include relation or we fetch categories. 
-                          For now, displaying ID or placeholder if relation not loaded. 
-                          Ideally the backend returns the Category object.
-                          Let's assume for now it's just ID or we need to look it up.
-                      */}
-                      {transaction.categoryId ? 'Categoria' : 'Sem Categoria'}
+                      {getCategoryName(transaction.categoryId)}
                     </td>
                     <td className="p-4 align-middle text-muted-foreground">
                       {new Date(transaction.date).toLocaleDateString('pt-BR')}
                     </td>
                     <td
                       className={`p-4 align-middle text-right font-medium ${
-                        transaction.type === 'INCOME' ? 'text-green-500' : 'text-red-500'
+                        transaction.type === 'INCOME' || transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
                       }`}
                     >
-                      {transaction.type === 'INCOME' ? '+' : '-'} {formatCurrency(Number(transaction.value))}
+                      {transaction.type === 'INCOME' || transaction.type === 'income' ? '+' : '-'} {formatCurrency(Number(transaction.value))}
                     </td>
                     <td className="p-4 align-middle text-right">
                       <div className="flex justify-end gap-2">
                         <Button tone="layer01" size="small" onClick={() => setEditingTransaction(transaction)}>
                           <Icon name="Pencil1Outlined" className="h-4 w-4" />
                         </Button>
-                        <Button tone="layer01" size="small">
+                        <Button tone="layer01" size="small" onClick={() => handleDelete(transaction)}>
                           <Icon name="Trash3Outlined" className="h-4 w-4" />
                         </Button>
                       </div>

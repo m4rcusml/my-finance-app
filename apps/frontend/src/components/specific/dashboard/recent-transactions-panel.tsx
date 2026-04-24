@@ -2,7 +2,7 @@ import { formatCurrency } from '@/shared/lib/utils';
 import { Button } from '@/components/ui/button';
 
 import { Label } from '@/components/ui/label';
-import { Transaction } from '@/shared/lib/api/dashboard';
+import { Transaction } from '@/shared/lib/api/transactions';
 import Link from 'next/link';
 
 type RecentTransactionsPanelProps = {
@@ -38,7 +38,7 @@ export function RecentTransactionsPanel({ transactions = [] }: RecentTransaction
                     {transaction.type === 'INCOME' ? 'Receita' : 'Despesa'}
                   </Label>
                   <Label tone="layer02" size="small">
-                    {typeof transaction.category === 'object' ? transaction.category.name : 'Sem categoria'}
+                    {transaction.categoryId ?? 'Sem categoria'}
                   </Label>
                 </div>
                 <div className="mt-2 text-sm font-medium text-foreground">{transaction.description}</div>

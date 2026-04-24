@@ -1,6 +1,7 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { AccountsService } from 'src/accounts/accounts.service';
 import { CategoriesService } from 'src/categories/categories.service';
+import { CreditCardsService } from 'src/credit-cards/credit-cards.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateTransactionDto, ListTransactionsQueryDto, UpdateTransactionDto } from './transactions.dto';
 
@@ -10,12 +11,27 @@ export class TransactionsService {
     private readonly prisma: PrismaService,
     private readonly accountsService: AccountsService,
     private readonly categoriesService: CategoriesService,
+    private readonly creditCardsService: CreditCardsService,
   ) { }
 
   async create(userId: string, dto: CreateTransactionDto) {
-    const { accountId, categoryId } = dto;
+    const { accountId, creditCardId, categoryId } = dto;
 
-    await this.accountsService.findById(userId, accountId)
+    if (!accountId && !creditCardId) {
+      throw new BadRequestException('Either accountId or creditCardId must be provided');
+    }
+
+    if (accountId && creditCardId) {
+      throw new BadRequestException('Cannot provide both accountId and creditCardId');
+    }
+
+    if (accountId) {
+      await this.accountsService.findById(userId, accountId)
+    }
+
+    if (creditCardId) {
+      await this.creditCardsService.findById(userId, creditCardId)
+    }
 
     if (categoryId) {
       await this.categoriesService.findById(userId, categoryId)
@@ -42,6 +58,10 @@ export class TransactionsService {
 
       if (filters.accountId) {
         where.accountId = filters.accountId;
+      }
+
+      if (filters.creditCardId) {
+        where.creditCardId = filters.creditCardId;
       }
 
       if (filters.categoryId) {
@@ -99,6 +119,10 @@ export class TransactionsService {
         where.accountId = filters.accountId;
       }
 
+      if (filters.creditCardId) {
+        where.creditCardId = filters.creditCardId;
+      }
+
       if (filters.fromDate || filters.toDate) {
         where.date = {};
         if (filters.fromDate) {
@@ -131,12 +155,22 @@ export class TransactionsService {
       throw new ForbiddenException();
     }
 
+    const { accountId, creditCardId } = dto;
+
+    if (accountId && creditCardId) {
+      throw new BadRequestException('Cannot provide both accountId and creditCardId');
+    }
+
     if (dto.categoryId) {
       await this.categoriesService.findById(userId, dto.categoryId)
     }
 
     if (dto.accountId) {
       await this.accountsService.findById(userId, dto.accountId)
+    }
+
+    if (dto.creditCardId) {
+      await this.creditCardsService.findById(userId, dto.creditCardId)
     }
 
     return await this.prisma.transaction.update({

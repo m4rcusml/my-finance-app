@@ -1,9 +1,27 @@
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+
+export enum CategoryType {
+  INCOME = 'income',
+  EXPENSE = 'expense',
+  BOTH = 'both',
+}
+
 export class CreateCategoryDto {
-  name: string;
-  type: 'income' | 'expense' | 'both';
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsEnum(CategoryType)
+  @IsNotEmpty()
+  type!: CategoryType;
 }
 
 export class UpdateCategoryDto {
+  @IsString()
+  @IsOptional()
   name?: string;
-  type?: 'income' | 'expense' | 'both';
+
+  @IsEnum(CategoryType)
+  @IsOptional()
+  type?: CategoryType;
 }

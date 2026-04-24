@@ -1,25 +1,93 @@
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+
+export enum TransactionType {
+  INCOME = 'income',
+  EXPENSE = 'expense',
+}
+
 export class CreateTransactionDto {
-  type: 'income' | 'expense';
-  value: number;
-  date: string;
-  accountId: string;
+  @IsEnum(TransactionType)
+  @IsNotEmpty()
+  type!: TransactionType;
+
+  @IsNumber()
+  @Min(0)
+  value!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  date!: string;
+
+  @IsUUID()
+  @IsOptional()
+  accountId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  creditCardId?: string;
+
+  @IsUUID()
+  @IsOptional()
   categoryId?: string;
+
+  @IsString()
+  @IsOptional()
   description?: string;
 }
 
 export class UpdateTransactionDto {
-  type?: 'income' | 'expense';
+  @IsEnum(TransactionType)
+  @IsOptional()
+  type?: TransactionType;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
   value?: number;
+
+  @IsString()
+  @IsOptional()
   date?: string;
+
+  @IsUUID()
+  @IsOptional()
   accountId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  creditCardId?: string;
+
+  @IsUUID()
+  @IsOptional()
   categoryId?: string;
+
+  @IsString()
+  @IsOptional()
   description?: string;
 }
 
 export class ListTransactionsQueryDto {
-  type?: 'income' | 'expense';
+  @IsEnum(TransactionType)
+  @IsOptional()
+  type?: TransactionType;
+
+  @IsString()
+  @IsOptional()
   fromDate?: string;
+
+  @IsString()
+  @IsOptional()
   toDate?: string;
+
+  @IsUUID()
+  @IsOptional()
   accountId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  creditCardId?: string;
+
+  @IsUUID()
+  @IsOptional()
   categoryId?: string;
 }

@@ -1,11 +1,12 @@
-import { request } from "./http";
+import { request } from './http';
 
 export type Transaction = {
   id: string;
   userId: string;
-  accountId: string;
+  accountId?: string;
+  creditCardId?: string;
   categoryId?: string;
-  type: 'INCOME' | 'EXPENSE';
+  type: 'INCOME' | 'EXPENSE' | 'income' | 'expense';
   value: number;
   date: string;
   description?: string;
@@ -13,23 +14,12 @@ export type Transaction = {
   updatedAt: string;
 };
 
-// Based on backend DTO from step 24:
-// export class CreateTransactionDto {
-//   type: 'income' | 'expense';
-//   value: number;
-//   date: string;
-//   accountId: string;
-//   categoryId?: string;
-//   description?: string;
-// }
-// Note: Backend might use lowercase 'income'/'expense' in DTO but uppercase 'INCOME'/'EXPENSE' in DB/Typos? 
-// Step 24 says: type: 'income' | 'expense';
-
 export type CreateTransactionDto = {
-  type: 'INCOME' | 'EXPENSE';
+  type: 'income' | 'expense';
   value: number;
   date: string;
-  accountId: string;
+  accountId?: string;
+  creditCardId?: string;
   categoryId?: string;
   description?: string;
 };
@@ -37,10 +27,11 @@ export type CreateTransactionDto = {
 export type UpdateTransactionDto = Partial<CreateTransactionDto>;
 
 export type ListTransactionsFilters = {
-  type?: 'INCOME' | 'EXPENSE';
+  type?: 'income' | 'expense';
   fromDate?: string;
   toDate?: string;
   accountId?: string;
+  creditCardId?: string;
   categoryId?: string;
 };
 
@@ -70,8 +61,8 @@ export const transactionsApi = {
   },
 
   create(dto: CreateTransactionDto) {
-    return request<Transaction>("/transactions", {
-      method: "POST",
+    return request<Transaction>('/transactions', {
+      method: 'POST',
       auth: true,
       body: dto,
     });
@@ -79,7 +70,7 @@ export const transactionsApi = {
 
   update(id: string, dto: UpdateTransactionDto) {
     return request<Transaction>(`/transactions/${id}`, {
-      method: "PATCH",
+      method: 'PATCH',
       auth: true,
       body: dto,
     });
@@ -87,7 +78,7 @@ export const transactionsApi = {
 
   remove(id: string) {
     return request<void>(`/transactions/${id}`, {
-      method: "DELETE",
+      method: 'DELETE',
       auth: true,
     });
   },

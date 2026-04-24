@@ -12,6 +12,7 @@ export function useCreateTransactionMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.creditCards.all() });
     },
   });
 }
@@ -26,19 +27,21 @@ export function useUpdateTransactionMutation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.creditCards.all() });
     },
   });
 }
 
-export function useDeleteTransactionMutation(id: string) {
+export function useDeleteTransactionMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => transactionsApi.remove(id),
+    mutationFn: (id: string) => transactionsApi.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.creditCards.all() });
     },
   });
 }

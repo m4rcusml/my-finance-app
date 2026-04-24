@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useCreateTransactionMutation } from '@/features/transactions/mutations';
 import { useAccountsQuery } from '@/features/accounts/queries';
 import { useCategoriesQuery } from '@/features/categories/queries';
+import { useCreditCardsQuery } from '@/shared/lib/queries/credit-cards.queries';
 
 interface CreateTransactionModalProps {
   isOpen: boolean;
@@ -12,17 +13,21 @@ interface CreateTransactionModalProps {
 }
 
 type TransactionType = 'INCOME' | 'EXPENSE';
+type SourceType = 'account' | 'creditCard';
 
 export function CreateTransactionModal({ isOpen, onClose, initialType = 'EXPENSE' }: CreateTransactionModalProps) {
   const mutation = useCreateTransactionMutation();
   const { data: accounts } = useAccountsQuery();
   const { data: categories } = useCategoriesQuery();
+  const { data: creditCards } = useCreditCardsQuery();
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
   const [type, setType] = useState<TransactionType>(initialType);
+  const [sourceType, setSourceType] = useState<SourceType>('account');
   const [accountId, setAccountId] = useState('');
+  const [creditCardId, setCreditCardId] = useState('');
   const [categoryId, setCategoryId] = useState('');
 
   useEffect(() => {
@@ -39,15 +44,17 @@ export function CreateTransactionModal({ isOpen, onClose, initialType = 'EXPENSE
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!amount || !date || !accountId) return;
+    const sourceId = sourceType === 'account' ? accountId : creditCardId;
+    if (!amount || !date || !sourceId) return;
 
     mutation.mutate(
       {
         description,
         value: Number(parseFloat(amount.replace(',', '.')).toFixed(2)),
         date: new Date(date).toISOString(),
-        type: type,
-        accountId,
+        type: type.toLowerCase() as 'income' | 'expense',
+        accountId: sourceType === 'account' ? accountId : undefined,
+        creditCardId: sourceType === 'creditCard' ? creditCardId : undefined,
         categoryId: categoryId || undefined,
       },
       {
@@ -64,7 +71,9 @@ export function CreateTransactionModal({ isOpen, onClose, initialType = 'EXPENSE
     setAmount('');
     setDate(new Date().toISOString().split('T')[0]);
     setType(initialType);
+    setSourceType('account');
     setAccountId('');
+    setCreditCardId('');
     setCategoryId('');
   }
 
@@ -130,25 +139,51 @@ export function CreateTransactionModal({ isOpen, onClose, initialType = 'EXPENSE
           </label>
 
           <label className="block space-y-1.5 text-sm font-medium text-foreground">
-            Conta
+            Origem
             <select
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
+              value={sourceType}
+              onChange={(e) => {
+                setSourceType(e.target.value as SourceType);
+                setAccountId('');
+                setCreditCardId('');
+              }}
               className="w-full rounded-xl border border-foreground/10 bg-layer02 px-4 py-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
-              required
               disabled={isLoading}
             >
-              <option value="" disabled>
-                Selecione
-              </option>
-              {accounts?.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
+              <option value="account">Conta</option>
+              <option value="creditCard">Cartão de Crédito</option>
             </select>
           </label>
         </div>
+
+        <label className="block space-y-1.5 text-sm font-medium text-foreground">
+          {sourceType === 'account' ? 'Conta' : 'Cartão de Crédito'}
+          <select
+            value={sourceType === 'account' ? accountId : creditCardId}
+            onChange={(e) => {
+              if (sourceType === 'account') setAccountId(e.target.value);
+              else setCreditCardId(e.target.value);
+            }}
+            className="w-full rounded-xl border border-foreground/10 bg-layer02 px-4 py-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
+            required
+            disabled={isLoading}
+          >
+            <option value="" disabled>
+              Selecione
+            </option>
+            {sourceType === 'account'
+              ? accounts?.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))
+              : creditCards?.map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.name}
+                  </option>
+                ))}
+          </select>
+        </label>
 
         <label className="block space-y-1.5 text-sm font-medium text-foreground">
           Categoria

@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './categories.dto';
 
@@ -69,10 +69,22 @@ export class CategoriesService {
       throw new ForbiddenException();
     }
 
-    // verificar transactions dependentes
+    const dependentTransactions = await this.prisma.transaction.count({
+      where: { categoryId },
+    });
+
+    const dependentFixedTransactions = await this.prisma.fixedTransaction.count({
+      where: { categoryId },
+    });
+
+    if (dependentTransactions > 0 || dependentFixedTransactions > 0) {
+      throw new ConflictException(
+        'Cannot delete category with existing transactions. Please reassign or delete them first.',
+      );
+    }
 
     await this.prisma.category.delete({
-      where: { id: categoryId }
-    })
+      where: { id: categoryId },
+    });
   }
 }

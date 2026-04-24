@@ -1,6 +1,7 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TransactionsService } from 'src/transactions/transactions.service';
+import { CreateTransactionDto, TransactionType } from 'src/transactions/transactions.dto';
 import { FixedTransactionsService } from './fixed-transactions.service';
 
 interface ListOccurrencesFilter {
@@ -62,13 +63,19 @@ export class FixedTransactionsOccurrencesService {
 
     const currentDate = new Date().toISOString();
     const { type, value, accountId, categoryId, description } = await this.fixedTransactionsService.findById(userId, response.fixedTransactionId);
-    const { id: transactionId } = await this.transactionsService.create(userId, {
-      // @ts-expect-error
-      type, accountId, categoryId,
+    if (!accountId) {
+      throw new BadRequestException('Fixed transaction must have an accountId to confirm occurrence');
+    }
+
+    const transactionData: CreateTransactionDto = {
+      type: type as TransactionType,
+      accountId,
+      categoryId: categoryId ?? undefined,
       value: value.toNumber(),
       description: description ?? undefined,
-      date: realDate ?? currentDate
-    })
+      date: realDate ?? currentDate,
+    };
+    const { id: transactionId } = await this.transactionsService.create(userId, transactionData);
 
     return await this.prisma.fixedTransactionOccurrence.update({
       data: { realDate: realDate ?? currentDate, transactionId, status: 'CONFIRMED' },

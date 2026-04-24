@@ -1,60 +1,56 @@
-import { request } from "./http";
+import { request } from './http';
+import type { Transaction } from './transactions';
+import type { CreditCard } from './credit-cards';
 
-export type Transaction = {
-  id: string;
-  description: string; // Was title
-  categoryId?: string;
-  category?: { name: string; icon: string }; // Optional if populated later
-  value: number | string; // JSON shows string "5000" for transactions
-  type: 'INCOME' | 'EXPENSE';
-  date?: string;
-  status?: string;
-  referenceDay?: number; // For fixed transactions
-  due?: string; // Legacy or alternative
-};
-
-export type DashboardResponse = {
+export type DashboardOverview = {
   period: {
-    referenceDate?: string;
+    referenceDate: string;
     startOfMonth: string;
     endOfMonth: string;
   };
   totals: {
     totalBalance: number;
+    totalCreditLimit: number;
+    totalCreditUsed: number;
+    totalCreditAvailable: number;
     trending: number;
     currentMonth: {
-      income: {
-        value: number;
-        trending: number;
-      };
-      expense: {
-        value: number;
-        trending: number;
-      };
-      net: {
-        value: number;
-        trending: number;
-      };
+      income: { value: number; trending: number };
+      expense: { value: number; trending: number };
+      net: { value: number; trending: number };
     };
   };
   accounts: Array<{
     id: string;
     name: string;
     institution: string;
-    initialBalance: number;
+    type: string;
     balance: number;
+    initialBalance: number;
+    createdAt: string;
+    updatedAt: string;
   }>;
+  creditCards: CreditCard[];
   latestTransactions: Transaction[];
-  fixedTransactions: Transaction[];
-  annualBalance: any[]; // User requested to skip annual balance for now
+  fixedTransactions: Array<{
+    id: string;
+    description: string;
+    value: number;
+    type: string;
+    category?: { id: string; name: string } | null;
+    referenceDay?: number;
+    due?: string;
+  }>;
+  annualBalance: Array<{ month: string; net: number }>;
 };
 
+export type DashboardResponse = DashboardOverview;
+
 export const dashboardApi = {
-  getOverview(referenceDate?: string) {
-    return request<DashboardResponse>("/dashboard", {
-      method: "GET",
+  overview(referenceDate?: string) {
+    const query = referenceDate ? `?referenceDate=${referenceDate}` : '';
+    return request<DashboardOverview>(`/dashboard/overview${query}`, {
       auth: true,
-      query: referenceDate ? { referenceDate } : undefined,
     });
   },
 };

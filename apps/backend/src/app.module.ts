@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AccountsModule } from './accounts/accounts.module';
+import { CreditCardsModule } from './credit-cards/credit-cards.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -26,6 +27,7 @@ import { UsersModule } from './users/users.module';
     JobsModule,
     UsersModule,
     AccountsModule,
+    CreditCardsModule,
     DashboardModule,
     CategoriesModule,
     TransactionsModule,

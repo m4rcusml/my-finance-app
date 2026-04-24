@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAccountsQuery } from '@/features/accounts/queries';
+import { useDeleteAccountMutation } from '@/features/accounts/mutations';
 import { CreateAccountModal } from '@/components/specific/modals/create-account-modal';
 import { EditAccountModal } from '@/components/specific/modals/edit-account-modal';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,13 @@ export default function AccountsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const { data: accounts, isLoading } = useAccountsQuery();
+  const deleteMutation = useDeleteAccountMutation();
+
+  function handleDelete(account: Account) {
+    if (window.confirm(`Tem certeza que deseja excluir a conta "${account.name}"?`)) {
+      deleteMutation.mutate(account.id);
+    }
+  }
 
   return (
     <main className="flex-1 flex flex-col space-y-6 h-full p-4 md:p-8 pt-6 overflow-y-auto">
@@ -45,20 +53,18 @@ export default function AccountsPage() {
                   >
                     <Icon name="Pencil1Outlined" className="h-4 w-4" />
                   </button>
-                  <div className="p-2 bg-layer02 rounded-full">
-                    <Icon name="CreditCardMultipleOutlined" className="h-4 w-4 text-foreground" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(account)}
+                    className="p-2 transition-colors hover:text-red text-muted-foreground"
+                  >
+                    <Icon name="Trash3Outlined" className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
               <div className="mt-4">
                 <div className="text-xl font-bold text-foreground">{account.name}</div>
                 <p className="text-xs text-muted-foreground uppercase mt-1">{account.type}</p>
-                {/* Note: Showing initialBalance as general balance might be misleading if it's not updated correctly, 
-                    but existing specific/dashboard/accounts-panel uses 'balance' which comes from dashboard aggregator. 
-                    The /accounts endpoint returns Account entity which has initialBalance. 
-                    Ideally we should have a 'balance' field computed. 
-                    Given the task constraints, I will display what is available. 
-                */}
                 <div className="mt-4 text-2xl font-bold text-foreground">{formatCurrency(account.balance)}</div>
                 <p className="text-xs text-muted-foreground">Saldo atual</p>
               </div>
