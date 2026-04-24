@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser, UserPayload } from '../decorators/user.decorator';
+import { PaginationQueryDto } from '../shared/pagination.dto';
 import { CreateCreditCardDto, UpdateCreditCardDto } from './credit-cards.dto';
 import { CreditCardsService } from './credit-cards.service';
 
@@ -13,8 +14,8 @@ export class CreditCardsController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: UserPayload) {
-    return this.creditCardsService.findAllByUser(user.sub);
+  findAll(@CurrentUser() user: UserPayload, @Query() pagination: PaginationQueryDto) {
+    return this.creditCardsService.findAllByUser(user.sub, pagination.page ?? 1, pagination.limit ?? 20);
   }
 
   @Get(':id')

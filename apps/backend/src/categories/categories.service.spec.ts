@@ -1,8 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { CategoriesService } from './categories.service';
+import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './categories.dto';
+import { CategoriesService } from './categories.service';
 
 describe('CategoriesService', () => {
   let service: CategoriesService;
@@ -33,6 +33,7 @@ describe('CategoriesService', () => {
               findUnique: jest.fn(),
               update: jest.fn(),
               delete: jest.fn(),
+              count: jest.fn(),
             },
             transaction: {
               count: jest.fn(),
@@ -70,11 +71,13 @@ describe('CategoriesService', () => {
   describe('findAll', () => {
     it('should return all categories for the user', async () => {
       prisma.category.findMany.mockResolvedValue([baseCategory]);
+      prisma.category.count.mockResolvedValue(1);
 
-      const result = await service.findAll(userId);
+      const result = await service.findAll(userId, 1, 20);
 
-      expect(prisma.category.findMany).toHaveBeenCalledWith({ where: { userId } });
-      expect(result).toHaveLength(1);
+      expect(prisma.category.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId } }));
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.totalItems).toBe(1);
     });
   });
 
@@ -145,7 +148,9 @@ describe('CategoriesService', () => {
       prisma.category.findUnique.mockResolvedValue(baseCategory);
       prisma.transaction.count.mockResolvedValue(5);
 
-      await expect(service.delete(userId, categoryId)).rejects.toThrow('Cannot delete category with existing transactions');
+      await expect(service.delete(userId, categoryId)).rejects.toThrow(
+        'Cannot delete category with existing transactions',
+      );
     });
 
     it('should throw NotFoundException when category does not exist', async () => {

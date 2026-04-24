@@ -1,8 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { AccountsService } from './accounts.service';
+import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAccountDto, UpdateAccountDto } from './accounts.dto';
+import { AccountsService } from './accounts.service';
 
 describe('AccountsService', () => {
   let service: AccountsService;
@@ -36,6 +36,7 @@ describe('AccountsService', () => {
               findUnique: jest.fn(),
               update: jest.fn(),
               delete: jest.fn(),
+              count: jest.fn(),
             },
           },
         },
@@ -80,12 +81,14 @@ describe('AccountsService', () => {
           ],
         },
       ]);
+      prisma.account.count.mockResolvedValue(1);
 
-      const result = await service.findAllByUser(userId);
+      const result = await service.findAllByUser(userId, 1, 20);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].balance).toBe(1300); // 1000 + 500 - 200
-      expect(result[0]).not.toHaveProperty('transactions');
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].balance).toBe(1300); // 1000 + 500 - 200
+      expect(result.data[0]).not.toHaveProperty('transactions');
+      expect(result.meta.totalItems).toBe(1);
     });
 
     it('should handle accounts with no transactions', async () => {
@@ -95,10 +98,12 @@ describe('AccountsService', () => {
           transactions: [],
         },
       ]);
+      prisma.account.count.mockResolvedValue(1);
 
-      const result = await service.findAllByUser(userId);
+      const result = await service.findAllByUser(userId, 1, 20);
 
-      expect(result[0].balance).toBe(1000);
+      expect(result.data[0].balance).toBe(1000);
+      expect(result.meta.totalItems).toBe(1);
     });
   });
 

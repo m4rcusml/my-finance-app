@@ -16,7 +16,7 @@ export type Account = {
 export type CreateAccountDto = {
   name: string;
   institution: string;
-  type: string; // e.g. "CHECKING"
+  type: string; // e.g. "checking", "savings", "investment", "cash", "other"
   initialBalance: number;
 };
 

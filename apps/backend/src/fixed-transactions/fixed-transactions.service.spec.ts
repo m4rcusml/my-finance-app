@@ -1,10 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { FixedTransactionsService } from './fixed-transactions.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { Test, TestingModule } from '@nestjs/testing';
 import { AccountsService } from '../accounts/accounts.service';
 import { CategoriesService } from '../categories/categories.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateFixedTransactionDto, UpdateFixedTransactionDto } from './fixed-transactions.dto';
+import { FixedTransactionsService } from './fixed-transactions.service';
 
 describe('FixedTransactionsService', () => {
   let service: FixedTransactionsService;
@@ -45,6 +45,7 @@ describe('FixedTransactionsService', () => {
               findUnique: jest.fn(),
               update: jest.fn(),
               delete: jest.fn(),
+              count: jest.fn(),
             },
           },
         },
@@ -102,11 +103,13 @@ describe('FixedTransactionsService', () => {
   describe('findAllByUser', () => {
     it('should return all fixed transactions for user', async () => {
       prisma.fixedTransaction.findMany.mockResolvedValue([baseFixedTransaction]);
+      prisma.fixedTransaction.count.mockResolvedValue(1);
 
-      const result = await service.findAllByUser(userId);
+      const result = await service.findAllByUser(userId, 1, 20);
 
-      expect(prisma.fixedTransaction.findMany).toHaveBeenCalledWith({ where: { userId } });
-      expect(result).toHaveLength(1);
+      expect(prisma.fixedTransaction.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId } }));
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.totalItems).toBe(1);
     });
   });
 
@@ -198,9 +201,7 @@ describe('FixedTransactionsService', () => {
     it('should throw NotFoundException when fixed transaction does not exist', async () => {
       prisma.fixedTransaction.findUnique.mockResolvedValue(null);
 
-      await expect(service.updateFixedTransaction(userId, fixedId, {})).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateFixedTransaction(userId, fixedId, {})).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when updating another user fixed transaction', async () => {
@@ -209,9 +210,33 @@ describe('FixedTransactionsService', () => {
         userId: 'other-user',
       });
 
-      await expect(service.updateFixedTransaction(userId, fixedId, {})).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.updateFixedTransaction(userId, fixedId, {})).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('deleteFixedTransaction', () => {
+    it('should delete fixed transaction when owned', async () => {
+      prisma.fixedTransaction.findUnique.mockResolvedValue(baseFixedTransaction);
+      prisma.fixedTransaction.delete.mockResolvedValue(baseFixedTransaction);
+
+      await service.deleteFixedTransaction(userId, fixedId);
+
+      expect(prisma.fixedTransaction.delete).toHaveBeenCalledWith({ where: { id: fixedId } });
+    });
+
+    it('should throw NotFoundException when fixed transaction does not exist', async () => {
+      prisma.fixedTransaction.findUnique.mockResolvedValue(null);
+
+      await expect(service.deleteFixedTransaction(userId, fixedId)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when deleting another user fixed transaction', async () => {
+      prisma.fixedTransaction.findUnique.mockResolvedValue({
+        ...baseFixedTransaction,
+        userId: 'other-user',
+      });
+
+      await expect(service.deleteFixedTransaction(userId, fixedId)).rejects.toThrow(ForbiddenException);
     });
   });
 

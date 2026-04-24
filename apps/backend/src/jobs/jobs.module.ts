@@ -4,6 +4,6 @@ import { FixedTransactionsJob } from './fixed-transactions.job';
 
 @Module({
   imports: [FixedTransactionsModule],
-  providers: [FixedTransactionsJob]
+  providers: [FixedTransactionsJob],
 })
-export class JobsModule { }
+export class JobsModule {}

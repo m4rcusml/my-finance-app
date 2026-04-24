@@ -7,8 +7,8 @@ import { FixedTransactionsOccurrencesService } from 'src/fixed-transactions/fixe
 export class FixedTransactionsJob {
   constructor(
     private readonly fixedTransactionsService: FixedTransactionsService,
-    private readonly fixedTransactionsOccurrencesService: FixedTransactionsOccurrencesService
-  ) { }
+    private readonly fixedTransactionsOccurrencesService: FixedTransactionsOccurrencesService,
+  ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async handleFixedTransactions() {
@@ -17,7 +17,7 @@ export class FixedTransactionsJob {
     const month = today.getMonth() + 1;
     const year = today.getFullYear();
 
-    const fixedTransactions = await this.fixedTransactionsService.findAllActive()
+    const fixedTransactions = await this.fixedTransactionsService.findAllActive();
 
     await Promise.all(
       fixedTransactions.map(async (t) => {
@@ -25,8 +25,13 @@ export class FixedTransactionsJob {
         const toDay = t.referenceDay + t.marginDays;
 
         if (day >= fromDay && day <= toDay) {
-          const occurrences = await this.fixedTransactionsOccurrencesService.listAllByUser(t.userId, { month, year });
-          const filteredOccurrences = occurrences.filter((o) => o.fixedTransactionId === t.id);
+          const occurrences = await this.fixedTransactionsOccurrencesService.listAllByUser(
+            t.userId,
+            { month, year },
+            1,
+            1000,
+          );
+          const filteredOccurrences = occurrences.data.filter((o) => o.fixedTransactionId === t.id);
           // talvez criar um método próprio pra simplificar as duas linhas acima
 
           if (filteredOccurrences.length === 0) {

@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "lint": "biome check",
     "format": "biome format --write"
   },
@@ -16,7 +18,7 @@
     "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-query-devtools": "^5.91.1",
     "embla-carousel-react": "^8.6.0",
-    "next": "16.0.8",
+    "next": "16.2.4",
     "postcss": "^8.5.6",
     "react": "19.2.1",
     "react-dom": "19.2.1",
@@ -25,10 +27,19 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "baseline-browser-mapping": "^2.10.21",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

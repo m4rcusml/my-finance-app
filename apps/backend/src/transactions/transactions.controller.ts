@@ -5,7 +5,7 @@ import { TransactionsService } from './transactions.service';
 
 @Controller('transactions')
 export class TransactionsController {
-  constructor(private readonly transactionService: TransactionsService) { }
+  constructor(private readonly transactionService: TransactionsService) {}
 
   @Post()
   async create(@CurrentUser() user: UserPayload, @Body() dto: CreateTransactionDto) {
@@ -20,6 +20,20 @@ export class TransactionsController {
   @Get('uncategorized')
   async findUncategorized(@CurrentUser() user: UserPayload, @Query() filters: ListTransactionsQueryDto) {
     return await this.transactionService.findUncategorized(user.sub, filters);
+  }
+
+  @Get('summary')
+  async getSummary(
+    @CurrentUser() user: UserPayload,
+    @Query('fromDate') fromDate: string,
+    @Query('toDate') toDate: string,
+  ) {
+    return await this.transactionService.getSummary(user.sub, fromDate, toDate);
+  }
+
+  @Get('projection')
+  async getProjection(@CurrentUser() user: UserPayload) {
+    return await this.transactionService.getProjection(user.sub);
   }
 
   @Get(':id')

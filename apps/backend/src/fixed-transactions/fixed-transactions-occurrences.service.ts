@@ -1,7 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { TransactionsService } from 'src/transactions/transactions.service';
 import { CreateTransactionDto, TransactionType } from 'src/transactions/transactions.dto';
+import { TransactionsService } from 'src/transactions/transactions.service';
+import { buildPaginatedResponse } from '../shared/pagination.dto';
 import { FixedTransactionsService } from './fixed-transactions.service';
 
 interface ListOccurrencesFilter {
@@ -15,8 +16,8 @@ export class FixedTransactionsOccurrencesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fixedTransactionsService: FixedTransactionsService,
-    private readonly transactionsService: TransactionsService
-  ) { }
+    private readonly transactionsService: TransactionsService,
+  ) {}
 
   async createOccurrence(userId: string, fixedTransactionId: string, year: number, month: number) {
     return await this.prisma.fixedTransactionOccurrence.create({
@@ -32,22 +33,31 @@ export class FixedTransactionsOccurrencesService {
     });
   }
 
+  async listAllByUser(userId: string, { year, month, status }: ListOccurrencesFilter, page = 1, limit = 20) {
+    const where = {
+      userId,
+      status,
+      periodYear: year,
+      periodMonth: month,
+    };
 
-  async listAllByUser(userId: string, { year, month, status }: ListOccurrencesFilter) {
-    return await this.prisma.fixedTransactionOccurrence.findMany({
-      where: {
-        userId,
-        status,
-        periodYear: year,
-        periodMonth: month
-      }
-    })
+    const [occurrences, total] = await Promise.all([
+      this.prisma.fixedTransactionOccurrence.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.fixedTransactionOccurrence.count({ where }),
+    ]);
+
+    return buildPaginatedResponse(occurrences, total, page, limit);
   }
 
   async confirmOccurrence(userId: string, occurrenceId: string, realDate?: string) {
     const response = await this.prisma.fixedTransactionOccurrence.findUnique({
-      where: { id: occurrenceId }
-    })
+      where: { id: occurrenceId },
+    });
 
     if (!response) {
       throw new NotFoundException();
@@ -62,7 +72,10 @@ export class FixedTransactionsOccurrencesService {
     }
 
     const currentDate = new Date().toISOString();
-    const { type, value, accountId, categoryId, description } = await this.fixedTransactionsService.findById(userId, response.fixedTransactionId);
+    const { type, value, accountId, categoryId, description } = await this.fixedTransactionsService.findById(
+      userId,
+      response.fixedTransactionId,
+    );
     if (!accountId) {
       throw new BadRequestException('Fixed transaction must have an accountId to confirm occurrence');
     }
@@ -79,14 +92,14 @@ export class FixedTransactionsOccurrencesService {
 
     return await this.prisma.fixedTransactionOccurrence.update({
       data: { realDate: realDate ?? currentDate, transactionId, status: 'CONFIRMED' },
-      where: { id: occurrenceId }
-    })
+      where: { id: occurrenceId },
+    });
   }
 
   async skipOccurrence(userId: string, occurrenceId: string) {
     const response = await this.prisma.fixedTransactionOccurrence.findUnique({
-      where: { id: occurrenceId }
-    })
+      where: { id: occurrenceId },
+    });
 
     if (!response) {
       throw new NotFoundException();
@@ -98,7 +111,7 @@ export class FixedTransactionsOccurrencesService {
 
     return await this.prisma.fixedTransactionOccurrence.update({
       data: { status: 'SKIPPED' },
-      where: { id: occurrenceId }
-    })
+      where: { id: occurrenceId },
+    });
   }
 }

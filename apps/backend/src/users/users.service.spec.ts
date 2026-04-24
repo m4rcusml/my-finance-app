@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import * as argon2 from 'argon2';
-import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { UsersService } from './users.service';
 
 jest.mock('argon2');
 
@@ -113,9 +113,7 @@ describe('UsersService', () => {
 
       const result = await service.listUsers({});
 
-      expect(prisma.user.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ omit: { passwordHash: true } }),
-      );
+      expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ omit: { passwordHash: true } }));
       expect(result).toHaveLength(1);
     });
   });

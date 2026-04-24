@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { FixedTransactionsOccurrencesService } from './fixed-transactions-occurrences.service';
+import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
-import { FixedTransactionsService } from './fixed-transactions.service';
 import { TransactionsService } from '../transactions/transactions.service';
+import { FixedTransactionsService } from './fixed-transactions.service';
+import { FixedTransactionsOccurrencesService } from './fixed-transactions-occurrences.service';
 
 describe('FixedTransactionsOccurrencesService', () => {
   let service: FixedTransactionsOccurrencesService;
@@ -56,6 +56,7 @@ describe('FixedTransactionsOccurrencesService', () => {
               findMany: jest.fn(),
               findUnique: jest.fn(),
               update: jest.fn(),
+              count: jest.fn(),
             },
           },
         },
@@ -108,33 +109,40 @@ describe('FixedTransactionsOccurrencesService', () => {
   describe('listAllByUser', () => {
     it('should return occurrences filtered by year, month and status', async () => {
       prisma.fixedTransactionOccurrence.findMany.mockResolvedValue([baseOccurrence]);
+      prisma.fixedTransactionOccurrence.count.mockResolvedValue(1);
 
-      const result = await service.listAllByUser(userId, { year: 2025, month: 1, status: 'PENDING' });
+      const result = await service.listAllByUser(userId, { year: 2025, month: 1, status: 'PENDING' }, 1, 20);
 
-      expect(prisma.fixedTransactionOccurrence.findMany).toHaveBeenCalledWith({
-        where: {
-          userId,
-          status: 'PENDING',
-          periodYear: 2025,
-          periodMonth: 1,
-        },
-      });
-      expect(result).toHaveLength(1);
+      expect(prisma.fixedTransactionOccurrence.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            userId,
+            status: 'PENDING',
+            periodYear: 2025,
+            periodMonth: 1,
+          },
+        }),
+      );
+      expect(result.data).toHaveLength(1);
+      expect(result.meta.totalItems).toBe(1);
     });
 
     it('should allow listing without status filter', async () => {
       prisma.fixedTransactionOccurrence.findMany.mockResolvedValue([baseOccurrence]);
+      prisma.fixedTransactionOccurrence.count.mockResolvedValue(1);
 
-      await service.listAllByUser(userId, { year: 2025, month: 1 });
+      await service.listAllByUser(userId, { year: 2025, month: 1 }, 1, 20);
 
-      expect(prisma.fixedTransactionOccurrence.findMany).toHaveBeenCalledWith({
-        where: {
-          userId,
-          status: undefined,
-          periodYear: 2025,
-          periodMonth: 1,
-        },
-      });
+      expect(prisma.fixedTransactionOccurrence.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            userId,
+            status: undefined,
+            periodYear: 2025,
+            periodMonth: 1,
+          },
+        }),
+      );
     });
   });
 
@@ -174,10 +182,7 @@ describe('FixedTransactionsOccurrencesService', () => {
 
       const result = await service.confirmOccurrence(userId, occurrenceId, realDate);
 
-      expect(transactionsService.create).toHaveBeenCalledWith(
-        userId,
-        expect.objectContaining({ date: realDate }),
-      );
+      expect(transactionsService.create).toHaveBeenCalledWith(userId, expect.objectContaining({ date: realDate }));
       expect(result.realDate).toBe(realDate);
     });
 
@@ -197,9 +202,7 @@ describe('FixedTransactionsOccurrencesService', () => {
     it('should throw NotFoundException when occurrence does not exist', async () => {
       prisma.fixedTransactionOccurrence.findUnique.mockResolvedValue(null);
 
-      await expect(service.confirmOccurrence(userId, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.confirmOccurrence(userId, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when occurrence belongs to another user', async () => {
@@ -208,9 +211,7 @@ describe('FixedTransactionsOccurrencesService', () => {
         userId: 'other-user',
       });
 
-      await expect(service.confirmOccurrence(userId, occurrenceId)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.confirmOccurrence(userId, occurrenceId)).rejects.toThrow(ForbiddenException);
     });
   });
 

@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { buildPaginatedResponse } from '../shared/pagination.dto';
 import { CreateCreditCardDto, UpdateCreditCardDto } from './credit-cards.dto';
 
 @Injectable()
@@ -15,22 +16,28 @@ export class CreditCardsService {
     });
   }
 
-  async findAllByUser(userId: string) {
-    const creditCards = await this.prisma.creditCard.findMany({
-      where: { userId },
-      include: {
-        transactions: {
-          where: {
-            type: 'expense',
-          },
-          select: {
-            value: true,
+  async findAllByUser(userId: string, page = 1, limit = 20) {
+    const [creditCards, total] = await Promise.all([
+      this.prisma.creditCard.findMany({
+        where: { userId },
+        include: {
+          transactions: {
+            where: {
+              type: 'expense',
+            },
+            select: {
+              value: true,
+            },
           },
         },
-      },
-    });
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.creditCard.count({ where: { userId } }),
+    ]);
 
-    return creditCards.map((card) => {
+    const data = creditCards.map((card) => {
       const usedAmount = this.calculateUsedAmount(card.transactions);
       const limitTotal = Number(card.limitTotal);
       return {
@@ -40,6 +47,8 @@ export class CreditCardsService {
         availableAmount: Number((limitTotal - usedAmount).toFixed(2)),
       };
     });
+
+    return buildPaginatedResponse(data, total, page, limit);
   }
 
   async findById(userId: string, creditCardId: string) {

@@ -29,45 +29,39 @@ export class DashboardService {
     const prevMonthEnd = endOfMonth(subMonths(date, 1));
 
     // 1. Fetch data in parallel
-    const [
-      accounts,
-      creditCards,
-      monthlyTransactions,
-      prevMonthTransactions,
-      allTransactions,
-      fixedTransactions,
-    ] = await Promise.all([
-      this.accountsService.findAllByUser(userId),
-      this.creditCardsService.findAllByUser(userId),
-      this.transactionsService.findAllByUser(userId, {
-        fromDate: start.toISOString(),
-        toDate: end.toISOString(),
-      }),
-      this.transactionsService.findAllByUser(userId, {
-        fromDate: prevMonthStart.toISOString(),
-        toDate: prevMonthEnd.toISOString(),
-      }),
-      this.transactionsService.findAllByUser(userId),
-      this.fixedTransactionsService.findAllActive(userId),
-    ]);
+    const [accounts, creditCards, monthlyTransactions, prevMonthTransactions, allTransactions, fixedTransactions] =
+      await Promise.all([
+        this.accountsService.findAllByUser(userId, 1, 1000),
+        this.creditCardsService.findAllByUser(userId, 1, 1000),
+        this.transactionsService.findAllByUser(userId, {
+          fromDate: start.toISOString(),
+          toDate: end.toISOString(),
+        }),
+        this.transactionsService.findAllByUser(userId, {
+          fromDate: prevMonthStart.toISOString(),
+          toDate: prevMonthEnd.toISOString(),
+        }),
+        this.transactionsService.findAllByUser(userId),
+        this.fixedTransactionsService.findAllActive(userId),
+      ]);
 
     // 2. Calculate monthly totals
-    const currentMonth = this.calculateMonthlyTotals(monthlyTransactions);
-    const previousMonth = this.calculateMonthlyTotals(prevMonthTransactions);
+    const currentMonth = this.calculateMonthlyTotals(monthlyTransactions.data);
+    const previousMonth = this.calculateMonthlyTotals(prevMonthTransactions.data);
 
     // 3. Accounts are already returned with calculated balance from AccountsService
-    const accountsWithBalance = accounts;
+    const accountsWithBalance = accounts.data;
 
     // 4. Total balance
     const totalBalance = accountsWithBalance.reduce((acc, account) => acc + account.balance, 0);
 
     // 5. Credit card totals
-    const totalCreditLimit = creditCards.reduce((acc, card) => acc + card.limitTotal, 0);
-    const totalCreditUsed = creditCards.reduce((acc, card) => acc + card.usedAmount, 0);
+    const totalCreditLimit = creditCards.data.reduce((acc, card) => acc + card.limitTotal, 0);
+    const totalCreditUsed = creditCards.data.reduce((acc, card) => acc + card.usedAmount, 0);
     const totalCreditAvailable = Number((totalCreditLimit - totalCreditUsed).toFixed(2));
 
     // 6. Latest transactions
-    const latestTransactions = allTransactions.slice(0, 5);
+    const latestTransactions = allTransactions.data.slice(0, 5);
 
     // 7. Annual balance (last 12 months)
     const annualBalance = await this.calculateAnnualBalance(userId, date);
@@ -99,15 +93,17 @@ export class DashboardService {
           },
         },
       },
-      accounts: accountsWithBalance,
-      creditCards,
+      accounts: accounts.data,
+      creditCards: creditCards.data,
       latestTransactions,
       fixedTransactions,
       annualBalance,
     };
   }
 
-  private calculateMonthlyTotals(transactions: { type: string; value: number | { toNumber: () => number } }[]): MonthlyTotals {
+  private calculateMonthlyTotals(
+    transactions: { type: string; value: number | { toNumber: () => number } }[],
+  ): MonthlyTotals {
     const income = transactions
       .filter((t) => t.type === 'INCOME' || t.type === 'income')
       .reduce((acc, t) => acc + Number(t.value), 0);
@@ -137,7 +133,7 @@ export class DashboardService {
         toDate: monthEnd.toISOString(),
       });
 
-      const totals = this.calculateMonthlyTotals(transactions);
+      const totals = this.calculateMonthlyTotals(transactions.data);
       months.push({
         month: monthDate.toISOString().slice(0, 7), // YYYY-MM format
         net: totals.net,

@@ -1,9 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DashboardService } from './dashboard.service';
 import { AccountsService } from '../accounts/accounts.service';
 import { CreditCardsService } from '../credit-cards/credit-cards.service';
-import { TransactionsService } from '../transactions/transactions.service';
 import { FixedTransactionsService } from '../fixed-transactions/fixed-transactions.service';
+import { TransactionsService } from '../transactions/transactions.service';
+import { DashboardService } from './dashboard.service';
+
+function paginated<T>(data: T[]) {
+  return { data, meta: { page: 1, limit: 20, totalItems: data.length, totalPages: 1 } };
+}
 
 describe('DashboardService', () => {
   let service: DashboardService;
@@ -58,16 +62,18 @@ describe('DashboardService', () => {
 
   describe('getOverview', () => {
     it('should return dashboard data with correct structure', async () => {
-      accountsService.findAllByUser.mockResolvedValue([
-        { id: 'acc-1', name: 'Main', balance: 5000 },
-        { id: 'acc-2', name: 'Savings', balance: 3000 },
-      ] as any);
+      accountsService.findAllByUser.mockResolvedValue(
+        paginated([
+          { id: 'acc-1', name: 'Main', balance: 5000 },
+          { id: 'acc-2', name: 'Savings', balance: 3000 },
+        ] as any),
+      );
 
-      creditCardsService.findAllByUser.mockResolvedValue([
-        { id: 'cc-1', name: 'Nubank', limitTotal: 5000, usedAmount: 1200, availableAmount: 3800 },
-      ] as any);
+      creditCardsService.findAllByUser.mockResolvedValue(
+        paginated([{ id: 'cc-1', name: 'Nubank', limitTotal: 5000, usedAmount: 1200, availableAmount: 3800 }] as any),
+      );
 
-      transactionsService.findAllByUser.mockResolvedValue([]);
+      transactionsService.findAllByUser.mockResolvedValue(paginated([]));
       fixedTransactionsService.findAllActive.mockResolvedValue([
         { id: 'fx-1', description: 'Rent', value: 1200 },
       ] as any);
@@ -94,21 +100,25 @@ describe('DashboardService', () => {
     });
 
     it('should calculate trending and annual balance correctly', async () => {
-      accountsService.findAllByUser.mockResolvedValue([]);
-      creditCardsService.findAllByUser.mockResolvedValue([]);
+      accountsService.findAllByUser.mockResolvedValue(paginated([]));
+      creditCardsService.findAllByUser.mockResolvedValue(paginated([]));
       fixedTransactionsService.findAllActive.mockResolvedValue([]);
 
       // First call = current month, second = previous month, rest = annual months
       transactionsService.findAllByUser
-        .mockResolvedValueOnce([
-          { id: 't1', type: 'income', value: 6000 },
-          { id: 't2', type: 'expense', value: 2000 },
-        ])
-        .mockResolvedValueOnce([
-          { id: 't3', type: 'income', value: 5000 },
-          { id: 't4', type: 'expense', value: 2500 },
-        ])
-        .mockResolvedValue([]);
+        .mockResolvedValueOnce(
+          paginated([
+            { id: 't1', type: 'income', value: 6000 },
+            { id: 't2', type: 'expense', value: 2000 },
+          ]),
+        )
+        .mockResolvedValueOnce(
+          paginated([
+            { id: 't3', type: 'income', value: 5000 },
+            { id: 't4', type: 'expense', value: 2500 },
+          ]),
+        )
+        .mockResolvedValue(paginated([]));
 
       const result = await service.getOverview(userId);
 
@@ -128,9 +138,9 @@ describe('DashboardService', () => {
     });
 
     it('should handle referenceDate parameter', async () => {
-      accountsService.findAllByUser.mockResolvedValue([]);
-      creditCardsService.findAllByUser.mockResolvedValue([]);
-      transactionsService.findAllByUser.mockResolvedValue([]);
+      accountsService.findAllByUser.mockResolvedValue(paginated([]));
+      creditCardsService.findAllByUser.mockResolvedValue(paginated([]));
+      transactionsService.findAllByUser.mockResolvedValue(paginated([]));
       fixedTransactionsService.findAllActive.mockResolvedValue([]);
 
       const result = await service.getOverview(userId, '2025-06-15');
@@ -139,9 +149,9 @@ describe('DashboardService', () => {
     });
 
     it('should handle zero balance and no transactions', async () => {
-      accountsService.findAllByUser.mockResolvedValue([]);
-      creditCardsService.findAllByUser.mockResolvedValue([]);
-      transactionsService.findAllByUser.mockResolvedValue([]);
+      accountsService.findAllByUser.mockResolvedValue(paginated([]));
+      creditCardsService.findAllByUser.mockResolvedValue(paginated([]));
+      transactionsService.findAllByUser.mockResolvedValue(paginated([]));
       fixedTransactionsService.findAllActive.mockResolvedValue([]);
 
       const result = await service.getOverview(userId);
@@ -157,18 +167,20 @@ describe('DashboardService', () => {
     });
 
     it('should calculate totals with both upper and lower case type values', async () => {
-      accountsService.findAllByUser.mockResolvedValue([]);
-      creditCardsService.findAllByUser.mockResolvedValue([]);
+      accountsService.findAllByUser.mockResolvedValue(paginated([]));
+      creditCardsService.findAllByUser.mockResolvedValue(paginated([]));
       fixedTransactionsService.findAllActive.mockResolvedValue([]);
 
       transactionsService.findAllByUser
-        .mockResolvedValueOnce([
-          { id: 't1', type: 'INCOME', value: 3000 },
-          { id: 't2', type: 'EXPENSE', value: 1500 },
-          { id: 't3', type: 'income', value: 1000 },
-          { id: 't4', type: 'expense', value: 500 },
-        ])
-        .mockResolvedValue([]);
+        .mockResolvedValueOnce(
+          paginated([
+            { id: 't1', type: 'INCOME', value: 3000 },
+            { id: 't2', type: 'EXPENSE', value: 1500 },
+            { id: 't3', type: 'income', value: 1000 },
+            { id: 't4', type: 'expense', value: 500 },
+          ]),
+        )
+        .mockResolvedValue(paginated([]));
 
       const result = await service.getOverview(userId);
 

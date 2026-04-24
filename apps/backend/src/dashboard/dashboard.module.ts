@@ -9,6 +9,6 @@ import { DashboardService } from './dashboard.service';
 @Module({
   imports: [AccountsModule, CreditCardsModule, TransactionsModule, FixedTransactionsModule],
   controllers: [DashboardController],
-  providers: [DashboardService]
+  providers: [DashboardService],
 })
-export class DashboardModule { }
+export class DashboardModule {}

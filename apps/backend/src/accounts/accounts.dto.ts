@@ -3,6 +3,8 @@ import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-v
 export enum AccountType {
   CHECKING = 'checking',
   SAVINGS = 'savings',
+  INVESTMENT = 'investment',
+  CASH = 'cash',
   OTHER = 'other',
 }
 

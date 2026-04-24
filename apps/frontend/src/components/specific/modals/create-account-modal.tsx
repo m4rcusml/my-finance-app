@@ -8,19 +8,21 @@ interface CreateAccountModalProps {
   onClose: () => void;
 }
 
-type AccountType = 'CHECKING' | 'INVESTMENT' | 'CASH';
+type AccountType = 'checking' | 'savings' | 'investment' | 'cash' | 'other';
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
-  { value: 'CHECKING', label: 'Conta Corrente' },
-  { value: 'INVESTMENT', label: 'Investimento' },
-  { value: 'CASH', label: 'Dinheiro' },
+  { value: 'checking', label: 'Conta Corrente' },
+  { value: 'savings', label: 'Poupança' },
+  { value: 'investment', label: 'Investimento' },
+  { value: 'cash', label: 'Dinheiro' },
+  { value: 'other', label: 'Outro' },
 ];
 
 export function CreateAccountModal({ isOpen, onClose }: CreateAccountModalProps) {
   const mutation = useCreateAccountMutation();
   const [name, setName] = useState('');
   const [institution, setInstitution] = useState('');
-  const [type, setType] = useState<AccountType>('CHECKING');
+  const [type, setType] = useState<AccountType>('checking');
   const [initialBalance, setInitialBalance] = useState('');
 
   const isLoading = mutation.isPending;
@@ -48,7 +50,7 @@ export function CreateAccountModal({ isOpen, onClose }: CreateAccountModalProps)
   function resetForm() {
     setName('');
     setInstitution('');
-    setType('CHECKING');
+    setType('checking');
     setInitialBalance('');
   }
 

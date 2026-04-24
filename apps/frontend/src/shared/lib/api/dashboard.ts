@@ -49,7 +49,7 @@ export type DashboardResponse = DashboardOverview;
 export const dashboardApi = {
   overview(referenceDate?: string) {
     const query = referenceDate ? `?referenceDate=${referenceDate}` : '';
-    return request<DashboardOverview>(`/dashboard/overview${query}`, {
+    return request<DashboardOverview>(`/dashboard${query}`, {
       auth: true,
     });
   },

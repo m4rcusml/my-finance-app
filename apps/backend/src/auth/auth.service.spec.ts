@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
 import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { Test, TestingModule } from '@nestjs/testing';
 import * as argon2 from 'argon2';
-import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
+import { AuthService } from './auth.service';
 
 jest.mock('argon2');
 
@@ -71,18 +71,14 @@ describe('AuthService', () => {
     it('should throw NotFoundException when user does not exist', async () => {
       usersService.findByEmailWithPassword.mockResolvedValue(null);
 
-      await expect(service.validateUser('unknown@example.com', 'password123')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.validateUser('unknown@example.com', 'password123')).rejects.toThrow(NotFoundException);
     });
 
     it('should throw UnauthorizedException when password does not match', async () => {
       usersService.findByEmailWithPassword.mockResolvedValue(mockUser);
       (argon2.verify as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.validateUser('test@example.com', 'wrongpassword')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.validateUser('test@example.com', 'wrongpassword')).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -121,9 +117,7 @@ describe('AuthService', () => {
     it('should throw ConflictException when email already exists', async () => {
       usersService.findByEmail.mockResolvedValue(mockUser);
 
-      await expect(service.register('test@example.com', 'password123')).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.register('test@example.com', 'password123')).rejects.toThrow(ConflictException);
     });
   });
 });

@@ -10,7 +10,7 @@ import { FixedTransactionsOccurrencesService } from './fixed-transactions-occurr
 @Module({
   imports: [TransactionsModule, AccountsModule, CategoriesModule],
   providers: [FixedTransactionsService, FixedTransactionsOccurrencesService],
-  controllers: [FixedTransactionsController, FixedTransactionsOccurrencesController],
-  exports: [FixedTransactionsService, FixedTransactionsOccurrencesService]
+  controllers: [FixedTransactionsOccurrencesController, FixedTransactionsController],
+  exports: [FixedTransactionsService, FixedTransactionsOccurrencesService],
 })
-export class FixedTransactionsModule { }
+export class FixedTransactionsModule {}

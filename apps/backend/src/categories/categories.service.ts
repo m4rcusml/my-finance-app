@@ -1,30 +1,39 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { buildPaginatedResponse } from '../shared/pagination.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './categories.dto';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, dto: CreateCategoryDto) {
     return await this.prisma.category.create({
       data: {
         ...dto,
-        userId
-      }
-    })
+        userId,
+      },
+    });
   }
 
-  async findAll(userId: string) {
-    return await this.prisma.category.findMany({
-      where: { userId }
-    })
+  async findAll(userId: string, page = 1, limit = 20) {
+    const [categories, total] = await Promise.all([
+      this.prisma.category.findMany({
+        where: { userId },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.category.count({ where: { userId } }),
+    ]);
+
+    return buildPaginatedResponse(categories, total, page, limit);
   }
 
   async findById(userId: string, categoryId: string) {
     const response = await this.prisma.category.findUnique({
-      where: { id: categoryId }
-    })
+      where: { id: categoryId },
+    });
 
     if (!response) {
       throw new NotFoundException();
@@ -39,8 +48,8 @@ export class CategoriesService {
 
   async update(userId: string, categoryId: string, dto: UpdateCategoryDto) {
     const response = await this.prisma.category.findUnique({
-      where: { id: categoryId }
-    })
+      where: { id: categoryId },
+    });
 
     if (!response) {
       throw new NotFoundException();
@@ -52,14 +61,14 @@ export class CategoriesService {
 
     return await this.prisma.category.update({
       data: dto,
-      where: { id: categoryId }
-    })
+      where: { id: categoryId },
+    });
   }
 
   async delete(userId: string, categoryId: string) {
     const response = await this.prisma.category.findUnique({
-      where: { id: categoryId }
-    })
+      where: { id: categoryId },
+    });
 
     if (!response) {
       throw new NotFoundException();

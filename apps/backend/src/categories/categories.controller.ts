@@ -1,11 +1,12 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser, UserPayload } from 'src/decorators/user.decorator';
+import { PaginationQueryDto } from '../shared/pagination.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from './categories.dto';
 import { CategoriesService } from './categories.service';
 
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) { }
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
   create(@CurrentUser() user: UserPayload, @Body() body: CreateCategoryDto) {
@@ -13,8 +14,8 @@ export class CategoriesController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: UserPayload) {
-    return this.categoriesService.findAll(user.sub);
+  findAll(@CurrentUser() user: UserPayload, @Query() pagination: PaginationQueryDto) {
+    return this.categoriesService.findAll(user.sub, pagination.page ?? 1, pagination.limit ?? 20);
   }
 
   @Get(':id')

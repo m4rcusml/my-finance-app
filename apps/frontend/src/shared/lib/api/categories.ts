@@ -1,28 +1,24 @@
-import { request } from "./http";
+import { request } from './http';
 
 export type Category = {
   id: string;
   userId: string;
   name: string;
-  type: string; // 'INCOME' | 'EXPENSE'
-  icon?: string;
-  color?: string;
+  type: 'income' | 'expense' | 'both';
   createdAt: string;
   updatedAt: string;
 };
 
 export type CreateCategoryDto = {
   name: string;
-  type: 'INCOME' | 'EXPENSE';
-  icon?: string;
-  color?: string;
+  type: 'income' | 'expense' | 'both';
 };
 
 export type UpdateCategoryDto = Partial<CreateCategoryDto>;
 
 export const categoriesApi = {
   list() {
-    return request<Category[]>("/categories", { auth: true });
+    return request<Category[]>('/categories', { auth: true });
   },
 
   getById(id: string) {
@@ -30,8 +26,8 @@ export const categoriesApi = {
   },
 
   create(dto: CreateCategoryDto) {
-    return request<Category>("/categories", {
-      method: "POST",
+    return request<Category>('/categories', {
+      method: 'POST',
       auth: true,
       body: dto,
     });
@@ -39,7 +35,7 @@ export const categoriesApi = {
 
   update(id: string, dto: UpdateCategoryDto) {
     return request<Category>(`/categories/${id}`, {
-      method: "PATCH",
+      method: 'PATCH',
       auth: true,
       body: dto,
     });
@@ -47,7 +43,7 @@ export const categoriesApi = {
 
   remove(id: string) {
     return request<void>(`/categories/${id}`, {
-      method: "DELETE",
+      method: 'DELETE',
       auth: true,
     });
   },

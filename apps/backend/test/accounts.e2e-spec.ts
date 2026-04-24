@@ -1,10 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
-import * as argon2 from 'argon2';
 
 jest.mock('argon2');
 
@@ -51,6 +51,7 @@ describe('AccountsController (e2e)', () => {
           findUnique: jest.fn(),
           update: jest.fn(),
           delete: jest.fn(),
+          count: jest.fn(),
         },
         transaction: {
           findMany: jest.fn(),
@@ -122,14 +123,16 @@ describe('AccountsController (e2e)', () => {
           ],
         },
       ] as any);
+      prisma.account.count.mockResolvedValue(1);
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/accounts')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body[0]).toHaveProperty('balance', 1300);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data[0]).toHaveProperty('balance', 1300);
+      expect(response.body.meta.totalItems).toBe(1);
     });
   });
 

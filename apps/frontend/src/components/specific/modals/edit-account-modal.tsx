@@ -10,18 +10,20 @@ interface EditAccountModalProps {
   account: Account | null;
 }
 
-type AccountType = 'CHECKING' | 'INVESTMENT' | 'CASH';
+type AccountType = 'checking' | 'savings' | 'investment' | 'cash' | 'other';
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
-  { value: 'CHECKING', label: 'Conta Corrente' },
-  { value: 'INVESTMENT', label: 'Investimento' },
-  { value: 'CASH', label: 'Dinheiro' },
+  { value: 'checking', label: 'Conta Corrente' },
+  { value: 'savings', label: 'Poupança' },
+  { value: 'investment', label: 'Investimento' },
+  { value: 'cash', label: 'Dinheiro' },
+  { value: 'other', label: 'Outro' },
 ];
 
 export function EditAccountModal({ isOpen, onClose, account }: EditAccountModalProps) {
   const [name, setName] = useState('');
   const [institution, setInstitution] = useState('');
-  const [type, setType] = useState<AccountType>('CHECKING');
+  const [type, setType] = useState<AccountType>('checking');
   const [initialBalance, setInitialBalance] = useState('');
 
   // Initialize mutation with empty string, will be ignored until used properly or we can't use hook conditionally.
@@ -53,7 +55,7 @@ export function EditAccountModal({ isOpen, onClose, account }: EditAccountModalP
       setName(account.name);
       setInstitution(account.institution);
       // Ensure type matches our discriminated union or fallback
-      const foundType = ACCOUNT_TYPES.find((t) => t.value === account.type)?.value || 'CHECKING';
+      const foundType = ACCOUNT_TYPES.find((t) => t.value === account.type)?.value || 'checking';
       setType(foundType);
       setInitialBalance(String(account.initialBalance));
     }

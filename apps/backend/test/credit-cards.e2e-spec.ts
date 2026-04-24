@@ -1,10 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
-import * as argon2 from 'argon2';
 
 jest.mock('argon2');
 
@@ -51,6 +51,7 @@ describe('CreditCardsController (e2e)', () => {
           findUnique: jest.fn(),
           update: jest.fn(),
           delete: jest.fn(),
+          count: jest.fn(),
         },
         transaction: {
           findMany: jest.fn(),
@@ -112,18 +113,18 @@ describe('CreditCardsController (e2e)', () => {
 
   describe('GET /api/v1/credit-cards', () => {
     it('should return list of credit cards with usage', async () => {
-      prisma.creditCard.findMany.mockResolvedValue([
-        { ...baseCreditCard, transactions: [{ value: 500 }] },
-      ] as any);
+      prisma.creditCard.findMany.mockResolvedValue([{ ...baseCreditCard, transactions: [{ value: 500 }] }] as any);
+      prisma.creditCard.count.mockResolvedValue(1);
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/credit-cards')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body[0]).toHaveProperty('usedAmount');
-      expect(response.body[0]).toHaveProperty('availableAmount');
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data[0]).toHaveProperty('usedAmount');
+      expect(response.body.data[0]).toHaveProperty('availableAmount');
+      expect(response.body.meta.totalItems).toBe(1);
     });
   });
 
