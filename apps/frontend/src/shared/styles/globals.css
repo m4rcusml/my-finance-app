@@ -1,18 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  --color-placeholder: #C0C2D6;
-  --color-foreground: #FFFFFF;
-  --color-muted-foreground: #C0C2D6;
-  --color-primary: #6747ED;
-  --color-muted-primary: #8970DD;
-  --color-green: #039155;
-  --color-red: #DE2D2D;
+  /* Surfaces (dark theme) */
   --color-layer00: #05051E;
   --color-layer01: #14172F;
   --color-layer02: #272B40;
+  --color-layer03: #363B54;
+
+  /* Text */
+  --color-foreground: #FFFFFF;
+  --color-muted-foreground: #C0C2D6;
+  --color-placeholder: #9497B4;
+
+  /* Brand */
+  --color-primary: #6747ED;
+  --color-muted-primary: #8970DD;
+
+  /* Status — solid fills, meant to carry white text */
+  --color-green: #039155;
+  --color-red: #DE2D2D;
   --color-success: #039155;
   --color-danger: #DE2D2D;
+  --color-warning: #B45309;
+
+  /*
+   * Status — TEXT variants. The solid fills above sit at ~4.3:1 against
+   * --color-layer00, just under the WCAG AA 4.5:1 floor for body text, so
+   * coloured *text* uses these brighter tones instead (>= 7:1).
+   */
+  --color-success-text: #34D399;
+  --color-danger-text: #FF7A7A;
+  --color-warning-text: #FBBF24;
+
+  /* Borders and the modal scrim. `--color-background` used to be referenced but
+     never defined, which is why the old overlay rendered fully transparent. */
+  --color-border: #2E3350;
+  --color-border-strong: #454B6B;
+  --color-scrim: rgba(5, 5, 30, 0.75);
+
   --font-sans: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
   --text-xxl: 48px;
   --text-xxl--line-height: 1.1;
@@ -32,13 +57,13 @@
   box-sizing: border-box;
 }
 
-html,
-body {
-  max-width: 100vw;
+html {
+  /* Never lock the viewport: content must stay reachable at 320px and at 200% zoom. */
   overflow-x: hidden;
 }
 
 body {
+  min-height: 100dvh;
   color: var(--color-foreground);
   background: var(--color-layer00);
   font-family: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
@@ -46,10 +71,45 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* A visible, consistent focus ring everywhere — keyboard navigation is a
+   first-class path, not an afterthought. */
+:focus-visible {
+  outline: 2px solid var(--color-muted-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @utility no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Skip link: visible only once focused. */
+@utility skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  &:focus {
+    left: 1rem;
+    top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: var(--color-layer02);
+    color: var(--color-foreground);
   }
 }

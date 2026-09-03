@@ -1,0 +1,8 @@
+Fatura Cartao de Credito
+Vencimento: 10/05/2026
+
+Data;Lançamento;Categoria;Tipo;Valor
+05/04/2026;PADARIA CENTRAL;Alimentação;Compra à vista;45,90
+07/04/2026;ASSINATURA STREAMING;Serviços;Compra à vista;39,90
+12/04/2026;PAGAMENTO RECEBIDO;Pagamentos;Pagamento;-500,00
+15/04/2026;LOJA DE MATERIAIS;Casa;Parcela 2/3;1.234,56

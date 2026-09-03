@@ -1,7 +1,17 @@
+# Local development stack.
+#
+# `docker compose up -d db`   -> just PostgreSQL, for `pnpm dev`
+# `docker compose --profile full up --build` -> database + backend + frontend
+#
+# Redis was removed: nothing in the V1 code path uses it. Sessions live in
+# PostgreSQL (refresh_tokens), rate limiting is in-process, and import previews
+# are persisted as import_batches rows. See docs/backlog.md if that changes.
+
 services:
   db:
     image: postgres:16-alpine
     container_name: finance-db
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
@@ -10,18 +20,60 @@ services:
       POSTGRES_DB: finance
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finance -d finance"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
-  redis:
-    image: redis:7-alpine
-    container_name: finance-redis
-    command: redis-server --appendonly yes
+  backend:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: finance-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      - ALLOW_EMPTY_PASSWORD=yes
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://finance:finance@db:5432/finance?schema=public
+      # Compose-only development values. Never reuse these anywhere real.
+      JWT_SECRET: compose-development-access-secret-32-chars
+      JWT_REFRESH_SECRET: compose-development-refresh-secret-32-chars
+      CORS_ORIGINS: http://localhost:3000
+      APP_TIMEZONE: America/Sao_Paulo
+      COOKIE_SECURE: "false"
+      COOKIE_SAMESITE: lax
+      ENABLE_SWAGGER: "true"
     ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  frontend:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+    container_name: finance-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:
-  redis_data:

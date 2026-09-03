@@ -1,141 +1,327 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { AccountsService } from 'src/accounts/accounts.service';
-import { CategoriesService } from 'src/categories/categories.service';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { buildPaginatedResponse } from '../shared/pagination.dto';
-import { CreateFixedTransactionDto, UpdateFixedTransactionDto } from './fixed-transactions.dto';
+import type { FixedTransaction, PaginatedResponse } from '@finance/contracts';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { fromCivilDate } from '../common/civil-date';
+import { toMoney } from '../common/money';
+import { assertOwned } from '../common/ownership';
+import { buildPaginatedResponse, resolvePagination } from '../common/pagination.dto';
+import type { EnvConfig } from '../config/env';
+import type { Prisma } from '../generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import type {
+  CreateFixedTransactionDto,
+  ListFixedTransactionsQueryDto,
+  UpdateFixedTransactionDto,
+} from './fixed-transactions.dto';
+import { type FixedTransactionRow, toFixedTransaction } from './fixed-transactions.mapper';
+import { afterPeriodWhere, currentPeriod, dueDateFor, type Period } from './recurrence';
+
+const DEFAULT_TIME_ZONE = 'America/Sao_Paulo';
+
+/**
+ * Upper bound on how many future pending occurrences a single edit rewrites.
+ * The generator only ever runs one period ahead, so this is slack, not a limit
+ * a real template can hit — but it keeps an unbounded `findMany` out of the code.
+ */
+const MAX_FUTURE_OCCURRENCES = 120;
+
+/** The final state a PATCH produces, before any of it reaches the database. */
+interface FinalTemplateState {
+  type: FixedTransaction['type'];
+  value: number;
+  referenceDay: number;
+  marginDays: number;
+  accountId: string | null;
+  creditCardId: string | null;
+  categoryId: string;
+  description: string | null;
+  isActive: boolean;
+}
 
 @Injectable()
 export class FixedTransactionsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly accountsService: AccountsService,
-    private readonly categoriesService: CategoriesService,
+    private readonly config: ConfigService<EnvConfig, true>,
   ) {}
 
-  async createFixedTransaction(userId: string, dto: CreateFixedTransactionDto) {
-    const { accountId, categoryId } = dto;
+  // -------------------------------------------------------------------------
+  // Reads
+  // -------------------------------------------------------------------------
 
-    await this.accountsService.findById(userId, accountId);
-    await this.categoriesService.findById(userId, categoryId);
+  async findAll(userId: string, query: ListFixedTransactionsQueryDto): Promise<PaginatedResponse<FixedTransaction>> {
+    const { page, limit, skip } = resolvePagination(query);
+    const where = {
+      userId,
+      ...(query.isActive === undefined ? {} : { isActive: query.isActive }),
+      ...(query.type === undefined ? {} : { type: query.type }),
+    };
 
-    return await this.prisma.fixedTransaction.create({
-      data: {
-        ...dto,
-        accountId,
-        categoryId,
-        userId,
-      },
-    });
-  }
-
-  async findAllByUser(userId: string, page = 1, limit = 20) {
-    const [response, total] = await Promise.all([
+    const [rows, totalItems] = await Promise.all([
       this.prisma.fixedTransaction.findMany({
-        where: { userId },
-        skip: (page - 1) * limit,
+        where,
+        skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
       }),
-      this.prisma.fixedTransaction.count({ where: { userId } }),
+      this.prisma.fixedTransaction.count({ where }),
     ]);
 
-    return buildPaginatedResponse(response, total, page, limit);
+    return buildPaginatedResponse(rows.map(toFixedTransaction), totalItems, page, limit);
   }
 
-  async findById(userId: string, fixedId: string) {
-    const response = await this.prisma.fixedTransaction.findUnique({
-      where: {
-        id: fixedId,
+  async findOne(userId: string, id: string): Promise<FixedTransaction> {
+    return toFixedTransaction(await this.loadOwned(userId, id));
+  }
+
+  // -------------------------------------------------------------------------
+  // Writes
+  // -------------------------------------------------------------------------
+
+  async create(userId: string, dto: CreateFixedTransactionDto): Promise<FixedTransaction> {
+    const accountId = dto.accountId ?? null;
+    const creditCardId = dto.creditCardId ?? null;
+    this.assertExactlyOneSource(accountId, creditCardId);
+
+    await this.assertCategoryOwned(userId, dto.categoryId);
+    if (accountId) await this.assertAccountOwned(userId, accountId);
+    if (creditCardId) await this.assertCreditCardOwned(userId, creditCardId);
+
+    const created = await this.prisma.fixedTransaction.create({
+      data: {
+        userId,
+        type: dto.type,
+        value: dto.value,
+        referenceDay: dto.referenceDay,
+        marginDays: dto.marginDays ?? 0,
+        accountId,
+        creditCardId,
+        categoryId: dto.categoryId,
+        description: dto.description ?? null,
       },
     });
 
-    if (!response) {
-      throw new NotFoundException();
-    }
-
-    if (response.userId !== userId) {
-      throw new ForbiddenException();
-    }
-
-    return response;
+    return toFixedTransaction(created);
   }
 
-  async findAllActive(userId?: string) {
-    const response = await this.prisma.fixedTransaction.findMany({
-      where: { isActive: true },
-    });
+  /**
+   * PATCH. The final row is computed first and validated as a whole, then the
+   * write and the propagation to *future* occurrences happen in one transaction.
+   */
+  async update(userId: string, id: string, dto: UpdateFixedTransactionDto): Promise<FixedTransaction> {
+    const current = await this.loadOwned(userId, id);
 
-    if (!userId) {
-      return response;
+    const final: FinalTemplateState = {
+      type: dto.type ?? current.type,
+      value: dto.value ?? toMoney(current.value),
+      referenceDay: dto.referenceDay ?? current.referenceDay,
+      marginDays: dto.marginDays ?? current.marginDays,
+      accountId: dto.accountId === undefined ? current.accountId : dto.accountId,
+      creditCardId: dto.creditCardId === undefined ? current.creditCardId : dto.creditCardId,
+      categoryId: dto.categoryId ?? current.categoryId,
+      description: dto.description === undefined ? current.description : dto.description,
+      isActive: dto.isActive ?? current.isActive,
+    };
+
+    this.assertExactlyOneSource(final.accountId, final.creditCardId);
+
+    if (final.categoryId !== current.categoryId) {
+      await this.assertCategoryOwned(userId, final.categoryId);
+    }
+    if (final.accountId && final.accountId !== current.accountId) {
+      await this.assertAccountOwned(userId, final.accountId);
+    }
+    if (final.creditCardId && final.creditCardId !== current.creditCardId) {
+      await this.assertCreditCardOwned(userId, final.creditCardId);
     }
 
-    return response.filter((t) => t.userId === userId);
+    const deactivating = current.isActive && !final.isActive;
+    const reactivating = !current.isActive && final.isActive;
+    const period = this.currentPeriod();
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.fixedTransaction.update({
+        where: { id },
+        data: {
+          type: final.type,
+          value: final.value,
+          referenceDay: final.referenceDay,
+          marginDays: final.marginDays,
+          accountId: final.accountId,
+          creditCardId: final.creditCardId,
+          categoryId: final.categoryId,
+          description: final.description,
+          isActive: final.isActive,
+          ...(deactivating ? { archivedAt: new Date() } : {}),
+          ...(reactivating ? { archivedAt: null } : {}),
+        },
+      });
+
+      if (final.isActive) {
+        await this.propagateToFutureOccurrences(tx, userId, id, final, period);
+      } else {
+        await this.dropFutureOccurrences(tx, userId, id, period);
+      }
+
+      return row;
+    });
+
+    return toFixedTransaction(updated);
   }
 
-  async updateFixedTransaction(userId: string, fixedId: string, dto: UpdateFixedTransactionDto) {
-    const response = await this.prisma.fixedTransaction.findUnique({
-      where: { id: fixedId },
+  /**
+   * Archive, never delete. The occurrence -> template FK is `RESTRICT`, so a
+   * hard delete of a template that ever generated a period is impossible by
+   * construction; archiving is the only operation that keeps history readable.
+   */
+  async archive(userId: string, id: string): Promise<FixedTransaction> {
+    const current = await this.loadOwned(userId, id);
+    if (!current.isActive) return toFixedTransaction(current);
+
+    const period = this.currentPeriod();
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.fixedTransaction.update({
+        where: { id },
+        data: { isActive: false, archivedAt: new Date() },
+      });
+      await this.dropFutureOccurrences(tx, userId, id, period);
+      return row;
     });
 
-    if (!response) {
-      throw new NotFoundException();
-    }
-
-    if (response.userId !== userId) {
-      throw new ForbiddenException();
-    }
-
-    if (dto.categoryId) {
-      await this.categoriesService.findById(userId, dto.categoryId);
-    }
-
-    if (dto.accountId) {
-      await this.accountsService.findById(userId, dto.accountId);
-    }
-
-    return await this.prisma.fixedTransaction.update({
-      data: dto,
-      where: { id: fixedId },
-    });
+    return toFixedTransaction(updated);
   }
 
-  async toggleActive(userId: string, fixedId: string, isActive: boolean) {
-    const response = await this.prisma.fixedTransaction.findUnique({
-      where: {
-        id: fixedId,
+  async restore(userId: string, id: string): Promise<FixedTransaction> {
+    const current = await this.loadOwned(userId, id);
+    if (current.isActive) return toFixedTransaction(current);
+
+    const updated = await this.prisma.fixedTransaction.update({
+      where: { id },
+      data: { isActive: true, archivedAt: null },
+    });
+
+    return toFixedTransaction(updated);
+  }
+
+  /** `DELETE` is an archive. Nothing in this module ever destroys a template. */
+  async remove(userId: string, id: string): Promise<void> {
+    await this.archive(userId, id);
+  }
+
+  // -------------------------------------------------------------------------
+  // Internals
+  // -------------------------------------------------------------------------
+
+  private currentPeriod(): Period {
+    const timeZone = this.config.get('APP_TIMEZONE', { infer: true }) ?? DEFAULT_TIME_ZONE;
+    return currentPeriod(timeZone);
+  }
+
+  private async loadOwned(userId: string, id: string): Promise<FixedTransactionRow> {
+    const row = await this.prisma.fixedTransaction.findFirst({ where: { id, userId } });
+    return assertOwned(row, userId, 'Lançamento fixo');
+  }
+
+  private assertExactlyOneSource(accountId: string | null, creditCardId: string | null): void {
+    if (Boolean(accountId) === Boolean(creditCardId)) {
+      throw new BadRequestException('Informe exatamente uma origem: accountId ou creditCardId.');
+    }
+  }
+
+  private async assertCategoryOwned(userId: string, categoryId: string): Promise<void> {
+    const row = await this.prisma.category.findFirst({
+      where: { id: categoryId, userId },
+      select: { id: true, userId: true },
+    });
+    assertOwned(row, userId, 'Cadastro de categoria');
+  }
+
+  private async assertAccountOwned(userId: string, accountId: string): Promise<void> {
+    const row = await this.prisma.account.findFirst({
+      where: { id: accountId, userId },
+      select: { id: true, userId: true },
+    });
+    assertOwned(row, userId, 'Cadastro de conta');
+  }
+
+  private async assertCreditCardOwned(userId: string, creditCardId: string): Promise<void> {
+    const row = await this.prisma.creditCard.findFirst({
+      where: { id: creditCardId, userId },
+      select: { id: true, userId: true },
+    });
+    assertOwned(row, userId, 'Cartão de crédito');
+  }
+
+  /**
+   * Refresh the snapshot carried by occurrences that have not happened yet.
+   * Rows at or before the current period, and rows that are no longer `pending`,
+   * are never touched — an edit today must not rewrite what already occurred.
+   */
+  private async propagateToFutureOccurrences(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    fixedTransactionId: string,
+    final: FinalTemplateState,
+    period: Period,
+  ): Promise<void> {
+    const where = {
+      fixedTransactionId,
+      userId,
+      status: 'pending' as const,
+      ...afterPeriodWhere(period),
+    };
+
+    await tx.fixedTransactionOccurrence.updateMany({
+      where,
+      data: {
+        type: final.type,
+        value: final.value,
+        description: final.description,
+        categoryId: final.categoryId,
+        accountId: final.accountId,
+        creditCardId: final.creditCardId,
       },
     });
 
-    if (!response) {
-      throw new NotFoundException();
-    }
-
-    if (response.userId !== userId) {
-      throw new ForbiddenException();
-    }
-
-    return await this.prisma.fixedTransaction.update({
-      data: { isActive },
-      where: { id: fixedId },
+    // `dueDate` is per-period (the reference day clamps to each month), so it
+    // cannot be set by a single `updateMany`.
+    const future = await tx.fixedTransactionOccurrence.findMany({
+      where,
+      select: { id: true, periodYear: true, periodMonth: true },
+      orderBy: [{ periodYear: 'asc' }, { periodMonth: 'asc' }],
+      take: MAX_FUTURE_OCCURRENCES,
     });
+
+    for (const row of future) {
+      const dueDate = dueDateFor({ year: row.periodYear, month: row.periodMonth }, final.referenceDay);
+      await tx.fixedTransactionOccurrence.update({
+        where: { id: row.id },
+        data: { dueDate: fromCivilDate(dueDate) },
+      });
+    }
   }
 
-  async deleteFixedTransaction(userId: string, fixedId: string) {
-    const response = await this.prisma.fixedTransaction.findUnique({
-      where: { id: fixedId },
-    });
-
-    if (!response) {
-      throw new NotFoundException();
-    }
-
-    if (response.userId !== userId) {
-      throw new ForbiddenException();
-    }
-
-    await this.prisma.fixedTransaction.delete({
-      where: { id: fixedId },
+  /**
+   * Archiving a template removes only its *unconfirmed, future* placeholders.
+   * Those rows carry no transaction (`transactionId: null` is checked, as the
+   * no-dependents rule requires) and were generated by the cron rather than by
+   * the user, so dropping them destroys no history — and restoring the template
+   * lets the generator recreate them.
+   */
+  private async dropFutureOccurrences(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    fixedTransactionId: string,
+    period: Period,
+  ): Promise<void> {
+    await tx.fixedTransactionOccurrence.deleteMany({
+      where: {
+        fixedTransactionId,
+        userId,
+        status: 'pending',
+        transactionId: null,
+        ...afterPeriodWhere(period),
+      },
     });
   }
 }

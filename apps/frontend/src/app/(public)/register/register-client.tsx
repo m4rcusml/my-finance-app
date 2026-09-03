@@ -1,158 +1,149 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ApiError } from '@/shared/lib/api/errors';
-import { useAuthStore } from '@/shared/stores/auth-store';
-import { useLoginMutation, useRegisterMutation } from '@/features/auth/mutations';
-import { Button } from '@/components/ui/button/button';
-import { Label } from '@/components/ui/label/label';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { errorDetails, errorMessage } from '@/shared/lib/api';
+import { useSession } from '@/shared/session/session-provider';
+import { ActionButton, Field, TextInput } from '@/shared/ui/form';
+
+const MIN_PASSWORD_LENGTH = 10;
 
 export default function RegisterClient() {
-  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
-  const accessToken = useAuthStore((s) => s.accessToken);
-  const loginMutation = useLoginMutation();
-  const registerMutation = useRegisterMutation();
+  const { register } = useSession();
 
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [details, setDetails] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
-  const isSubmitting = registerMutation.isPending || loginMutation.isPending;
-  const isDisabled = isSubmitting || !email || !password;
-
-  const errorMessage = useMemo(() => {
-    const error = registerMutation.error || loginMutation.error;
-    if (!error) return null;
-    if (error instanceof ApiError) {
-      return error.message;
-    }
-    return 'Ocorreu um erro. Tente novamente.';
-  }, [registerMutation.error, loginMutation.error]);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (accessToken) {
-      router.replace('/dashboard');
-    }
-  }, [accessToken, router]);
+  const passwordTooShort = password.length > 0 && password.length < MIN_PASSWORD_LENGTH;
+  const mismatch = confirmation.length > 0 && confirmation !== password;
+  const canSubmit = email.length > 0 && password.length >= MIN_PASSWORD_LENGTH && !mismatch;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isDisabled) return;
+    if (!canSubmit || submitting) return;
 
+    setError(null);
+    setDetails([]);
+    setSubmitting(true);
     try {
-      await registerMutation.mutateAsync({ email, password });
-      await loginMutation.mutateAsync({ email, password });
-    } catch {
-      // Errors are handled by the query state
+      await register(email.trim(), password, name.trim() || undefined);
+      router.replace('/dashboard');
+    } catch (cause) {
+      setError(errorMessage(cause));
+      setDetails(errorDetails(cause));
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  if (!isMounted) return null;
-
   return (
-    <div className="relative min-h-screen overflow-hidden bg-layer00 text-foreground">
-      <div
-        aria-hidden
-        className="absolute -top-24 left-1/2 h-72 w-xl -translate-x-1/2 rounded-full bg-primary/20 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="absolute bottom-0 right-0 h-80 w-80 translate-x-1/3 rounded-full bg-muted-primary/20 blur-3xl"
-      />
-      <div className="relative mx-auto flex min-h-screen max-w-6xl items-center px-6 py-12">
-        <div className="grid w-full items-center gap-10 lg:grid-cols-[1.2fr_1fr]">
-          <div className="space-y-6">
-            <Label
-              tone="layer01"
-              className="border border-foreground/10 uppercase tracking-[0.3em] text-muted-foreground"
-            >
-              My Finance App
-            </Label>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground md:text-xxl">
-              Comece a controlar sua vida financeira hoje.
-            </h1>
-            <p className="max-w-xl text-sm text-muted-foreground sm:text-md">
-              Crie sua conta gratuita e tenha acesso a um painel completo para gerenciar suas receitas, despesas e
-              objetivos.
-            </p>
-            <div className="grid max-w-xl gap-4 text-sm text-muted-foreground sm:grid-cols-2">
-              <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">Cadastro rápido e simples.</div>
-              <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Segurança total dos seus dados.
-              </div>
-              <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">Acesse de qualquer lugar.</div>
-              <div className="rounded-2xl border border-foreground/10 bg-layer01 p-4">
-                Ferramentas poderosas de análise.
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-foreground/10 bg-layer01 p-8 shadow-2xl shadow-layer00/60">
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold text-foreground">Crie sua conta</h2>
-              <p className="text-sm text-muted-foreground">Preencha os dados abaixo para começar.</p>
-            </div>
-
-            <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-              <label className="block space-y-2 text-sm text-muted-foreground">
-                E-mail
-                <input
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-xl border border-foreground/10 bg-layer02 px-4 py-3 text-sm text-foreground placeholder:text-placeholder focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="voce@email.com"
-                  required
-                />
-              </label>
-
-              <label className="block space-y-2 text-sm text-muted-foreground">
-                Senha
-                <input
-                  type="password"
-                  name="password"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-xl border border-foreground/10 bg-layer02 px-4 py-3 text-sm text-foreground placeholder:text-placeholder focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="Sua senha segura"
-                  required
-                  minLength={6}
-                />
-              </label>
-
-              {errorMessage ? (
-                <div className="rounded-xl border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">
-                  {errorMessage}
-                </div>
-              ) : null}
-
-              <Button type="submit" disabled={isDisabled} size="large" className="w-full">
-                {registerMutation.isPending
-                  ? 'Criando conta...'
-                  : loginMutation.isPending
-                    ? 'Entrando...'
-                    : 'Criar conta'}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              Já tem uma conta?{' '}
-              <Link href="/login" className="font-semibold text-primary hover:text-muted-primary hover:underline">
-                Entre agora
-              </Link>
-            </div>
-          </div>
-        </div>
+    <main id="conteudo" className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-5 py-12">
+      <div>
+        <h1 className="text-xl font-semibold">Criar conta</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Seus dados ficam no banco PostgreSQL configurado para esta instalação.
+        </p>
       </div>
-    </div>
+
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        {error ? (
+          <div role="alert" className="rounded-lg border border-danger/60 bg-layer01 p-3 text-sm text-danger-text">
+            <p>{error}</p>
+            {details.length > 0 ? (
+              <ul className="mt-1 list-inside list-disc">
+                {details.map((detail) => (
+                  <li key={detail}>{detail}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+
+        <Field label="Nome" hint="Opcional. Usado apenas para te cumprimentar no painel.">
+          {({ id, describedBy }) => (
+            <TextInput
+              id={id}
+              aria-describedby={describedBy}
+              name="name"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          )}
+        </Field>
+
+        <Field label="E-mail" required>
+          {({ id, describedBy, invalid }) => (
+            <TextInput
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              type="email"
+              name="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          )}
+        </Field>
+
+        <Field
+          label="Senha"
+          required
+          hint={`Mínimo de ${MIN_PASSWORD_LENGTH} caracteres.`}
+          error={passwordTooShort ? `A senha precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` : undefined}
+        >
+          {({ id, describedBy, invalid }) => (
+            <TextInput
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              type="password"
+              name="password"
+              autoComplete="new-password"
+              required
+              minLength={MIN_PASSWORD_LENGTH}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          )}
+        </Field>
+
+        <Field label="Confirmar senha" required error={mismatch ? 'As senhas não coincidem.' : undefined}>
+          {({ id, describedBy, invalid }) => (
+            <TextInput
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              type="password"
+              name="passwordConfirmation"
+              autoComplete="new-password"
+              required
+              value={confirmation}
+              onChange={(e) => setConfirmation(e.target.value)}
+            />
+          )}
+        </Field>
+
+        <ActionButton type="submit" loading={submitting} disabled={!canSubmit} className="w-full">
+          Criar conta
+        </ActionButton>
+      </form>
+
+      <p className="text-sm text-muted-foreground">
+        Já tem conta?{' '}
+        <Link href="/login" className="font-medium text-muted-primary underline underline-offset-2">
+          Entrar
+        </Link>
+      </p>
+    </main>
   );
 }

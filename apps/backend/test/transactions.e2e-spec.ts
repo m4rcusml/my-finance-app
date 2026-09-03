@@ -88,11 +88,8 @@ describe('TransactionsController (e2e)', () => {
     authToken = loginResponse.body.access_token;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
-  });
-
-  afterAll(async () => {
     await app.close();
   });
 

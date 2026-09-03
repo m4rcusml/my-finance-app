@@ -1,112 +1,124 @@
-import { IsNotEmpty, IsObject } from 'class-validator';
+import {
+  BACKUP_SCHEMA_VERSION,
+  RESTORE_MODES,
+  type RestoreMode,
+  type RestoreResponse,
+  type RestoreResultCounts,
+} from '@finance/contracts';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsIn, IsNotEmptyObject, IsObject } from 'class-validator';
 
+/**
+ * Restore request.
+ *
+ * `mode` is required on purpose: the previous endpoint always merged, which
+ * meant "restore my backup" quietly produced a duplicated ledger. `data` stays
+ * a raw object here — its 11 collections are validated field by field in
+ * `backup.validation.ts` before anything is written, and a nested DTO tree
+ * could not express the cross-row rules (relation ids, unique keys) anyway.
+ */
 export class RestoreBackupDto {
-  @IsObject()
-  @IsNotEmpty()
+  @ApiProperty({
+    enum: RESTORE_MODES,
+    description:
+      '`replace` apaga os registros atuais e restaura o arquivo; `merge` mantém o que já existe e apenas adiciona.',
+    example: 'replace',
+  })
+  @IsIn(RESTORE_MODES, { message: 'mode deve ser replace ou merge.' })
+  mode!: RestoreMode;
+
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: true,
+    description: `Conteúdo integral do arquivo gerado por GET /backup/export (schemaVersion ${BACKUP_SCHEMA_VERSION}).`,
+  })
+  @IsObject({ message: 'data deve ser o conteúdo do arquivo de backup.' })
+  @IsNotEmptyObject({ nullable: false }, { message: 'data não pode ser vazio.' })
   data!: Record<string, unknown>;
 }
 
-export interface BackupAccount {
-  id: string;
-  name: string;
-  institution: string;
-  type: string;
-  initialBalance: number;
-  isActive: boolean;
+/** Swagger model for the `user` block of an export. Credentials never appear here. */
+export class BackupUserDto {
+  @ApiProperty({ example: 'pessoa@exemplo.com' })
+  email!: string;
+
+  @ApiProperty({ type: String, nullable: true, example: 'Maria' })
+  name!: string | null;
 }
 
-export interface BackupCategory {
-  id: string;
-  name: string;
-  type: string;
+/**
+ * Swagger model for the exported file. The collections are documented as plain
+ * object arrays because their authoritative shapes live in `@finance/contracts`
+ * (`Account`, `Transaction`, ...) and duplicating them here would only let the
+ * documentation drift away from the types the frontend actually compiles with.
+ */
+export class BackupFileDto {
+  @ApiProperty({ enum: [BACKUP_SCHEMA_VERSION], example: BACKUP_SCHEMA_VERSION })
+  schemaVersion!: typeof BACKUP_SCHEMA_VERSION;
+
+  @ApiProperty({ format: 'date-time', example: '2026-09-03T12:00:00.000Z' })
+  exportedAt!: string;
+
+  @ApiProperty({ type: BackupUserDto })
+  user!: BackupUserDto;
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Contas (`Account[]`).' })
+  accounts!: Record<string, unknown>[];
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Cartões de crédito.' })
+  creditCards!: Record<string, unknown>[];
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Categorias.' })
+  categories!: Record<string, unknown>[];
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Transações.' })
+  transactions!: Record<string, unknown>[];
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Lançamentos fixos.' })
+  fixedTransactions!: Record<string, unknown>[];
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Ocorrências dos lançamentos fixos.' })
+  fixedTransactionOccurrences!: Record<string, unknown>[];
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Ativos do catálogo do usuário.' })
+  marketAssets!: Record<string, unknown>[];
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Investimentos.' })
+  investments!: Record<string, unknown>[];
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Metas.' })
+  goals!: Record<string, unknown>[];
+
+  @ApiProperty({ type: 'array', items: { type: 'object' }, description: 'Histórico de arquivos importados.' })
+  importedFiles!: Record<string, unknown>[];
 }
 
-export interface BackupCreditCard {
-  id: string;
-  name: string;
-  institution: string;
-  limitTotal: number;
-  closingDay?: number;
-  isActive: boolean;
+export class RestoreResultCountsDto implements RestoreResultCounts {
+  @ApiProperty({ example: 3 }) accounts!: number;
+  @ApiProperty({ example: 2 }) creditCards!: number;
+  @ApiProperty({ example: 12 }) categories!: number;
+  @ApiProperty({ example: 840 }) transactions!: number;
+  @ApiProperty({ example: 6 }) fixedTransactions!: number;
+  @ApiProperty({ example: 72 }) fixedTransactionOccurrences!: number;
+  @ApiProperty({ example: 4 }) marketAssets!: number;
+  @ApiProperty({ example: 9 }) investments!: number;
+  @ApiProperty({ example: 2 }) goals!: number;
+  @ApiProperty({ example: 5 }) importedFiles!: number;
 }
 
-export interface BackupMarketAsset {
-  id: string;
-  symbol: string;
-  type: string;
-  exchange: string;
-  name?: string;
-}
+export class RestoreResponseDto implements RestoreResponse {
+  @ApiProperty({ enum: RESTORE_MODES, example: 'replace' })
+  mode!: RestoreMode;
 
-export interface BackupTransaction {
-  id: string;
-  type: string;
-  value: number;
-  date: string;
-  accountId?: string;
-  creditCardId?: string;
-  categoryId?: string;
-  description?: string;
-  source: string;
-  externalId?: string;
-}
+  @ApiProperty({ example: BACKUP_SCHEMA_VERSION })
+  schemaVersion!: number;
 
-export interface BackupFixedTransaction {
-  id: string;
-  type: string;
-  value: number;
-  referenceDay: number;
-  marginDays: number;
-  accountId?: string;
-  creditCardId?: string;
-  categoryId: string;
-  description?: string;
-  isActive: boolean;
-}
+  @ApiProperty({ type: RestoreResultCountsDto, description: 'Linhas efetivamente criadas.' })
+  created!: RestoreResultCountsDto;
 
-export interface BackupInvestment {
-  id: string;
-  marketAssetId?: string;
-  broker: string;
-  type: string;
-  quantity: number;
-  buyPrice: number;
-  investedAmount: number;
-  buyDate: string;
-}
-
-export interface BackupGoal {
-  id: string;
-  name: string;
-  type: string;
-  targetAmount: number;
-  currentAmount?: number;
-  deadline?: string;
-  relatedCategoryId?: string;
-  relatedAccountId?: string;
-}
-
-export interface BackupImportedFile {
-  id: string;
-  origin: string;
-  fileName: string;
-  fileType: string;
-  status: string;
-  importedAt: string;
-  totalRecords: number;
-}
-
-export interface BackupData {
-  version: string;
-  exportedAt: string;
-  user: { id: string; email: string; name?: string | null };
-  accounts: BackupAccount[];
-  categories: BackupCategory[];
-  creditCards: BackupCreditCard[];
-  marketAssets: BackupMarketAsset[];
-  transactions: BackupTransaction[];
-  fixedTransactions: BackupFixedTransaction[];
-  investments: BackupInvestment[];
-  goals: BackupGoal[];
-  importedFiles: BackupImportedFile[];
+  @ApiProperty({
+    type: RestoreResultCountsDto,
+    description: 'Linhas removidas antes da restauração. Sempre zerado no modo `merge`.',
+  })
+  deleted!: RestoreResultCountsDto;
 }

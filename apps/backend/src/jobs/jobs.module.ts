@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
-import { FixedTransactionsModule } from 'src/fixed-transactions/fixed-transactions.module';
 import { FixedTransactionsJob } from './fixed-transactions.job';
 
+/**
+ * `PrismaModule` is global and `ConfigModule` is registered with `isGlobal`, so
+ * the job needs no imports of its own — and, crucially, no dependency on the
+ * `FixedTransactionsModule` HTTP layer.
+ */
 @Module({
-  imports: [FixedTransactionsModule],
   providers: [FixedTransactionsJob],
+  exports: [FixedTransactionsJob],
 })
 export class JobsModule {}

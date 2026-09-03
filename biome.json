@@ -27,7 +27,19 @@
 		"indentStyle": "space",
 		"indentWidth": 2
 	},
-	"assist": {
+	"overrides": [
+    {
+      "includes": ["apps/backend/test/**/*.e2e-spec.ts", "apps/backend/src/**/*.spec.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ],
+  "assist": {
 		"enabled": true,
 		"actions": {
 			"source": {

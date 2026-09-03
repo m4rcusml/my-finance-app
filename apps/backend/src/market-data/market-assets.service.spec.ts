@@ -1,200 +1,243 @@
-import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { createMockPrismaService, type MockedPrismaService } from '../prisma/prisma.mock';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateMarketAssetDto, MarketAssetType, UpdateMarketAssetDto } from './market-assets.dto';
 import { MarketAssetsService } from './market-assets.service';
 
+/**
+ * The catalogue is a plain per-user list of labels: no quotes, no prices, no
+ * history. These tests pin the two things that used to be wrong — the shared
+ * global catalogue and the update path that skipped the uniqueness check.
+ */
 describe('MarketAssetsService', () => {
   let service: MarketAssetsService;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
 
-  const userId = 'user-1';
+  const userId = 'user-a';
+  const otherUserId = 'user-b';
   const assetId = 'asset-1';
 
-  const baseAsset = {
+  const assetRow = {
     id: assetId,
     userId,
     symbol: 'PETR4',
     type: 'stock',
     exchange: 'B3',
     name: 'Petrobras PN',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date('2026-01-10T12:00:00.000Z'),
+    updatedAt: new Date('2026-01-11T12:00:00.000Z'),
   };
+
+  /** Prisma reports a violated unique index with this code. */
+  const uniqueViolation = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MarketAssetsService,
-        {
-          provide: PrismaService,
-          useValue: {
-            marketAsset: {
-              create: jest.fn(),
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              findFirst: jest.fn(),
-              update: jest.fn(),
-              delete: jest.fn(),
-              count: jest.fn(),
-            },
-          },
-        },
-      ],
+      providers: [MarketAssetsService, { provide: PrismaService, useValue: createMockPrismaService() }],
     }).compile();
 
-    service = module.get<MarketAssetsService>(MarketAssetsService);
-    prisma = module.get(PrismaService);
+    service = module.get(MarketAssetsService);
+    prisma = module.get(PrismaService) as unknown as MockedPrismaService;
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
-  describe('createMarketAsset', () => {
-    it('should create a market asset for the user', async () => {
-      const dto: CreateMarketAssetDto = {
+  describe('create', () => {
+    it('stores the asset under the caller and returns the contract shape', async () => {
+      prisma.marketAsset.create.mockResolvedValue(assetRow);
+
+      const result = await service.create(userId, {
         symbol: 'PETR4',
-        type: MarketAssetType.STOCK,
+        type: 'stock',
         exchange: 'B3',
         name: 'Petrobras PN',
-      };
-      prisma.marketAsset.findFirst.mockResolvedValue(null);
-      prisma.marketAsset.create.mockResolvedValue(baseAsset as any);
-
-      const result = await service.createMarketAsset(userId, dto);
-
-      expect(prisma.marketAsset.findFirst).toHaveBeenCalledWith({
-        where: { symbol: dto.symbol, exchange: dto.exchange },
       });
+
       expect(prisma.marketAsset.create).toHaveBeenCalledWith({
-        data: { ...dto, userId },
+        data: { userId, symbol: 'PETR4', type: 'stock', exchange: 'B3', name: 'Petrobras PN' },
       });
-      expect(result.symbol).toBe('PETR4');
+      expect(result).toEqual({
+        id: assetId,
+        symbol: 'PETR4',
+        type: 'stock',
+        exchange: 'B3',
+        name: 'Petrobras PN',
+        createdAt: '2026-01-10T12:00:00.000Z',
+        updatedAt: '2026-01-11T12:00:00.000Z',
+      });
+      expect(result).not.toHaveProperty('userId');
     });
 
-    it('should throw ConflictException when symbol+exchange already exists', async () => {
-      const dto: CreateMarketAssetDto = {
-        symbol: 'PETR4',
-        type: MarketAssetType.STOCK,
-        exchange: 'B3',
-      };
-      prisma.marketAsset.findFirst.mockResolvedValue(baseAsset as any);
+    it('defaults a missing name to null', async () => {
+      prisma.marketAsset.create.mockResolvedValue({ ...assetRow, name: null });
 
-      await expect(service.createMarketAsset(userId, dto)).rejects.toThrow(ConflictException);
-      expect(prisma.marketAsset.create).not.toHaveBeenCalled();
+      const result = await service.create(userId, { symbol: 'PETR4', type: 'stock', exchange: 'B3' });
+
+      expect(prisma.marketAsset.create).toHaveBeenCalledWith({
+        data: { userId, symbol: 'PETR4', type: 'stock', exchange: 'B3', name: null },
+      });
+      expect(result.name).toBeNull();
+    });
+
+    it('turns the unique-index violation into a 409 in pt-BR', async () => {
+      prisma.marketAsset.create.mockRejectedValue(uniqueViolation);
+
+      await expect(service.create(userId, { symbol: 'PETR4', type: 'stock', exchange: 'B3' })).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.create(userId, { symbol: 'PETR4', type: 'stock', exchange: 'B3' })).rejects.toThrow(
+        'Já existe um ativo com esse símbolo nesta bolsa.',
+      );
+    });
+
+    it('does not swallow unrelated database errors', async () => {
+      prisma.marketAsset.create.mockRejectedValue(new Error('connection lost'));
+
+      await expect(service.create(userId, { symbol: 'PETR4', type: 'stock', exchange: 'B3' })).rejects.toThrow(
+        'connection lost',
+      );
     });
   });
 
   describe('findAll', () => {
-    it('should return global assets plus user assets', async () => {
-      prisma.marketAsset.findMany.mockResolvedValue([{ ...baseAsset, userId: null, symbol: 'BTC' }, baseAsset]);
-      prisma.marketAsset.count.mockResolvedValue(2);
+    it('filters strictly by the caller and returns the paginated envelope', async () => {
+      prisma.marketAsset.findMany.mockResolvedValue([assetRow]);
+      prisma.marketAsset.count.mockResolvedValue(1);
 
-      const result = await service.findAll(userId, 1, 20);
+      const result = await service.findAll(userId, { page: 2, limit: 5 });
 
-      expect(prisma.marketAsset.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            OR: [{ userId: null }, { userId }],
-          },
-        }),
-      );
-      expect(result.data).toHaveLength(2);
-      expect(result.meta.totalItems).toBe(2);
+      expect(prisma.marketAsset.findMany).toHaveBeenCalledWith({
+        where: { userId },
+        skip: 5,
+        take: 5,
+        orderBy: [{ symbol: 'asc' }, { exchange: 'asc' }],
+      });
+      expect(result.data).toHaveLength(1);
+      expect(result.meta).toEqual({
+        page: 2,
+        limit: 5,
+        totalItems: 1,
+        totalPages: 1,
+        hasPreviousPage: true,
+        hasNextPage: false,
+      });
+    });
+
+    it('never widens the filter to ownerless legacy rows', async () => {
+      prisma.marketAsset.findMany.mockResolvedValue([]);
+      prisma.marketAsset.count.mockResolvedValue(0);
+
+      await service.findAll(userId);
+
+      const where = prisma.marketAsset.findMany.mock.calls[0][0].where;
+      expect(where).toEqual({ userId });
+      expect(JSON.stringify(where)).not.toContain('OR');
+    });
+
+    it('clamps an absent page/limit to the defaults', async () => {
+      prisma.marketAsset.findMany.mockResolvedValue([]);
+      prisma.marketAsset.count.mockResolvedValue(0);
+
+      const result = await service.findAll(userId);
+
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(20);
+      expect(prisma.marketAsset.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 20, skip: 0 }));
     });
   });
 
-  describe('findById', () => {
-    it('should return asset when owned', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue(baseAsset);
+  describe('findOne', () => {
+    it('returns the asset when it belongs to the caller', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue(assetRow);
 
-      const result = await service.findById(userId, assetId);
-
-      expect(result.id).toBe(assetId);
+      await expect(service.findOne(userId, assetId)).resolves.toMatchObject({ id: assetId, symbol: 'PETR4' });
     });
 
-    it('should return global asset when not owned', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue({ ...baseAsset, userId: null });
-
-      const result = await service.findById(userId, assetId);
-
-      expect(result.userId).toBeNull();
-    });
-
-    it('should throw NotFoundException when asset does not exist', async () => {
+    it('throws 404 when the asset does not exist', async () => {
       prisma.marketAsset.findUnique.mockResolvedValue(null);
 
-      await expect(service.findById(userId, 'nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(userId, assetId)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when asset belongs to another user', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue({ ...baseAsset, userId: 'other-user' });
+    it('throws 404 — never 403 — for another user’s asset', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue({ ...assetRow, userId: otherUserId });
 
-      await expect(service.findById(userId, assetId)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(userId, assetId)).rejects.toThrow(NotFoundException);
+    });
+
+    it('hides ownerless legacy rows behind the same 404', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue({ ...assetRow, userId: null });
+
+      await expect(service.findOne(userId, assetId)).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('updateMarketAsset', () => {
-    it('should update asset when owned', async () => {
-      const dto: UpdateMarketAssetDto = { name: 'Updated' };
-      prisma.marketAsset.findUnique.mockResolvedValue(baseAsset);
-      prisma.marketAsset.update.mockResolvedValue({ ...baseAsset, ...dto });
+  describe('update', () => {
+    it('patches only the keys that were sent', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue(assetRow);
+      prisma.marketAsset.update.mockResolvedValue({ ...assetRow, symbol: 'VALE3' });
 
-      const result = await service.updateMarketAsset(userId, assetId, dto);
+      await service.update(userId, assetId, { symbol: 'VALE3' });
 
       expect(prisma.marketAsset.update).toHaveBeenCalledWith({
-        data: dto,
         where: { id: assetId },
+        data: { symbol: 'VALE3' },
       });
-      expect(result.name).toBe('Updated');
     });
 
-    it('should throw ForbiddenException when updating global asset', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue({ ...baseAsset, userId: null });
+    it('clears the name on an explicit null', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue(assetRow);
+      prisma.marketAsset.update.mockResolvedValue({ ...assetRow, name: null });
 
-      await expect(service.updateMarketAsset(userId, assetId, {})).rejects.toThrow(ForbiddenException);
+      const result = await service.update(userId, assetId, { name: null });
+
+      expect(prisma.marketAsset.update).toHaveBeenCalledWith({ where: { id: assetId }, data: { name: null } });
+      expect(result.name).toBeNull();
     });
 
-    it('should throw ForbiddenException when updating another user asset', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue({ ...baseAsset, userId: 'other-user' });
+    it('enforces uniqueness on update too, as a 409', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue(assetRow);
+      prisma.marketAsset.update.mockRejectedValue(uniqueViolation);
 
-      await expect(service.updateMarketAsset(userId, assetId, {})).rejects.toThrow(ForbiddenException);
+      await expect(service.update(userId, assetId, { symbol: 'VALE3' })).rejects.toThrow(ConflictException);
     });
 
-    it('should throw NotFoundException when asset does not exist', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue(null);
+    it('refuses to touch another user’s asset', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue({ ...assetRow, userId: otherUserId });
 
-      await expect(service.updateMarketAsset(userId, assetId, {})).rejects.toThrow(NotFoundException);
+      await expect(service.update(userId, assetId, { symbol: 'VALE3' })).rejects.toThrow(NotFoundException);
+      expect(prisma.marketAsset.update).not.toHaveBeenCalled();
     });
   });
 
-  describe('deleteMarketAsset', () => {
-    it('should delete asset when owned', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue(baseAsset);
-      prisma.marketAsset.delete.mockResolvedValue(baseAsset);
+  describe('remove', () => {
+    it('deletes an asset that no investment references', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue(assetRow);
+      prisma.investment.count.mockResolvedValue(0);
+      prisma.marketAsset.delete.mockResolvedValue(assetRow);
 
-      await service.deleteMarketAsset(userId, assetId);
+      await service.remove(userId, assetId);
 
+      expect(prisma.investment.count).toHaveBeenCalledWith({ where: { marketAssetId: assetId } });
       expect(prisma.marketAsset.delete).toHaveBeenCalledWith({ where: { id: assetId } });
     });
 
-    it('should throw ForbiddenException when deleting global asset', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue({ ...baseAsset, userId: null });
+    it('refuses with 409 while investments still point at it', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue(assetRow);
+      prisma.investment.count.mockResolvedValue(3);
 
-      await expect(service.deleteMarketAsset(userId, assetId)).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(userId, assetId)).rejects.toThrow(ConflictException);
+      await expect(service.remove(userId, assetId)).rejects.toThrow(
+        'Ativo em uso por investimentos e não pode ser excluído.',
+      );
+      expect(prisma.marketAsset.delete).not.toHaveBeenCalled();
     });
 
-    it('should throw ForbiddenException when deleting another user asset', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue({ ...baseAsset, userId: 'other-user' });
+    it('throws 404 for another user’s asset', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue({ ...assetRow, userId: otherUserId });
 
-      await expect(service.deleteMarketAsset(userId, assetId)).rejects.toThrow(ForbiddenException);
-    });
-
-    it('should throw NotFoundException when asset does not exist', async () => {
-      prisma.marketAsset.findUnique.mockResolvedValue(null);
-
-      await expect(service.deleteMarketAsset(userId, assetId)).rejects.toThrow(NotFoundException);
+      await expect(service.remove(userId, assetId)).rejects.toThrow(NotFoundException);
+      expect(prisma.marketAsset.delete).not.toHaveBeenCalled();
     });
   });
 });

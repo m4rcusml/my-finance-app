@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import type { MockedPrismaService } from '../prisma/prisma.mock';
 import { TransactionsService } from '../transactions/transactions.service';
 import { ImportsService } from './imports.service';
 import { CsvParser } from './parsers/csv.parser';
@@ -11,7 +12,7 @@ import { StrategyFactory } from './strategies/strategy.factory';
 
 describe('ImportsService', () => {
   let service: ImportsService;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let transactionsService: jest.Mocked<TransactionsService>;
 
   const userId = 'user-1';
@@ -59,7 +60,7 @@ describe('ImportsService', () => {
     }).compile();
 
     service = module.get<ImportsService>(ImportsService);
-    prisma = module.get(PrismaService);
+    prisma = module.get(PrismaService) as unknown as MockedPrismaService;
     transactionsService = module.get(TransactionsService);
   });
 

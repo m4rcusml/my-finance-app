@@ -1,99 +1,224 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { buildPaginatedResponse } from '../shared/pagination.dto';
-import { CreateCategoryDto, UpdateCategoryDto } from './categories.dto';
+import { buildPaginatedResponse, type Category, type CategoryType, type PaginatedResponse } from '@finance/contracts';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { assertOwned } from '../common/ownership';
+import { resolvePagination } from '../common/pagination.dto';
+import type { Prisma } from '../generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import type { CreateCategoryDto, ListCategoriesQueryDto, UpdateCategoryDto } from './categories.dto';
+
+type CategoryRow = {
+  id: string;
+  userId: string;
+  name: string;
+  type: CategoryType;
+  isActive: boolean;
+  archivedAt: Date | string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+const NOT_FOUND = 'Categoria';
+
+function toIso(value: Date | string): string {
+  return typeof value === 'string' ? value : value.toISOString();
+}
+
+function toIsoOrNull(value: Date | string | null | undefined): string | null {
+  return value === null || value === undefined ? null : toIso(value);
+}
+
+/** `@@unique([userId, name, type])` violated. Mapped to a readable 409. */
+function isUniqueViolation(error: unknown): boolean {
+  return (error as { code?: string } | null)?.code === 'P2002';
+}
+
+function duplicateMessage(name: string, type: CategoryType): string {
+  return `Você já tem uma categoria "${name}" do tipo "${type}".`;
+}
 
 @Injectable()
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, dto: CreateCategoryDto) {
-    return await this.prisma.category.create({
-      data: {
-        ...dto,
-        userId,
-      },
-    });
-  }
+  // -------------------------------------------------------------------------
+  // Reads
+  // -------------------------------------------------------------------------
 
-  async findAll(userId: string, page = 1, limit = 20) {
-    const [categories, total] = await Promise.all([
+  async findAll(userId: string, query: ListCategoriesQueryDto = {}): Promise<PaginatedResponse<Category>> {
+    const { page, limit, skip } = resolvePagination(query);
+    const where = {
+      userId,
+      ...(query.includeArchived === true ? {} : { isActive: true }),
+      ...(query.type ? { type: query.type } : {}),
+    };
+
+    const [rows, totalItems] = await Promise.all([
       this.prisma.category.findMany({
-        where: { userId },
-        skip: (page - 1) * limit,
+        where,
+        skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ isActive: 'desc' }, { name: 'asc' }, { id: 'asc' }],
       }),
-      this.prisma.category.count({ where: { userId } }),
+      this.prisma.category.count({ where }),
     ]);
 
-    return buildPaginatedResponse(categories, total, page, limit);
+    return buildPaginatedResponse(
+      rows.map((row) => this.toResource(row as CategoryRow)),
+      totalItems,
+      page,
+      limit,
+    );
   }
 
-  async findById(userId: string, categoryId: string) {
-    const response = await this.prisma.category.findUnique({
-      where: { id: categoryId },
-    });
-
-    if (!response) {
-      throw new NotFoundException();
-    }
-
-    if (response.userId !== userId) {
-      throw new ForbiddenException();
-    }
-
-    return response;
+  async findOne(userId: string, categoryId: string): Promise<Category> {
+    const row = assertOwned(await this.prisma.category.findUnique({ where: { id: categoryId } }), userId, NOT_FOUND);
+    return this.toResource(row as CategoryRow);
   }
 
-  async update(userId: string, categoryId: string, dto: UpdateCategoryDto) {
-    const response = await this.prisma.category.findUnique({
-      where: { id: categoryId },
-    });
+  // -------------------------------------------------------------------------
+  // Writes
+  // -------------------------------------------------------------------------
 
-    if (!response) {
-      throw new NotFoundException();
+  async create(userId: string, dto: CreateCategoryDto): Promise<Category> {
+    await this.assertNameAvailable(userId, dto.name, dto.type);
+
+    try {
+      const row = await this.prisma.category.create({
+        data: { userId, name: dto.name, type: dto.type },
+      });
+      return this.toResource(row as CategoryRow);
+    } catch (error) {
+      // Race with a concurrent create: the index is the real authority.
+      if (isUniqueViolation(error)) throw new ConflictException(duplicateMessage(dto.name, dto.type));
+      throw error;
     }
-
-    if (response.userId !== userId) {
-      throw new ForbiddenException();
-    }
-
-    return await this.prisma.category.update({
-      data: dto,
-      where: { id: categoryId },
-    });
   }
 
-  async delete(userId: string, categoryId: string) {
-    const response = await this.prisma.category.findUnique({
+  async update(userId: string, categoryId: string, dto: UpdateCategoryDto): Promise<Category> {
+    const existing = assertOwned(
+      await this.prisma.category.findUnique({ where: { id: categoryId } }),
+      userId,
+      NOT_FOUND,
+    );
+
+    // Validate the FINAL state, not the patch: renaming only the type still has
+    // to respect the (userId, name, type) uniqueness.
+    const name = dto.name !== undefined ? dto.name : existing.name;
+    const type = dto.type !== undefined ? dto.type : (existing.type as CategoryType);
+
+    if (name !== existing.name || type !== existing.type) {
+      await this.assertNameAvailable(userId, name, type, categoryId);
+    }
+
+    try {
+      const row = await this.prisma.category.update({
+        where: { id: categoryId },
+        data: {
+          ...(dto.name !== undefined ? { name: dto.name } : {}),
+          ...(dto.type !== undefined ? { type: dto.type } : {}),
+        },
+      });
+      return this.toResource(row as CategoryRow);
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new ConflictException(duplicateMessage(name, type));
+      throw error;
+    }
+  }
+
+  /**
+   * Archive-or-delete: uma categoria usada por qualquer lançamento, lançamento
+   * fixo, ocorrência ou meta é arquivada; só uma categoria sem nenhum vínculo é
+   * realmente excluída.
+   */
+  async remove(userId: string, categoryId: string): Promise<Category> {
+    const existing = assertOwned(
+      await this.prisma.category.findUnique({ where: { id: categoryId } }),
+      userId,
+      NOT_FOUND,
+    );
+
+    const row = await this.prisma.$transaction(async (tx) => {
+      const dependents = await this.countDependents(tx, userId, categoryId);
+      if (dependents === 0) {
+        await tx.category.delete({ where: { id: categoryId } });
+        return existing;
+      }
+      if (!existing.isActive) return existing;
+      return await tx.category.update({
+        where: { id: categoryId },
+        data: { isActive: false, archivedAt: new Date() },
+      });
+    });
+
+    return this.toResource(row as CategoryRow);
+  }
+
+  async archive(userId: string, categoryId: string): Promise<Category> {
+    const existing = assertOwned(
+      await this.prisma.category.findUnique({ where: { id: categoryId } }),
+      userId,
+      NOT_FOUND,
+    );
+    if (!existing.isActive) return this.toResource(existing as CategoryRow);
+
+    const row = await this.prisma.category.update({
       where: { id: categoryId },
+      data: { isActive: false, archivedAt: new Date() },
     });
+    return this.toResource(row as CategoryRow);
+  }
 
-    if (!response) {
-      throw new NotFoundException();
-    }
+  async restore(userId: string, categoryId: string): Promise<Category> {
+    const existing = assertOwned(
+      await this.prisma.category.findUnique({ where: { id: categoryId } }),
+      userId,
+      NOT_FOUND,
+    );
+    if (existing.isActive) return this.toResource(existing as CategoryRow);
 
-    if (response.userId !== userId) {
-      throw new ForbiddenException();
-    }
-
-    const dependentTransactions = await this.prisma.transaction.count({
-      where: { categoryId },
-    });
-
-    const dependentFixedTransactions = await this.prisma.fixedTransaction.count({
-      where: { categoryId },
-    });
-
-    if (dependentTransactions > 0 || dependentFixedTransactions > 0) {
-      throw new ConflictException(
-        'Cannot delete category with existing transactions. Please reassign or delete them first.',
-      );
-    }
-
-    await this.prisma.category.delete({
+    const row = await this.prisma.category.update({
       where: { id: categoryId },
+      data: { isActive: true, archivedAt: null },
     });
+    return this.toResource(row as CategoryRow);
+  }
+
+  // -------------------------------------------------------------------------
+  // Internals
+  // -------------------------------------------------------------------------
+
+  private async assertNameAvailable(
+    userId: string,
+    name: string,
+    type: CategoryType,
+    exceptId?: string,
+  ): Promise<void> {
+    const clash = await this.prisma.category.findFirst({
+      where: { userId, name, type, ...(exceptId ? { id: { not: exceptId } } : {}) },
+      select: { id: true },
+    });
+    if (clash) throw new ConflictException(duplicateMessage(name, type));
+  }
+
+  private async countDependents(tx: Prisma.TransactionClient, userId: string, categoryId: string): Promise<number> {
+    const [transactions, fixedTransactions, occurrences, goals] = await Promise.all([
+      tx.transaction.count({ where: { userId, categoryId } }),
+      tx.fixedTransaction.count({ where: { userId, categoryId } }),
+      tx.fixedTransactionOccurrence.count({ where: { userId, categoryId } }),
+      tx.goal.count({ where: { userId, relatedCategoryId: categoryId } }),
+    ]);
+    return transactions + fixedTransactions + occurrences + goals;
+  }
+
+  private toResource(row: CategoryRow): Category {
+    return {
+      id: row.id,
+      name: row.name,
+      type: row.type,
+      isActive: row.isActive,
+      archivedAt: toIsoOrNull(row.archivedAt),
+      createdAt: toIso(row.createdAt),
+      updatedAt: toIso(row.updatedAt),
+    };
   }
 }

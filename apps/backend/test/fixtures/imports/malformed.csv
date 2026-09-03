@@ -1,0 +1,6 @@
+Data;Descrição;Valor;Tipo
+01/04/2026;Linha boa;-150,00;Débito
+31/02/2026;Data que não existe;-10,00;Débito
+;Sem data;-20,00;Débito
+03/04/2026;Valor não numérico;abc;Débito
+04/04/2026;Outra linha boa;1.234,56;Crédito

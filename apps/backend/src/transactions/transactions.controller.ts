@@ -1,54 +1,149 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
-import { CurrentUser, UserPayload } from 'src/decorators/user.decorator';
-import { CreateTransactionDto, ListTransactionsQueryDto, UpdateTransactionDto } from './transactions.dto';
+import type {
+  ExpenseProjection,
+  PaginatedResponse,
+  Transaction,
+  TransactionSummary,
+  TransactionWithRelations,
+} from '@finance/contracts';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { CurrentUser, type UserPayload } from '../decorators/user.decorator';
+import {
+  CreateTransactionDto,
+  ExpenseProjectionDto,
+  ExpenseProjectionQueryDto,
+  ListTransactionsQueryDto,
+  PaginatedTransactionsDto,
+  TransactionDto,
+  TransactionSummaryDto,
+  TransactionSummaryQueryDto,
+  UpdateTransactionDto,
+} from './transactions.dto';
 import { TransactionsService } from './transactions.service';
 
+@ApiTags('Lançamentos')
+@ApiBearerAuth('access-token')
+@ApiUnauthorizedResponse({ description: 'Sessão inválida ou expirada.' })
 @Controller('transactions')
 export class TransactionsController {
-  constructor(private readonly transactionService: TransactionsService) {}
+  constructor(private readonly transactionsService: TransactionsService) {}
 
   @Post()
-  async create(@CurrentUser() user: UserPayload, @Body() dto: CreateTransactionDto) {
-    return await this.transactionService.create(user.sub, dto);
+  @ApiOperation({
+    summary: 'Cria um lançamento',
+    description: 'Exatamente uma origem: informe accountId **ou** creditCardId, nunca os dois e nunca nenhum.',
+  })
+  @ApiCreatedResponse({ type: TransactionDto })
+  @ApiBadRequestResponse({ description: 'Origem inválida, data inválida ou conta/cartão/categoria arquivados.' })
+  @ApiNotFoundResponse({ description: 'Conta, cartão ou categoria não encontrados.' })
+  create(@CurrentUser() user: UserPayload, @Body() body: CreateTransactionDto): Promise<Transaction> {
+    return this.transactionsService.create(user.sub, body);
   }
 
   @Get()
-  async findAll(@CurrentUser() user: UserPayload, @Query() filters: ListTransactionsQueryDto) {
-    return await this.transactionService.findAllByUser(user.sub, filters);
+  @ApiOperation({
+    summary: 'Lista lançamentos',
+    description: 'Ordem estável (data, criação, id) e filtros combináveis. `toDate` inclui o dia inteiro.',
+  })
+  @ApiOkResponse({ type: PaginatedTransactionsDto })
+  @ApiBadRequestResponse({ description: 'Filtro inválido.' })
+  findAll(
+    @CurrentUser() user: UserPayload,
+    @Query() query: ListTransactionsQueryDto,
+  ): Promise<PaginatedResponse<TransactionWithRelations>> {
+    return this.transactionsService.findAllByUser(user.sub, query);
   }
 
   @Get('uncategorized')
-  async findUncategorized(@CurrentUser() user: UserPayload, @Query() filters: ListTransactionsQueryDto) {
-    return await this.transactionService.findUncategorized(user.sub, filters);
+  @ApiOperation({ summary: 'Lista lançamentos sem categoria', description: 'Mesmos filtros da listagem principal.' })
+  @ApiOkResponse({ type: PaginatedTransactionsDto })
+  @ApiBadRequestResponse({ description: 'Filtro inválido.' })
+  findUncategorized(
+    @CurrentUser() user: UserPayload,
+    @Query() query: ListTransactionsQueryDto,
+  ): Promise<PaginatedResponse<TransactionWithRelations>> {
+    return this.transactionsService.findUncategorized(user.sub, query);
   }
 
   @Get('summary')
-  async getSummary(
+  @ApiOperation({
+    summary: 'Resumo do período',
+    description: 'Entradas, saídas e saldo entre `from` e `to`, ambos obrigatórios e inclusivos.',
+  })
+  @ApiOkResponse({ type: TransactionSummaryDto })
+  @ApiBadRequestResponse({ description: '`from`/`to` ausentes, inválidos ou invertidos.' })
+  getSummary(
     @CurrentUser() user: UserPayload,
-    @Query('fromDate') fromDate: string,
-    @Query('toDate') toDate: string,
-  ) {
-    return await this.transactionService.getSummary(user.sub, fromDate, toDate);
+    @Query() query: TransactionSummaryQueryDto,
+  ): Promise<TransactionSummary> {
+    return this.transactionsService.getSummary(user.sub, query.from, query.to);
   }
 
   @Get('projection')
-  async getProjection(@CurrentUser() user: UserPayload) {
-    return await this.transactionService.getProjection(user.sub);
+  @ApiOperation({
+    summary: 'Projeção de despesa mensal',
+    description: 'Média dos últimos meses **completos**; o mês corrente, ainda parcial, fica de fora.',
+  })
+  @ApiOkResponse({ type: ExpenseProjectionDto })
+  @ApiBadRequestResponse({ description: '`months` fora do intervalo permitido.' })
+  getProjection(
+    @CurrentUser() user: UserPayload,
+    @Query() query: ExpenseProjectionQueryDto,
+  ): Promise<ExpenseProjection> {
+    return this.transactionsService.getProjection(user.sub, query.months);
   }
 
   @Get(':id')
-  async findById(@CurrentUser() user: UserPayload, @Param('id') id: string) {
-    return await this.transactionService.findById(user.sub, id);
+  @ApiOperation({ summary: 'Detalha um lançamento' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ type: TransactionDto })
+  @ApiNotFoundResponse({ description: 'Lançamento não encontrado.' })
+  findById(@CurrentUser() user: UserPayload, @Param('id') id: string): Promise<Transaction> {
+    return this.transactionsService.findById(user.sub, id);
   }
 
   @Patch(':id')
-  async update(@CurrentUser() user: UserPayload, @Param('id') id: string, @Body() dto: UpdateTransactionDto) {
-    return await this.transactionService.update(user.sub, id, dto);
+  @ApiOperation({
+    summary: 'Atualiza um lançamento',
+    description: 'Campo ausente fica como está; `null` limpa a relação. A origem única é validada no estado final.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ type: TransactionDto })
+  @ApiBadRequestResponse({
+    description: 'Resultado ficaria sem origem, com duas origens, ou aponta para item arquivado.',
+  })
+  @ApiNotFoundResponse({ description: 'Lançamento, conta, cartão ou categoria não encontrados.' })
+  update(
+    @CurrentUser() user: UserPayload,
+    @Param('id') id: string,
+    @Body() body: UpdateTransactionDto,
+  ): Promise<Transaction> {
+    return this.transactionsService.update(user.sub, id, body);
   }
 
   @Delete(':id')
-  @HttpCode(204)
-  async delete(@CurrentUser() user: UserPayload, @Param('id') id: string) {
-    return await this.transactionService.delete(user.sub, id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Exclui um lançamento',
+    description: 'Lançamento gerado por recorrência confirmada é histórico: desfaça a ocorrência antes.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiNoContentResponse({ description: 'Lançamento excluído.' })
+  @ApiNotFoundResponse({ description: 'Lançamento não encontrado.' })
+  @ApiConflictResponse({ description: 'Lançamento vinculado a uma ocorrência de recorrência confirmada.' })
+  remove(@CurrentUser() user: UserPayload, @Param('id') id: string): Promise<void> {
+    return this.transactionsService.remove(user.sub, id);
   }
 }

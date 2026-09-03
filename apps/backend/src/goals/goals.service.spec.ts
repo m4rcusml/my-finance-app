@@ -1,295 +1,309 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
-import { AccountsService } from '../accounts/accounts.service';
-import { CategoriesService } from '../categories/categories.service';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { createMockPrismaService, type MockedPrismaService } from '../prisma/prisma.mock';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateGoalDto, GoalType, UpdateGoalDto } from './goals.dto';
-import { GoalsService } from './goals.service';
+import { computeProgress, GoalsService } from './goals.service';
 
+/**
+ * Goals carry **manual** progress. These tests pin the clamp (progress used to
+ * run past 100%), the `'manual'` label, and the fact that the two related ids
+ * are ownership-checked labels that never influence the number.
+ */
 describe('GoalsService', () => {
   let service: GoalsService;
-  let prisma: jest.Mocked<PrismaService>;
-  let accountsService: jest.Mocked<AccountsService>;
-  let categoriesService: jest.Mocked<CategoriesService>;
+  let prisma: MockedPrismaService;
 
-  const userId = 'user-1';
+  const userA = 'user-a';
+  const userB = 'user-b';
   const goalId = 'goal-1';
+  const accountId = 'account-1';
+  const categoryId = 'category-1';
 
-  const baseGoal = {
+  const goalRow = {
     id: goalId,
-    userId,
-    name: 'Viagem Japão',
-    type: 'purchase',
-    targetAmount: 15000,
-    currentAmount: 5000,
-    deadline: new Date('2025-12-31'),
+    userId: userA,
+    name: 'Reserva de emergência',
+    type: 'saving',
+    targetAmount: '15000.00',
+    currentAmount: '5000.00',
+    deadline: new Date('2026-12-31T00:00:00.000Z'),
     relatedCategoryId: null,
     relatedAccountId: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date('2026-01-10T12:00:00.000Z'),
+    updatedAt: new Date('2026-01-11T12:00:00.000Z'),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        GoalsService,
-        {
-          provide: PrismaService,
-          useValue: {
-            goal: {
-              create: jest.fn(),
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              update: jest.fn(),
-              delete: jest.fn(),
-              count: jest.fn(),
-            },
-          },
-        },
-        {
-          provide: AccountsService,
-          useValue: {
-            findById: jest.fn(),
-          },
-        },
-        {
-          provide: CategoriesService,
-          useValue: {
-            findById: jest.fn(),
-          },
-        },
-      ],
+      providers: [GoalsService, { provide: PrismaService, useValue: createMockPrismaService() }],
     }).compile();
 
-    service = module.get<GoalsService>(GoalsService);
-    prisma = module.get(PrismaService);
-    accountsService = module.get(AccountsService);
-    categoriesService = module.get(CategoriesService);
+    service = module.get(GoalsService);
+    prisma = module.get(PrismaService) as unknown as MockedPrismaService;
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  afterEach(() => jest.clearAllMocks());
+
+  describe('computeProgress', () => {
+    it('rounds the ratio to 4 decimal places', () => {
+      expect(computeProgress(5000, 15000)).toBe(0.3333);
+    });
+
+    it('clamps an overshoot to 1 instead of reporting more than 100%', () => {
+      expect(computeProgress(30000, 15000)).toBe(1);
+    });
+
+    it('clamps a negative accumulation to 0', () => {
+      expect(computeProgress(-100, 15000)).toBe(0);
+    });
+
+    it('returns 0 for a non-positive target instead of dividing by zero', () => {
+      expect(computeProgress(500, 0)).toBe(0);
+    });
   });
 
-  describe('createGoal', () => {
-    it('should create a goal for the user', async () => {
-      const dto: CreateGoalDto = {
-        name: 'Viagem Japão',
-        type: GoalType.PURCHASE,
+  describe('create', () => {
+    it('defaults currentAmount to 0 and converts the deadline to a civil date', async () => {
+      prisma.goal.create.mockResolvedValue({ ...goalRow, currentAmount: '0.00' });
+
+      const result = await service.create(userA, {
+        name: 'Reserva de emergência',
+        type: 'saving',
         targetAmount: 15000,
-        currentAmount: 5000,
-        deadline: '2025-12-31',
-      };
-      prisma.goal.create.mockResolvedValue(baseGoal as any);
-
-      const result = await service.createGoal(userId, dto);
+        deadline: '2026-12-31',
+      });
 
       expect(prisma.goal.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          name: dto.name,
-          type: dto.type,
-          targetAmount: dto.targetAmount,
-          currentAmount: dto.currentAmount,
-          userId,
-        }),
+        data: {
+          userId: userA,
+          name: 'Reserva de emergência',
+          type: 'saving',
+          targetAmount: 15000,
+          currentAmount: 0,
+          deadline: new Date('2026-12-31T00:00:00.000Z'),
+          relatedCategoryId: null,
+          relatedAccountId: null,
+        },
       });
-      expect(result.name).toBe('Viagem Japão');
+      expect(result.deadline).toBe('2026-12-31');
+      expect(result.currentAmount).toBe(0);
+      expect(result.progress).toBe(0);
+      expect(result.progressSource).toBe('manual');
     });
 
-    it('should default currentAmount to 0 when not provided', async () => {
-      const dto: CreateGoalDto = {
-        name: 'Emergency Fund',
-        type: GoalType.SAVINGS,
-        targetAmount: 10000,
-      };
-      prisma.goal.create.mockResolvedValue({ ...baseGoal, ...dto, currentAmount: 0 } as any);
+    it('stores a null deadline when none is given', async () => {
+      prisma.goal.create.mockResolvedValue({ ...goalRow, deadline: null });
 
-      const result = await service.createGoal(userId, dto);
+      const result = await service.create(userA, { name: 'Carro', type: 'other', targetAmount: 50000 });
 
       expect(prisma.goal.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ currentAmount: 0 }),
-        }),
+        expect.objectContaining({ data: expect.objectContaining({ deadline: null }) }),
       );
+      expect(result.deadline).toBeNull();
     });
 
-    it('should validate relatedAccount when provided', async () => {
-      const dto: CreateGoalDto = {
-        name: 'Viagem Japão',
-        type: GoalType.PURCHASE,
-        targetAmount: 15000,
-        relatedAccountId: 'account-1',
-      };
-      accountsService.findById.mockResolvedValue({ id: 'account-1', userId } as any);
-      prisma.goal.create.mockResolvedValue({ ...baseGoal, relatedAccountId: 'account-1' } as any);
-
-      const result = await service.createGoal(userId, dto);
-
-      expect(accountsService.findById).toHaveBeenCalledWith(userId, 'account-1');
-      expect(result.relatedAccountId).toBe('account-1');
+    it('rejects a deadline that is not a real calendar day', async () => {
+      await expect(
+        service.create(userA, { name: 'Carro', type: 'other', targetAmount: 100, deadline: '2026-02-30' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.goal.create).not.toHaveBeenCalled();
     });
 
-    it('should validate relatedCategory when provided', async () => {
-      const dto: CreateGoalDto = {
-        name: 'Viagem Japão',
-        type: GoalType.PURCHASE,
+    it('accepts related ids that belong to the caller', async () => {
+      prisma.category.findUnique.mockResolvedValue({ id: categoryId, userId: userA });
+      prisma.account.findUnique.mockResolvedValue({ id: accountId, userId: userA });
+      prisma.goal.create.mockResolvedValue({ ...goalRow, relatedCategoryId: categoryId, relatedAccountId: accountId });
+
+      const result = await service.create(userA, {
+        name: 'Reserva',
+        type: 'saving',
         targetAmount: 15000,
-        relatedCategoryId: 'category-1',
-      };
-      categoriesService.findById.mockResolvedValue({ id: 'category-1', userId } as any);
-      prisma.goal.create.mockResolvedValue({ ...baseGoal, relatedCategoryId: 'category-1' } as any);
+        relatedCategoryId: categoryId,
+        relatedAccountId: accountId,
+      });
 
-      const result = await service.createGoal(userId, dto);
-
-      expect(categoriesService.findById).toHaveBeenCalledWith(userId, 'category-1');
-      expect(result.relatedCategoryId).toBe('category-1');
+      expect(result.relatedCategoryId).toBe(categoryId);
+      expect(result.relatedAccountId).toBe(accountId);
     });
 
-    it('should throw BadRequestException when relatedAccount validation fails', async () => {
-      const dto: CreateGoalDto = {
-        name: 'Viagem Japão',
-        type: GoalType.PURCHASE,
-        targetAmount: 15000,
-        relatedAccountId: 'account-1',
-      };
-      accountsService.findById.mockRejectedValue(new ForbiddenException());
+    it('rejects a related account owned by somebody else with 404', async () => {
+      prisma.account.findUnique.mockResolvedValue({ id: accountId, userId: userB });
 
-      await expect(service.createGoal(userId, dto)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(userA, { name: 'Reserva', type: 'saving', targetAmount: 100, relatedAccountId: accountId }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.goal.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a related category owned by somebody else with 404', async () => {
+      prisma.category.findUnique.mockResolvedValue({ id: categoryId, userId: userB });
+
+      await expect(
+        service.create(userA, { name: 'Reserva', type: 'saving', targetAmount: 100, relatedCategoryId: categoryId }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.goal.create).not.toHaveBeenCalled();
     });
   });
 
-  describe('findAllByUser', () => {
-    it('should return all goals for the user with progress', async () => {
-      prisma.goal.findMany.mockResolvedValue([baseGoal]);
+  describe('findAll', () => {
+    it('returns the paginated envelope with progress on every row', async () => {
+      prisma.goal.findMany.mockResolvedValue([goalRow]);
       prisma.goal.count.mockResolvedValue(1);
 
-      const result = await service.findAllByUser(userId, 1, 20);
+      const result = await service.findAll(userA, { page: 1, limit: 20 });
 
-      expect(prisma.goal.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId } }));
-      expect(result.data).toHaveLength(1);
-      expect(result.data[0].name).toBe('Viagem Japão');
-      expect(result.data[0].progress).toBeCloseTo(0.3333, 3);
+      expect(prisma.goal.findMany).toHaveBeenCalledWith({
+        where: { userId: userA },
+        skip: 0,
+        take: 20,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      });
+      expect(result.data[0].progress).toBe(0.3333);
+      expect(result.data[0].progressSource).toBe('manual');
       expect(result.meta.totalItems).toBe(1);
     });
 
-    it('should handle goals with zero targetAmount gracefully', async () => {
-      prisma.goal.findMany.mockResolvedValue([{ ...baseGoal, targetAmount: 0 }]);
-      prisma.goal.count.mockResolvedValue(1);
+    it('never returns a bare array', async () => {
+      prisma.goal.findMany.mockResolvedValue([]);
+      prisma.goal.count.mockResolvedValue(0);
 
-      const result = await service.findAllByUser(userId, 1, 20);
+      const result = await service.findAll(userA);
 
-      expect(result.data[0].progress).toBe(0);
-      expect(result.meta.totalItems).toBe(1);
+      expect(Array.isArray(result)).toBe(false);
+      expect(result).toHaveProperty('data');
+      expect(result).toHaveProperty('meta');
     });
   });
 
-  describe('findById', () => {
-    it('should return goal with progress when found and owned', async () => {
-      prisma.goal.findUnique.mockResolvedValue(baseGoal);
+  describe('findOne', () => {
+    it('returns the contract shape, money as numbers', async () => {
+      prisma.goal.findUnique.mockResolvedValue(goalRow);
 
-      const result = await service.findById(userId, goalId);
+      const result = await service.findOne(userA, goalId);
 
-      expect(result.id).toBe(goalId);
-      expect(result.progress).toBeCloseTo(0.3333, 3);
+      expect(result).toEqual({
+        id: goalId,
+        name: 'Reserva de emergência',
+        type: 'saving',
+        targetAmount: 15000,
+        currentAmount: 5000,
+        deadline: '2026-12-31',
+        relatedCategoryId: null,
+        relatedAccountId: null,
+        progress: 0.3333,
+        progressSource: 'manual',
+        createdAt: '2026-01-10T12:00:00.000Z',
+        updatedAt: '2026-01-11T12:00:00.000Z',
+      });
     });
 
-    it('should throw NotFoundException when goal does not exist', async () => {
+    it('throws 404 when it does not exist', async () => {
       prisma.goal.findUnique.mockResolvedValue(null);
 
-      await expect(service.findById(userId, 'nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(userA, goalId)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when goal belongs to another user', async () => {
-      prisma.goal.findUnique.mockResolvedValue({ ...baseGoal, userId: 'other-user' });
+    it('throws 404 — never 403 — for another user’s goal', async () => {
+      prisma.goal.findUnique.mockResolvedValue({ ...goalRow, userId: userB });
 
-      await expect(service.findById(userId, goalId)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(userA, goalId)).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('updateGoal', () => {
-    it('should update goal when owned', async () => {
-      const dto: UpdateGoalDto = { name: 'Viagem Europa' };
-      prisma.goal.findUnique.mockResolvedValue(baseGoal);
-      prisma.goal.update.mockResolvedValue({ ...baseGoal, ...dto });
+  describe('update', () => {
+    it('leaves omitted keys untouched', async () => {
+      prisma.goal.findUnique.mockResolvedValue(goalRow);
+      prisma.goal.update.mockResolvedValue({ ...goalRow, name: 'Nova reserva' });
 
-      const result = await service.updateGoal(userId, goalId, dto);
+      await service.update(userA, goalId, { name: 'Nova reserva' });
+
+      expect(prisma.goal.update).toHaveBeenCalledWith({ where: { id: goalId }, data: { name: 'Nova reserva' } });
+    });
+
+    it('clears the deadline on an explicit null', async () => {
+      prisma.goal.findUnique.mockResolvedValue(goalRow);
+      prisma.goal.update.mockResolvedValue({ ...goalRow, deadline: null });
+
+      const result = await service.update(userA, goalId, { deadline: null });
+
+      expect(prisma.goal.update).toHaveBeenCalledWith({ where: { id: goalId }, data: { deadline: null } });
+      expect(result.deadline).toBeNull();
+    });
+
+    it('clears both related ids on explicit nulls without any ownership lookup', async () => {
+      prisma.goal.findUnique.mockResolvedValue(goalRow);
+      prisma.goal.update.mockResolvedValue(goalRow);
+
+      await service.update(userA, goalId, { relatedAccountId: null, relatedCategoryId: null });
 
       expect(prisma.goal.update).toHaveBeenCalledWith({
-        data: dto,
         where: { id: goalId },
+        data: { relatedCategoryId: null, relatedAccountId: null },
       });
-      expect(result.name).toBe('Viagem Europa');
+      expect(prisma.account.findUnique).not.toHaveBeenCalled();
+      expect(prisma.category.findUnique).not.toHaveBeenCalled();
     });
 
-    it('should validate relatedAccount when provided in update', async () => {
-      const dto: UpdateGoalDto = { relatedAccountId: 'account-2' };
-      prisma.goal.findUnique.mockResolvedValue(baseGoal);
-      accountsService.findById.mockResolvedValue({ id: 'account-2', userId } as any);
-      prisma.goal.update.mockResolvedValue({ ...baseGoal, relatedAccountId: 'account-2' });
+    it('checks ownership before attaching a related account', async () => {
+      prisma.goal.findUnique.mockResolvedValue(goalRow);
+      prisma.account.findUnique.mockResolvedValue({ id: accountId, userId: userB });
 
-      const result = await service.updateGoal(userId, goalId, dto);
-
-      expect(accountsService.findById).toHaveBeenCalledWith(userId, 'account-2');
-      expect(result.relatedAccountId).toBe('account-2');
+      await expect(service.update(userA, goalId, { relatedAccountId: accountId })).rejects.toThrow(NotFoundException);
+      expect(prisma.goal.update).not.toHaveBeenCalled();
     });
 
-    it('should throw NotFoundException when goal does not exist', async () => {
-      prisma.goal.findUnique.mockResolvedValue(null);
+    it('clamps the recomputed progress after an overshooting currentAmount', async () => {
+      prisma.goal.findUnique.mockResolvedValue(goalRow);
+      prisma.goal.update.mockResolvedValue({ ...goalRow, currentAmount: '30000.00' });
 
-      await expect(service.updateGoal(userId, goalId, {})).rejects.toThrow(NotFoundException);
+      const result = await service.update(userA, goalId, { currentAmount: 30000 });
+
+      expect(result.progress).toBe(1);
+      expect(result.currentAmount).toBe(30000);
     });
 
-    it('should throw ForbiddenException when updating another user goal', async () => {
-      prisma.goal.findUnique.mockResolvedValue({ ...baseGoal, userId: 'other-user' });
+    it('refuses to touch another user’s goal', async () => {
+      prisma.goal.findUnique.mockResolvedValue({ ...goalRow, userId: userB });
 
-      await expect(service.updateGoal(userId, goalId, {})).rejects.toThrow(ForbiddenException);
+      await expect(service.update(userA, goalId, { name: 'x' })).rejects.toThrow(NotFoundException);
+      expect(prisma.goal.update).not.toHaveBeenCalled();
     });
   });
 
-  describe('deleteGoal', () => {
-    it('should delete goal when owned', async () => {
-      prisma.goal.findUnique.mockResolvedValue(baseGoal);
-      prisma.goal.delete.mockResolvedValue(baseGoal);
+  describe('updateProgress', () => {
+    it('patches only currentAmount and returns the recomputed progress', async () => {
+      prisma.goal.findUnique.mockResolvedValue(goalRow);
+      prisma.goal.update.mockResolvedValue({ ...goalRow, currentAmount: '7500.00' });
 
-      await service.deleteGoal(userId, goalId);
+      const result = await service.updateProgress(userA, goalId, 7500);
+
+      expect(prisma.goal.update).toHaveBeenCalledWith({ where: { id: goalId }, data: { currentAmount: 7500 } });
+      expect(result.progress).toBe(0.5);
+      expect(result.progressSource).toBe('manual');
+    });
+
+    it('throws 404 for another user’s goal', async () => {
+      prisma.goal.findUnique.mockResolvedValue({ ...goalRow, userId: userB });
+
+      await expect(service.updateProgress(userA, goalId, 100)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('remove', () => {
+    it('deletes a goal owned by the caller', async () => {
+      prisma.goal.findUnique.mockResolvedValue(goalRow);
+      prisma.goal.delete.mockResolvedValue(goalRow);
+
+      await service.remove(userA, goalId);
 
       expect(prisma.goal.delete).toHaveBeenCalledWith({ where: { id: goalId } });
     });
 
-    it('should throw NotFoundException when goal does not exist', async () => {
-      prisma.goal.findUnique.mockResolvedValue(null);
+    it('throws 404 for another user’s goal', async () => {
+      prisma.goal.findUnique.mockResolvedValue({ ...goalRow, userId: userB });
 
-      await expect(service.deleteGoal(userId, goalId)).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw ForbiddenException when deleting another user goal', async () => {
-      prisma.goal.findUnique.mockResolvedValue({ ...baseGoal, userId: 'other-user' });
-
-      await expect(service.deleteGoal(userId, goalId)).rejects.toThrow(ForbiddenException);
-    });
-  });
-
-  describe('enrichWithProgress', () => {
-    it('should calculate progress correctly', () => {
-      // @ts-expect-error accessing private method for testing
-      const result = service.enrichWithProgress({ ...baseGoal, currentAmount: 5000, targetAmount: 15000 });
-      expect(result.progress).toBeCloseTo(0.3333, 3);
-    });
-
-    it('should return 0 when targetAmount is 0', () => {
-      // @ts-expect-error accessing private method for testing
-      const result = service.enrichWithProgress({ ...baseGoal, currentAmount: 100, targetAmount: 0 });
-      expect(result.progress).toBe(0);
-    });
-
-    it('should handle Decimal-like values', () => {
-      // @ts-expect-error accessing private method for testing
-      const result = service.enrichWithProgress({
-        ...baseGoal,
-        currentAmount: { toNumber: () => 2500 },
-        targetAmount: { toNumber: () => 10000 },
-      });
-      expect(result.progress).toBe(0.25);
+      await expect(service.remove(userA, goalId)).rejects.toThrow(NotFoundException);
+      expect(prisma.goal.delete).not.toHaveBeenCalled();
     });
   });
 });

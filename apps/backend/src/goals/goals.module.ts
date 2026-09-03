@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AccountsModule } from 'src/accounts/accounts.module';
-import { CategoriesModule } from 'src/categories/categories.module';
 import { GoalsController } from './goals.controller';
 import { GoalsService } from './goals.service';
 
+/**
+ * Objetivos financeiros com progresso manual.
+ *
+ * O módulo não depende de Accounts nem de Categories: as duas relações são
+ * apenas rótulos e a checagem de posse é feita direto no Prisma, evitando
+ * acoplamento entre módulos.
+ */
 @Module({
-  imports: [AccountsModule, CategoriesModule],
   providers: [GoalsService],
   controllers: [GoalsController],
   exports: [GoalsService],

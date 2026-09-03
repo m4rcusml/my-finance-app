@@ -1,175 +1,364 @@
+// Financial data model for the V1 personal finance manager.
+//
+// Conventions enforced here (and mirrored in packages/contracts/src/enums.ts):
+//   * every closed value set is a native PostgreSQL enum with lowercase values;
+//   * a "civil date" (the day a person would write down) is `@db.Date`, never a
+//     timestamp, so it cannot shift across timezones;
+//   * money is `numeric(15,2)`, quantities `numeric(15,8)`;
+//   * history is never destroyed: accounts, cards, categories and recurrence
+//     templates are archived (`archivedAt`), not deleted;
+//   * a transaction has exactly one source (account XOR credit card), enforced
+//     by a CHECK constraint as well as by the service layer.
+
 generator client {
   provider = "prisma-client"
-  output   = "./generated"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
+enum AccountType {
+  checking
+  savings
+  investment
+  cash
+  other
+
+  @@map("account_type")
+}
+
+enum CategoryType {
+  income
+  expense
+  both
+
+  @@map("category_type")
+}
+
+enum TransactionType {
+  income
+  expense
+
+  @@map("transaction_type")
+}
+
+enum TransactionSource {
+  manual
+  imported
+  fixed
+
+  @@map("transaction_source")
+}
+
+enum OccurrenceStatus {
+  pending
+  confirmed
+  skipped
+
+  @@map("occurrence_status")
+}
+
+enum InvestmentType {
+  stock
+  fii
+  etf
+  crypto
+  fixed_income
+  fund
+  other
+
+  @@map("investment_type")
+}
+
+enum GoalType {
+  saving
+  spending_limit
+  debt_payoff
+  other
+
+  @@map("goal_type")
+}
+
+enum ImportOrigin {
+  inter
+  generic
+
+  @@map("import_origin")
+}
+
+enum ImportFileType {
+  csv
+  ofx
+  xlsx
+
+  @@map("import_file_type")
+}
+
+enum ImportStatus {
+  pending
+  processing
+  completed
+  failed
+  expired
+
+  @@map("import_status")
+}
+
 model User {
-  id                          String                       @id @default(uuid())
-  email                       String                       @unique
-  passwordHash                String                       @map("password_hash")
-  name                        String?
-  createdAt                   DateTime                     @default(now()) @map("created_at")
-  updatedAt                   DateTime                     @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  /// Bumped on logout-all / password change so outstanding refresh tokens die.
+  tokenVersion Int      @default(0) @map("token_version")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
   accounts                    Account[]
   categories                  Category[]
   creditCards                 CreditCard[]
   fixedTransactionOccurrences FixedTransactionOccurrence[]
   fixedTransactions           FixedTransaction[]
   goals                       Goal[]
+  importBatches               ImportBatch[]
   importedFiles               ImportedFile[]
   investments                 Investment[]
   marketAssets                MarketAsset[]
+  refreshTokens               RefreshToken[]
   transactions                Transaction[]
 
   @@map("users")
 }
 
+/// One row per issued refresh token. Rotation deletes the old row and inserts a
+/// new one, so replaying a used token finds nothing and is rejected.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  /// SHA-256 of the opaque token; the raw value only ever exists in the cookie.
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
 model Account {
-  id             String        @id @default(uuid())
-  userId         String        @map("user_id")
+  id             String      @id @default(uuid())
+  userId         String      @map("user_id")
   name           String
   institution    String
-  type           String
-  initialBalance Decimal       @map("initial_balance") @db.Decimal(15, 2)
-  isActive       Boolean       @default(true) @map("is_active")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goals          Goal[]
-  transactions   Transaction[]
+  type           AccountType
+  initialBalance Decimal     @map("initial_balance") @db.Decimal(15, 2)
+  isActive       Boolean     @default(true) @map("is_active")
+  archivedAt     DateTime?   @map("archived_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
 
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fixedTransactions FixedTransaction[]
+  goals             Goal[]
+  occurrences       FixedTransactionOccurrence[]
+  transactions      Transaction[]
+
+  @@index([userId, isActive])
+  @@index([userId, type])
   @@map("accounts")
 }
 
 model CreditCard {
-  id           String        @id @default(uuid())
-  userId       String        @map("user_id")
-  name         String
-  institution  String
-  limitTotal   Decimal       @map("limit_total") @db.Decimal(15, 2)
-  closingDay   Int?          @map("closing_day")
-  isActive     Boolean       @default(true) @map("is_active")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  name        String
+  institution String
+  limitTotal  Decimal   @map("limit_total") @db.Decimal(15, 2)
+  /// Day the invoice closes (1-31). Null means "aligned with the calendar month".
+  closingDay  Int?      @map("closing_day")
+  isActive    Boolean   @default(true) @map("is_active")
+  archivedAt  DateTime? @map("archived_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fixedTransactions FixedTransaction[]
+  occurrences       FixedTransactionOccurrence[]
+  transactions      Transaction[]
+
+  @@index([userId, isActive])
   @@map("credit_cards")
 }
 
 model Category {
-  id                String             @id @default(uuid())
-  userId            String             @map("user_id")
-  name              String
-  type              String
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @updatedAt @map("updated_at")
+  id         String       @id @default(uuid())
+  userId     String       @map("user_id")
+  name       String
+  type       CategoryType
+  isActive   Boolean      @default(true) @map("is_active")
+  archivedAt DateTime?    @map("archived_at")
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   fixedTransactions FixedTransaction[]
   goals             Goal[]
+  occurrences       FixedTransactionOccurrence[]
   transactions      Transaction[]
 
+  @@unique([userId, name, type])
+  @@index([userId, isActive])
   @@map("categories")
 }
 
 model Transaction {
-  id                         String                       @id @default(uuid())
-  userId                     String                       @map("user_id")
-  type                       String
-  value                      Decimal                      @db.Decimal(15, 2)
-  date                       DateTime
-  accountId                  String?                      @map("account_id")
-  creditCardId               String?                      @map("credit_card_id")
-  categoryId                 String?                      @map("category_id")
-  description                String?
-  source                     String                       @default("manual")
-  externalId                 String?                      @map("external_id")
-  createdAt                  DateTime                     @default(now()) @map("created_at")
-  updatedAt                  DateTime                     @updatedAt @map("updated_at")
-  fixedTransactionOccurrence FixedTransactionOccurrence[]
-  account                    Account?                     @relation(fields: [accountId], references: [id])
-  category                   Category?                    @relation(fields: [categoryId], references: [id])
-  creditCard                 CreditCard?                  @relation(fields: [creditCardId], references: [id])
-  user                       User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String            @id @default(uuid())
+  userId       String            @map("user_id")
+  type         TransactionType
+  value        Decimal           @db.Decimal(15, 2)
+  /// Civil date: the calendar day the money moved. No time, no timezone.
+  date         DateTime          @db.Date
+  accountId    String?           @map("account_id")
+  creditCardId String?           @map("credit_card_id")
+  categoryId   String?           @map("category_id")
+  description  String?
+  source       TransactionSource @default(manual)
+  /// Stable id derived from the imported file row; unique per user when set.
+  externalId   String?           @map("external_id")
+  importBatchId String?          @map("import_batch_id")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
 
+  fixedTransactionOccurrence FixedTransactionOccurrence[]
+  account                    Account?     @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  category                   Category?    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  creditCard                 CreditCard?  @relation(fields: [creditCardId], references: [id], onDelete: Restrict)
+  importBatch                ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  user                       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date(sort: Desc), id])
+  @@index([userId, accountId])
+  @@index([userId, creditCardId, date])
+  @@index([userId, categoryId])
+  @@index([userId, source])
+  @@index([userId, type, date])
   @@map("transactions")
 }
 
 model FixedTransaction {
-  id           String                       @id @default(uuid())
-  userId       String                       @map("user_id")
-  type         String
-  value        Decimal                      @db.Decimal(15, 2)
-  referenceDay Int                          @map("reference_day")
-  marginDays   Int                          @default(0) @map("margin_days")
-  accountId    String?                      @map("account_id")
-  creditCardId String?                      @map("credit_card_id")
-  categoryId   String                       @map("category_id")
+  id           String          @id @default(uuid())
+  userId       String          @map("user_id")
+  type         TransactionType
+  value        Decimal         @db.Decimal(15, 2)
+  /// Nominal day of month (1-31); clamped down in shorter months.
+  referenceDay Int             @map("reference_day")
+  marginDays   Int             @default(0) @map("margin_days")
+  accountId    String?         @map("account_id")
+  creditCardId String?         @map("credit_card_id")
+  categoryId   String          @map("category_id")
   description  String?
-  isActive     Boolean                      @default(true) @map("is_active")
-  createdAt    DateTime                     @default(now()) @map("created_at")
-  updatedAt    DateTime                     @updatedAt @map("updated_at")
-  occurrences  FixedTransactionOccurrence[]
-  category     Category                     @relation(fields: [categoryId], references: [id])
-  user         User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isActive     Boolean         @default(true) @map("is_active")
+  archivedAt   DateTime?       @map("archived_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
 
+  occurrences FixedTransactionOccurrence[]
+  account     Account?    @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  creditCard  CreditCard? @relation(fields: [creditCardId], references: [id], onDelete: Restrict)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
   @@map("fixed_transactions")
 }
 
+/// One row per (template, year, month). Carries a **snapshot** of the template
+/// as it was when the period was generated, so editing or archiving the
+/// template never rewrites history.
 model FixedTransactionOccurrence {
   id                 String           @id @default(uuid())
   fixedTransactionId String           @map("fixed_transaction_id")
   userId             String           @map("user_id")
   periodYear         Int              @map("period_year")
   periodMonth        Int              @map("period_month")
-  status             String           @default("pending")
-  realDate           DateTime?        @map("real_date")
-  transactionId      String?          @map("transaction_id")
-  createdAt          DateTime         @default(now()) @map("created_at")
-  updatedAt          DateTime         @updatedAt @map("updated_at")
-  fixedTransaction   FixedTransaction @relation(fields: [fixedTransactionId], references: [id], onDelete: Cascade)
-  transaction        Transaction?     @relation(fields: [transactionId], references: [id])
-  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             OccurrenceStatus @default(pending)
+  /// Civil date the user says it actually happened. Set only when confirmed.
+  realDate           DateTime?        @map("real_date") @db.Date
+  /// Nominal due day for this period (referenceDay clamped to the month).
+  dueDate            DateTime         @map("due_date") @db.Date
+  transactionId      String?          @unique @map("transaction_id")
+
+  // --- snapshot of the template at generation time ---
+  type         TransactionType
+  value        Decimal         @db.Decimal(15, 2)
+  description  String?
+  categoryId   String          @map("category_id")
+  accountId    String?         @map("account_id")
+  creditCardId String?         @map("credit_card_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  account          Account?         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  category         Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  creditCard       CreditCard?      @relation(fields: [creditCardId], references: [id], onDelete: Restrict)
+  /// Restrict, not Cascade: deleting a template must never erase its history.
+  fixedTransaction FixedTransaction @relation(fields: [fixedTransactionId], references: [id], onDelete: Restrict)
+  transaction      Transaction?     @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([fixedTransactionId, periodYear, periodMonth])
+  @@index([userId, status])
+  @@index([userId, periodYear, periodMonth])
   @@map("fixed_transaction_occurrences")
 }
 
+/// Manual catalogue of tradable assets, scoped per user. V1 stores no prices.
+///
+/// `userId` stays nullable only so that pre-V1 rows created under the old
+/// global model survive the migration untouched. Every write path sets it, and
+/// ownership checks require a strict match, so an ownerless legacy row is
+/// readable in the database but unreachable through the API.
 model MarketAsset {
-  id          String       @id @default(uuid())
-  userId      String?      @map("user_id")
-  symbol      String
-  type        String
-  exchange    String
-  name        String?
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+  id        String         @id @default(uuid())
+  userId    String?        @map("user_id")
+  symbol    String
+  type      InvestmentType
+  exchange  String
+  name      String?
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
   investments Investment[]
   user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([symbol, exchange])
+  @@unique([userId, symbol, exchange])
+  @@index([userId])
   @@map("market_assets")
 }
 
 model Investment {
-  id             String       @id @default(uuid())
-  userId         String       @map("user_id")
-  marketAssetId  String?      @map("market_asset_id")
+  id             String         @id @default(uuid())
+  userId         String         @map("user_id")
+  marketAssetId  String?        @map("market_asset_id")
   broker         String
-  type           String
-  quantity       Decimal      @db.Decimal(15, 8)
-  buyPrice       Decimal      @map("buy_price") @db.Decimal(15, 2)
-  investedAmount Decimal      @map("invested_amount") @db.Decimal(15, 2)
-  buyDate        DateTime     @map("buy_date")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  marketAsset    MarketAsset? @relation(fields: [marketAssetId], references: [id])
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           InvestmentType
+  quantity       Decimal        @db.Decimal(15, 8)
+  buyPrice       Decimal        @map("buy_price") @db.Decimal(15, 2)
+  investedAmount Decimal        @map("invested_amount") @db.Decimal(15, 2)
+  buyDate        DateTime       @map("buy_date") @db.Date
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
 
+  marketAsset MarketAsset? @relation(fields: [marketAssetId], references: [id], onDelete: Restrict)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, buyDate])
+  @@index([userId, type])
   @@map("investments")
 }
 
@@ -177,33 +366,89 @@ model Goal {
   id                String    @id @default(uuid())
   userId            String    @map("user_id")
   name              String
-  type              String
+  type              GoalType
   targetAmount      Decimal   @map("target_amount") @db.Decimal(15, 2)
-  currentAmount     Decimal?  @map("current_amount") @db.Decimal(15, 2)
-  deadline          DateTime?
+  /// Always entered by hand in V1. There is no automatic progress tracking.
+  currentAmount     Decimal   @default(0) @map("current_amount") @db.Decimal(15, 2)
+  deadline          DateTime? @db.Date
   relatedCategoryId String?   @map("related_category_id")
   relatedAccountId  String?   @map("related_account_id")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
-  relatedAccount    Account?  @relation(fields: [relatedAccountId], references: [id])
-  relatedCategory   Category? @relation(fields: [relatedCategoryId], references: [id])
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  relatedAccount  Account?  @relation(fields: [relatedAccountId], references: [id], onDelete: SetNull)
+  relatedCategory Category? @relation(fields: [relatedCategoryId], references: [id], onDelete: SetNull)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
   @@map("goals")
 }
 
-model ImportedFile {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  origin       String
-  fileName     String   @map("file_name")
-  fileType     String   @map("file_type")
-  status       String   @default("processing")
-  importedAt   DateTime @map("imported_at")
-  totalRecords Int      @default(0) @map("total_records")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+/// A parsed-but-not-yet-committed upload. The preview lives here so that
+/// `confirm` references server-side rows instead of trusting the browser.
+model ImportBatch {
+  id           String         @id @default(uuid())
+  userId       String         @map("user_id")
+  origin       ImportOrigin
+  fileName     String         @map("file_name")
+  fileType     ImportFileType @map("file_type")
+  /// SHA-256 of the uploaded bytes; used to recognise a re-uploaded file.
+  fileHash     String         @map("file_hash")
+  status       ImportStatus   @default(pending)
+  totalRows    Int            @default(0) @map("total_rows")
+  expiresAt    DateTime       @map("expires_at")
+  confirmedAt  DateTime?      @map("confirmed_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
 
+  rows         ImportBatchRow[]
+  importedFile ImportedFile?
+  transactions Transaction[]
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([expiresAt])
+  @@map("import_batches")
+}
+
+model ImportBatchRow {
+  id            String           @id @default(uuid())
+  batchId       String           @map("batch_id")
+  rowNumber     Int              @map("row_number")
+  type          TransactionType?
+  value         Decimal?         @db.Decimal(15, 2)
+  date          DateTime?        @db.Date
+  description   String?
+  externalId    String?          @map("external_id")
+  /// Row already exists in the user's ledger (same externalId).
+  duplicate     Boolean          @default(false)
+  /// Empty means importable. Non-empty rows are reported per-row and skipped.
+  errors        String[]         @default([])
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, rowNumber])
+  @@index([batchId])
+  @@map("import_batch_rows")
+}
+
+model ImportedFile {
+  id           String         @id @default(uuid())
+  userId       String         @map("user_id")
+  batchId      String?        @unique @map("batch_id")
+  origin       ImportOrigin
+  fileName     String         @map("file_name")
+  fileType     ImportFileType @map("file_type")
+  status       ImportStatus   @default(processing)
+  importedAt   DateTime       @map("imported_at")
+  totalRecords Int            @default(0) @map("total_records")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  batch ImportBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, importedAt])
   @@map("imported_files")
 }

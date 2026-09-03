@@ -1,271 +1,327 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { createMockPrismaService, type MockedPrismaService } from '../prisma/prisma.mock';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateInvestmentDto, InvestmentType, UpdateInvestmentDto } from './investments.dto';
 import { InvestmentsService } from './investments.service';
 
+/**
+ * The investment book is cost-basis only. These tests pin the civil-date
+ * handling, the `investedAmount` invariant, and the cross-tenant hole that used
+ * to let any user attach any asset id.
+ */
 describe('InvestmentsService', () => {
   let service: InvestmentsService;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
 
-  const userId = 'user-1';
+  const userA = 'user-a';
+  const userB = 'user-b';
   const investmentId = 'investment-1';
+  const assetId = 'asset-1';
 
-  const baseInvestment = {
+  const assetRow = {
+    id: assetId,
+    userId: userA,
+    symbol: 'PETR4',
+    type: 'stock',
+    exchange: 'B3',
+    name: 'Petrobras PN',
+    createdAt: new Date('2026-01-10T12:00:00.000Z'),
+    updatedAt: new Date('2026-01-10T12:00:00.000Z'),
+  };
+
+  // Money and quantities come back from Prisma as Decimals, i.e. as strings here.
+  const investmentRow = {
     id: investmentId,
-    userId,
+    userId: userA,
     marketAssetId: null,
     broker: 'XP Investimentos',
     type: 'stock',
+    quantity: '100.00000000',
+    buyPrice: '50.50',
+    investedAmount: '5050.00',
+    buyDate: new Date('2026-01-15T00:00:00.000Z'),
+    createdAt: new Date('2026-01-16T12:00:00.000Z'),
+    updatedAt: new Date('2026-01-16T12:00:00.000Z'),
+    marketAsset: null,
+  };
+
+  const baseDto = {
+    broker: 'XP Investimentos',
+    type: 'stock' as const,
     quantity: 100,
     buyPrice: 50.5,
-    investedAmount: 5050,
-    buyDate: new Date('2024-01-15'),
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    buyDate: '2026-01-15',
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        InvestmentsService,
-        {
-          provide: PrismaService,
-          useValue: {
-            investment: {
-              create: jest.fn(),
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              update: jest.fn(),
-              delete: jest.fn(),
-              count: jest.fn(),
-            },
-            marketAsset: {
-              findUnique: jest.fn(),
-            },
-          },
-        },
-      ],
+      providers: [InvestmentsService, { provide: PrismaService, useValue: createMockPrismaService() }],
     }).compile();
 
-    service = module.get<InvestmentsService>(InvestmentsService);
-    prisma = module.get(PrismaService);
+    service = module.get(InvestmentsService);
+    prisma = module.get(PrismaService) as unknown as MockedPrismaService;
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
-  describe('createInvestment', () => {
-    it('should create an investment for the user', async () => {
-      const dto: CreateInvestmentDto = {
-        broker: 'XP Investimentos',
-        type: InvestmentType.STOCK,
-        quantity: 100,
-        buyPrice: 50.5,
-        investedAmount: 5050,
-        buyDate: '2024-01-15',
-      };
-      prisma.investment.create.mockResolvedValue(baseInvestment as any);
+  describe('create', () => {
+    it('defaults investedAmount to quantity × buyPrice and stores buyDate as a civil date', async () => {
+      prisma.investment.create.mockResolvedValue(investmentRow);
 
-      const result = await service.createInvestment(userId, dto);
+      const result = await service.create(userA, baseDto);
 
       expect(prisma.investment.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          broker: dto.broker,
-          type: dto.type,
-          quantity: dto.quantity,
-          buyPrice: dto.buyPrice,
-          investedAmount: dto.investedAmount,
-          userId,
-        }),
+        data: {
+          userId: userA,
+          marketAssetId: null,
+          broker: 'XP Investimentos',
+          type: 'stock',
+          quantity: 100,
+          buyPrice: 50.5,
+          investedAmount: 5050,
+          buyDate: new Date('2026-01-15T00:00:00.000Z'),
+        },
+        include: { marketAsset: true },
       });
-      expect(result.broker).toBe('XP Investimentos');
+      expect(result.buyDate).toBe('2026-01-15');
+      expect(result.investedAmount).toBe(5050);
+      expect(result.quantity).toBe(100);
+      expect(result.marketAsset).toBeNull();
+      expect(result.createdAt).toBe('2026-01-16T12:00:00.000Z');
     });
 
-    it('should create investment with marketAssetId when asset exists', async () => {
-      const dto: CreateInvestmentDto = {
-        broker: 'XP Investimentos',
-        type: InvestmentType.STOCK,
-        quantity: 100,
-        buyPrice: 50.5,
-        investedAmount: 5050,
-        buyDate: '2024-01-15',
-        marketAssetId: 'asset-1',
-      };
-      prisma.marketAsset.findUnique.mockResolvedValue({ id: 'asset-1' } as any);
-      prisma.investment.create.mockResolvedValue({ ...baseInvestment, marketAssetId: 'asset-1' } as any);
+    it('accepts a supplied investedAmount within one cent of the product', async () => {
+      prisma.investment.create.mockResolvedValue(investmentRow);
 
-      const result = await service.createInvestment(userId, dto);
+      await service.create(userA, { ...baseDto, investedAmount: 5050.01 });
 
-      expect(prisma.marketAsset.findUnique).toHaveBeenCalledWith({ where: { id: 'asset-1' } });
-      expect(result.marketAssetId).toBe('asset-1');
+      expect(prisma.investment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ investedAmount: 5050.01 }) }),
+      );
     });
 
-    it('should throw BadRequestException when investedAmount does not match quantity * buyPrice', async () => {
-      const dto: CreateInvestmentDto = {
-        broker: 'XP Investimentos',
-        type: InvestmentType.STOCK,
-        quantity: 100,
-        buyPrice: 50.5,
-        investedAmount: 5000,
-        buyDate: '2024-01-15',
-      };
-
-      await expect(service.createInvestment(userId, dto)).rejects.toThrow(BadRequestException);
+    it('rejects an investedAmount that disagrees with quantity × buyPrice', async () => {
+      await expect(service.create(userA, { ...baseDto, investedAmount: 9999 })).rejects.toThrow(BadRequestException);
+      await expect(service.create(userA, { ...baseDto, investedAmount: 9999 })).rejects.toThrow(
+        'investedAmount deve ser igual a quantity × buyPrice (esperado 5050.00).',
+      );
+      expect(prisma.investment.create).not.toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException when marketAssetId does not exist', async () => {
-      const dto: CreateInvestmentDto = {
-        broker: 'XP Investimentos',
-        type: InvestmentType.STOCK,
-        quantity: 100,
-        buyPrice: 50.5,
-        investedAmount: 5050,
-        buyDate: '2024-01-15',
-        marketAssetId: 'nonexistent',
-      };
-      prisma.marketAsset.findUnique.mockResolvedValue(null);
+    it('rejects a buyDate that is not a real calendar day', async () => {
+      await expect(service.create(userA, { ...baseDto, buyDate: '2026-02-30' })).rejects.toThrow(BadRequestException);
+      expect(prisma.investment.create).not.toHaveBeenCalled();
+    });
 
-      await expect(service.createInvestment(userId, dto)).rejects.toThrow(BadRequestException);
+    it('attaches an asset that belongs to the caller', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue(assetRow);
+      prisma.investment.create.mockResolvedValue({ ...investmentRow, marketAssetId: assetId, marketAsset: assetRow });
+
+      const result = await service.create(userA, { ...baseDto, marketAssetId: assetId });
+
+      expect(prisma.marketAsset.findUnique).toHaveBeenCalledWith({ where: { id: assetId } });
+      expect(result.marketAsset).toMatchObject({ id: assetId, symbol: 'PETR4' });
+    });
+
+    // The regression that mattered: validateMarketAsset never received a userId.
+    it('refuses to attach an asset owned by another user (404, not 403)', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue(assetRow); // owned by userA
+
+      await expect(service.create(userB, { ...baseDto, marketAssetId: assetId })).rejects.toThrow(NotFoundException);
+      expect(prisma.investment.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses to attach an ownerless legacy asset', async () => {
+      prisma.marketAsset.findUnique.mockResolvedValue({ ...assetRow, userId: null });
+
+      await expect(service.create(userA, { ...baseDto, marketAssetId: assetId })).rejects.toThrow(NotFoundException);
+      expect(prisma.investment.create).not.toHaveBeenCalled();
     });
   });
 
-  describe('findAllByUser', () => {
-    it('should return all investments for the user', async () => {
-      prisma.investment.findMany.mockResolvedValue([baseInvestment]);
+  describe('findAll', () => {
+    it('returns the paginated envelope with the asset included', async () => {
+      prisma.investment.findMany.mockResolvedValue([{ ...investmentRow, marketAssetId: assetId, marketAsset: assetRow }]);
       prisma.investment.count.mockResolvedValue(1);
 
-      const result = await service.findAllByUser(userId, 1, 20);
+      const result = await service.findAll(userA, { page: 1, limit: 20 });
 
-      expect(prisma.investment.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId } }));
-      expect(result.data).toHaveLength(1);
-      expect(result.data[0].broker).toBe('XP Investimentos');
+      expect(prisma.investment.findMany).toHaveBeenCalledWith({
+        where: { userId: userA },
+        include: { marketAsset: true },
+        skip: 0,
+        take: 20,
+        orderBy: [{ buyDate: 'desc' }, { id: 'desc' }],
+      });
+      expect(result.data[0].marketAsset).toMatchObject({ symbol: 'PETR4' });
       expect(result.meta.totalItems).toBe(1);
     });
 
-    it('should return empty array when user has no investments', async () => {
+    it('applies the type and marketAssetId filters', async () => {
       prisma.investment.findMany.mockResolvedValue([]);
       prisma.investment.count.mockResolvedValue(0);
 
-      const result = await service.findAllByUser(userId, 1, 20);
+      await service.findAll(userA, { type: 'crypto', marketAssetId: assetId });
 
-      expect(result.data).toHaveLength(0);
-      expect(result.meta.totalItems).toBe(0);
+      expect(prisma.investment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: userA, type: 'crypto', marketAssetId: assetId } }),
+      );
+    });
+
+    it('always scopes the query to the caller', async () => {
+      prisma.investment.findMany.mockResolvedValue([]);
+      prisma.investment.count.mockResolvedValue(0);
+
+      await service.findAll(userB);
+
+      expect(prisma.investment.findMany.mock.calls[0][0].where.userId).toBe(userB);
     });
   });
 
-  describe('findById', () => {
-    it('should return investment when found and owned', async () => {
-      prisma.investment.findUnique.mockResolvedValue(baseInvestment);
+  describe('findOne', () => {
+    it('returns the investment when it belongs to the caller', async () => {
+      prisma.investment.findUnique.mockResolvedValue(investmentRow);
 
-      const result = await service.findById(userId, investmentId);
-
-      expect(result.id).toBe(investmentId);
-      expect(result.broker).toBe('XP Investimentos');
+      await expect(service.findOne(userA, investmentId)).resolves.toMatchObject({ id: investmentId });
     });
 
-    it('should throw NotFoundException when investment does not exist', async () => {
+    it('throws 404 when it does not exist', async () => {
       prisma.investment.findUnique.mockResolvedValue(null);
 
-      await expect(service.findById(userId, 'nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(userA, investmentId)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when investment belongs to another user', async () => {
-      prisma.investment.findUnique.mockResolvedValue({ ...baseInvestment, userId: 'other-user' });
+    it('throws 404 — never 403 — for another user’s investment', async () => {
+      prisma.investment.findUnique.mockResolvedValue({ ...investmentRow, userId: userB });
 
-      await expect(service.findById(userId, investmentId)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne(userA, investmentId)).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('updateInvestment', () => {
-    it('should update investment when owned', async () => {
-      const dto: UpdateInvestmentDto = { broker: 'Nu Invest' };
-      prisma.investment.findUnique.mockResolvedValue(baseInvestment);
-      prisma.investment.update.mockResolvedValue({ ...baseInvestment, ...dto });
+  describe('update', () => {
+    it('leaves omitted keys untouched', async () => {
+      prisma.investment.findUnique.mockResolvedValue(investmentRow);
+      prisma.investment.update.mockResolvedValue({ ...investmentRow, broker: 'Rico' });
 
-      const result = await service.updateInvestment(userId, investmentId, dto);
+      await service.update(userA, investmentId, { broker: 'Rico' });
 
       expect(prisma.investment.update).toHaveBeenCalledWith({
-        data: dto,
         where: { id: investmentId },
+        data: { broker: 'Rico', investedAmount: 5050 },
+        include: { marketAsset: true },
       });
-      expect(result.broker).toBe('Nu Invest');
     });
 
-    it('should throw BadRequestException when investedAmount does not match quantity * buyPrice', async () => {
-      const dto: UpdateInvestmentDto = {
-        quantity: 200,
-        buyPrice: 50.5,
-        investedAmount: 5000,
-      };
-      prisma.investment.findUnique.mockResolvedValue(baseInvestment);
+    it('recomputes investedAmount when the quantity changes and none is supplied', async () => {
+      prisma.investment.findUnique.mockResolvedValue(investmentRow);
+      prisma.investment.update.mockResolvedValue(investmentRow);
 
-      await expect(service.updateInvestment(userId, investmentId, dto)).rejects.toThrow(BadRequestException);
+      await service.update(userA, investmentId, { quantity: 200 });
+
+      expect(prisma.investment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ quantity: 200, investedAmount: 10100 }) }),
+      );
     });
 
-    it('should throw NotFoundException when investment does not exist', async () => {
-      prisma.investment.findUnique.mockResolvedValue(null);
+    it('validates a supplied investedAmount against the FINAL quantity and price', async () => {
+      prisma.investment.findUnique.mockResolvedValue(investmentRow);
 
-      await expect(service.updateInvestment(userId, investmentId, {})).rejects.toThrow(NotFoundException);
+      await expect(service.update(userA, investmentId, { quantity: 200, investedAmount: 5050 })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.investment.update).not.toHaveBeenCalled();
     });
 
-    it('should throw ForbiddenException when updating another user investment', async () => {
-      prisma.investment.findUnique.mockResolvedValue({ ...baseInvestment, userId: 'other-user' });
+    it('detaches the asset on an explicit null', async () => {
+      prisma.investment.findUnique.mockResolvedValue({ ...investmentRow, marketAssetId: assetId, marketAsset: assetRow });
+      prisma.investment.update.mockResolvedValue(investmentRow);
 
-      await expect(service.updateInvestment(userId, investmentId, {})).rejects.toThrow(ForbiddenException);
+      const result = await service.update(userA, investmentId, { marketAssetId: null });
+
+      expect(prisma.investment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ marketAssetId: null }) }),
+      );
+      expect(prisma.marketAsset.findUnique).not.toHaveBeenCalled();
+      expect(result.marketAsset).toBeNull();
     });
 
-    it('should validate marketAssetId when provided in update', async () => {
-      const dto: UpdateInvestmentDto = { marketAssetId: 'asset-1' };
-      prisma.investment.findUnique.mockResolvedValue(baseInvestment);
-      prisma.marketAsset.findUnique.mockResolvedValue({ id: 'asset-1' } as any);
-      prisma.investment.update.mockResolvedValue({ ...baseInvestment, marketAssetId: 'asset-1' });
+    it('refuses to attach another user’s asset on PATCH', async () => {
+      prisma.investment.findUnique.mockResolvedValue({ ...investmentRow, userId: userB });
+      prisma.marketAsset.findUnique.mockResolvedValue(assetRow); // owned by userA
 
-      const result = await service.updateInvestment(userId, investmentId, dto);
+      await expect(service.update(userB, investmentId, { marketAssetId: assetId })).rejects.toThrow(NotFoundException);
+      expect(prisma.investment.update).not.toHaveBeenCalled();
+    });
 
-      expect(prisma.marketAsset.findUnique).toHaveBeenCalledWith({ where: { id: 'asset-1' } });
-      expect(result.marketAssetId).toBe('asset-1');
+    it('converts a patched buyDate through the civil-date helpers', async () => {
+      prisma.investment.findUnique.mockResolvedValue(investmentRow);
+      prisma.investment.update.mockResolvedValue({ ...investmentRow, buyDate: new Date('2026-03-01T00:00:00.000Z') });
+
+      const result = await service.update(userA, investmentId, { buyDate: '2026-03-01' });
+
+      expect(prisma.investment.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ buyDate: new Date('2026-03-01T00:00:00.000Z') }),
+        }),
+      );
+      expect(result.buyDate).toBe('2026-03-01');
     });
   });
 
-  describe('deleteInvestment', () => {
-    it('should delete investment when owned', async () => {
-      prisma.investment.findUnique.mockResolvedValue(baseInvestment);
-      prisma.investment.delete.mockResolvedValue(baseInvestment);
+  describe('remove', () => {
+    it('deletes an investment owned by the caller', async () => {
+      prisma.investment.findUnique.mockResolvedValue(investmentRow);
+      prisma.investment.delete.mockResolvedValue(investmentRow);
 
-      await service.deleteInvestment(userId, investmentId);
+      await service.remove(userA, investmentId);
 
       expect(prisma.investment.delete).toHaveBeenCalledWith({ where: { id: investmentId } });
     });
 
-    it('should throw NotFoundException when investment does not exist', async () => {
-      prisma.investment.findUnique.mockResolvedValue(null);
+    it('throws 404 for another user’s investment', async () => {
+      prisma.investment.findUnique.mockResolvedValue({ ...investmentRow, userId: userB });
 
-      await expect(service.deleteInvestment(userId, investmentId)).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw ForbiddenException when deleting another user investment', async () => {
-      prisma.investment.findUnique.mockResolvedValue({ ...baseInvestment, userId: 'other-user' });
-
-      await expect(service.deleteInvestment(userId, investmentId)).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(userA, investmentId)).rejects.toThrow(NotFoundException);
+      expect(prisma.investment.delete).not.toHaveBeenCalled();
     });
   });
 
-  describe('validateInvestedAmount', () => {
-    it('should not throw when investedAmount matches quantity * buyPrice', () => {
-      // @ts-expect-error accessing private method for testing
-      expect(() => service.validateInvestedAmount(100, 50.5, 5050)).not.toThrow();
+  describe('getPortfolioSummary', () => {
+    it('aggregates cost basis with groupBy and never reports value or return', async () => {
+      prisma.investment.groupBy.mockResolvedValue([
+        { type: 'stock', _sum: { investedAmount: '5050.00' }, _count: { _all: 2 } },
+        { type: 'crypto', _sum: { investedAmount: '1200.50' }, _count: { _all: 1 } },
+      ]);
+
+      const result = await service.getPortfolioSummary(userA);
+
+      expect(prisma.investment.groupBy).toHaveBeenCalledWith({
+        by: ['type'],
+        where: { userId: userA },
+        _sum: { investedAmount: true },
+        _count: { _all: true },
+      });
+      expect(result).toEqual({
+        totalInvested: 6250.5,
+        positions: 3,
+        byType: [
+          { type: 'crypto', totalInvested: 1200.5, positions: 1 },
+          { type: 'stock', totalInvested: 5050, positions: 2 },
+        ],
+      });
+      expect(result).not.toHaveProperty('currentValue');
+      expect(result).not.toHaveProperty('profit');
+      expect(result).not.toHaveProperty('returnPercentage');
     });
 
-    it('should throw BadRequestException when investedAmount does not match', () => {
-      // @ts-expect-error accessing private method for testing
-      expect(() => service.validateInvestedAmount(100, 50.5, 5000)).toThrow(BadRequestException);
-    });
+    it('returns zeros for an empty portfolio', async () => {
+      prisma.investment.groupBy.mockResolvedValue([]);
 
-    it('should handle floating point precision within 0.01 tolerance', () => {
-      // @ts-expect-error accessing private method for testing
-      expect(() => service.validateInvestedAmount(0.1, 0.2, 0.02)).not.toThrow();
+      await expect(service.getPortfolioSummary(userA)).resolves.toEqual({
+        totalInvested: 0,
+        positions: 0,
+        byType: [],
+      });
     });
   });
 });

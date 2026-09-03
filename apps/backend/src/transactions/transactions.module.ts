@@ -1,14 +1,18 @@
 import { Module } from '@nestjs/common';
-import { AccountsModule } from 'src/accounts/accounts.module';
-import { CategoriesModule } from 'src/categories/categories.module';
-import { CreditCardsModule } from 'src/credit-cards/credit-cards.module';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
 
+/**
+ * No module imports: ownership of accounts, cards and categories is checked
+ * against the database inside the same write transaction. Depending on the
+ * other feature services here only bought a dependency cycle risk and a second
+ * round-trip per relation.
+ *
+ * `PrismaModule` and `ConfigModule` are global.
+ */
 @Module({
-  imports: [AccountsModule, CategoriesModule, CreditCardsModule],
-  providers: [TransactionsService],
   controllers: [TransactionsController],
+  providers: [TransactionsService],
   exports: [TransactionsService],
 })
 export class TransactionsModule {}

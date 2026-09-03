@@ -1,24 +1,14 @@
-import { Sidebar } from '@/components/ui/sidebar';
+import { RequireAuth } from '@/shared/session/require-auth';
+import { AppShell } from '@/shared/ui/app-shell';
 
-export default function PrivateLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+/**
+ * Single gate + single shell for every private route. Previously four pages had
+ * no guard at all and the shell had no mobile navigation.
+ */
+export default function PrivateLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="w-dvw h-dvh overflow-hidden bg-layer00 text-foreground">
-      <MainRoutesLayout>{children}</MainRoutesLayout>
-    </div>
-  );
-}
-
-function MainRoutesLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex h-full max-w-[1920px] gap-8 p-6">
-      <div className="hidden lg:block">
-        <Sidebar />
-      </div>
-      {children}
-    </div>
+    <RequireAuth>
+      <AppShell>{children}</AppShell>
+    </RequireAuth>
   );
 }

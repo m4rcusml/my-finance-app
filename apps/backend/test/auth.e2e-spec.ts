@@ -43,11 +43,8 @@ describe('AuthController (e2e)', () => {
     await app.init();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
-  });
-
-  afterAll(async () => {
     await app.close();
   });
 
