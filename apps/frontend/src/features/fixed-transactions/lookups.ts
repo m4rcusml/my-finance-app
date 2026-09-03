@@ -78,14 +78,8 @@ export function useSourceLookups(): SourceLookups {
   const creditCards = useMemo(() => creditCardsQuery.data?.data ?? [], [creditCardsQuery.data]);
   const categories = useMemo(() => categoriesQuery.data?.data ?? [], [categoriesQuery.data]);
 
-  const accountNames = useMemo(
-    () => new Map(accounts.map((account) => [account.id, account.name])),
-    [accounts],
-  );
-  const creditCardNames = useMemo(
-    () => new Map(creditCards.map((card) => [card.id, card.name])),
-    [creditCards],
-  );
+  const accountNames = useMemo(() => new Map(accounts.map((account) => [account.id, account.name])), [accounts]);
+  const creditCardNames = useMemo(() => new Map(creditCards.map((card) => [card.id, card.name])), [creditCards]);
   const categoryNames = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
     [categories],

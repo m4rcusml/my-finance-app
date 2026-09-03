@@ -21,10 +21,7 @@ import { Callout } from './atoms';
  */
 
 interface ConfirmMutationLike {
-  mutate: (
-    variables: ConfirmOccurrenceVariables,
-    options?: { onSuccess?: () => void },
-  ) => void;
+  mutate: (variables: ConfirmOccurrenceVariables, options?: { onSuccess?: () => void }) => void;
   reset: () => void;
   isPending: boolean;
   isError: boolean;
@@ -130,9 +127,7 @@ export function ConfirmOccurrenceDialog({
             <div className="col-span-2">
               <dt className="text-xs text-muted-foreground">Modelo</dt>
               <dd className="font-medium text-foreground">
-                {occurrence.fixedTransaction.description?.trim() ||
-                  occurrence.description?.trim() ||
-                  'Sem descrição'}
+                {occurrence.fixedTransaction.description?.trim() || occurrence.description?.trim() || 'Sem descrição'}
               </dd>
             </div>
             <div>
@@ -193,8 +188,8 @@ export function ConfirmOccurrenceDialog({
           </Field>
 
           <Callout>
-            A confirmação é definitiva: a ocorrência sai da lista de pendentes e o lançamento passa a contar no
-            saldo e no painel.
+            A confirmação é definitiva: a ocorrência sai da lista de pendentes e o lançamento passa a contar no saldo e
+            no painel.
           </Callout>
         </form>
       ) : null}

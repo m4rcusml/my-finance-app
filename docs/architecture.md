@@ -1,263 +1,192 @@
-# 🏛️ **Arquitetura do Sistema — Resumo Geral**
+# Arquitetura da V1
 
-Este documento descreve a arquitetura atual do sistema de controle financeiro, incluindo decisões tecnológicas, organização de domínios, comunicação entre camadas, infraestrutura e diretrizes de segurança. O objetivo é estabelecer uma visão clara e escalável para o desenvolvimento do frontend, backend e funcionalidades futuras.
+## Visão geral
 
-# 1. 🎯 **Visão Geral da Arquitetura**
+O My Finance App é um monorepo pnpm com três pacotes:
 
-O sistema será composto por duas aplicações principais:
+```text
+Navegador
+   |
+   | HTTPS + JSON/multipart
+   v
+apps/frontend (Next.js 16)
+   |
+   | /api/v1 + Bearer; cookies apenas no fluxo de sessão
+   v
+apps/backend (NestJS 11)
+   |
+   | Prisma 7
+   v
+PostgreSQL 16
 
-* **Frontend Web**: construído com **Next.js + TypeScript**, consumindo APIs REST e atuando inicialmente como *online-only*.
-* **Backend**: implementado em **Node.js + NestJS + TypeScript**, servindo endpoints REST, executando regras de negócio, acessando o banco de dados e agendando tarefas recorrentes.
+packages/contracts
+   ├── tipos e helpers consumidos pelo frontend
+   └── tipos e helpers consumidos pelo backend
+```
 
-Além disso, o backend integra-se a:
+Não há Redis, fila, provedor de cotação ou integração bancária externa na V1.
 
-* **PostgreSQL** (persistência principal)
-* **APIs externas** de mercado financeiro
-* **Jobs internos** (tarefas agendadas)
-* **Sistema de upload e parsing de arquivos**
+## Responsabilidades
 
-A arquitetura é orientada a **domínios (DDD light)**, com módulos independentes responsáveis pelas funcionalidades centrais.
+### `packages/contracts`
 
-# 2. 🔹 **Domínios Principais**
+Fonte compartilhada do protocolo:
 
-O backend é organizado em módulos refletindo o domínio da aplicação:
+- rotas e prefixo;
+- enums minúsculos;
+- recursos e payloads;
+- paginação;
+- datas civis e timestamps;
+- dinheiro e quantidade;
+- envelope de erro.
 
-* **Accounts** — Contas bancárias
-* **CreditCards** — Cartões de crédito
-* **Transactions** — Transações de ganhos e gastos
-* **FixedTransactions** — Transações recorrentes
-* **Categories** — Categorias de gasto/ganho
-* **Investments** — Investimentos cadastrados
-* **MarketData** — Dados externos de ações, FIIs e criptomoedas
-* **Goals** — Metas financeiras
-* **Imports** — Importação de extratos bancários/corretoras
-* **Backup** — Exportação/importação de dados
-* **Auth** — Autenticação via JWT
+O pacote produz `dist/index.js` para runtime e expõe os fontes TypeScript para tipos. Seu `dist` é artefato gerado.
 
-Esses módulos são independentes, mas se comunicam por meio de **services** e **regras de negócio compartilhadas**.
+### `apps/backend`
 
-# 3. 🧱 **Backend (NestJS) — Camadas**
+API NestJS modular. Cada domínio possui controller, DTO e service; os services acessam Prisma diretamente. O fluxo típico é:
 
-A arquitetura do backend segue uma **estrutura modular e em camadas**:
+1. middleware atribui ou propaga `X-Request-Id`;
+2. Helmet, CORS e parser de cookies tratam a borda HTTP;
+3. `ValidationPipe` remove campos desconhecidos, transforma queries e rejeita DTO inválido;
+4. o guard global exige access token, salvo rotas `@Public()`;
+5. o service valida ownership e invariantes;
+6. Prisma consulta ou altera PostgreSQL;
+7. o filtro global converte qualquer falha para o envelope uniforme;
+8. o interceptor registra método, rota, status, duração e `requestId`.
 
-### **3.1. Controllers**
+O prefixo de negócio é `/api/v1`. `/health/live` e `/health/ready` ficam fora dele para balanceadores.
 
-* Exposição de endpoints HTTP.
-* Validação inicial dos inputs.
-* Não contém regras de negócio.
+### `apps/frontend`
 
-### **3.2. Services / Use Cases**
+Aplicação Next.js App Router. Há um layout público e um layout privado único:
 
-* Implementam toda a lógica da aplicação.
-* São responsáveis por:
+```text
+SessionProvider
+  └── RequireAuth
+      └── AppShell
+          └── página privada
+```
 
-  * cálculos financeiros
-  * regras de importação
-  * projeções
-  * geração de transações fixas
-  * agregação de dados
+`SessionProvider` também possui o `QueryClient`, porque sessão e cache privado precisam ser descartados juntos. TanStack Query controla dados remotos; estado local de sessão permanece em memória.
 
-### **3.3. Repositories**
+A camada `shared/lib/api` centraliza base URL, Bearer, cookies, erros, refresh e retry. Upload multipart passa pela mesma recuperação de sessão do cliente JSON.
 
-* Acessam o banco de dados via Prisma.
-* Não implementam regras de negócio.
+## Sessão
 
-### **3.4. Entidades / Modelos de Domínio**
+### Access token
 
-* Classes ou interfaces representando objetos do domínio.
+É um JWT curto assinado por `JWT_SECRET`. O servidor o devolve no corpo de cadastro, login e refresh. O frontend mantém o valor apenas em memória e o envia em `Authorization: Bearer`.
 
-### **3.5. Jobs (Tarefas em Background)**
+### Refresh token
 
-* Usados para automatizar rotinas:
+É `base64url` de 32 bytes aleatórios, sem identificador embutido. O valor bruto existe apenas no cookie `refresh_token`; PostgreSQL guarda SHA-256, `familyId`, expiração, revogação, rotação e vínculo com o sucessor.
 
-  * verificação diária de transações fixas
-  * atualização periódica de dados de mercado
-  * processamento de importações pesadas
-* Inicialmente implementados com `@nestjs/schedule` (cron).
-* Futuramente podem rodar em um **worker separado** usando Redis + BullMQ.
+A rotação ocorre numa transação com lock da linha:
 
-# 4. 🗄️ **Banco de Dados (PostgreSQL + Prisma)**
+- um token ativo gera exatamente um sucessor;
+- o predecessor fica como tombstone até expirar;
+- valor desconhecido ou malformado retorna 401 sem descobrir usuário ou família;
+- reuso conhecido fora da janela revoga somente aquela família;
+- uma segunda chamada na janela de cinco segundos retorna 409 e não limpa cookies.
 
-O banco de dados é relacional devido à natureza financeira do sistema.
-As tabelas principais incluem:
+O frontend usa Web Locks quando o navegador oferece a API. No fallback, após 409 espera 200 ms e tenta uma vez com o cookie atualizado.
 
-* `accounts`
-* `credit_cards`
-* `categories`
-* `transactions`
-* `fixed_transactions`
-* `fixed_transaction_occurrences`
-* `investments`
-* `market_assets`
-* `goals`
+### CSRF
 
-O Prisma é utilizado para:
+`POST /auth/refresh` é a única operação autenticada pelo cookie. Antes dela, a SPA chama `GET /api/v1/auth/csrf`, recebe `{ csrfToken }` e repete o valor em `X-CSRF-Token`. A API compara o header ao cookie `csrf_token` em tempo constante. Ambos os cookies são `HttpOnly`; a SPA não usa `document.cookie`.
 
-* gerar o client de acesso ao banco
-* cuidar de migrations
-* fornecer tipagem estática no domínio
+Logout, 401 terminal e troca de usuário cancelam queries, limpam o cache privado e descartam o access token.
 
-# 5. 🌐 **Frontend (Next.js)**
+## Dados financeiros
 
-O frontend será uma aplicação web estruturada em:
+### Datas
 
-* **Next.js + TypeScript**
-* **React Query** para comunicação com a API + cache
-* **Zustand** para estado global simples (tema, filtros, UI)
-* **SSR/CSR híbrido** quando necessário
+Datas escolhidas pelo usuário são dias civis:
 
-Páginas principais:
+- JSON: `YYYY-MM-DD`;
+- PostgreSQL: `DATE`;
+- exemplos: data do lançamento, compra, vencimento e confirmação.
 
-* Dashboard
-* Transações
-* Contas
-* Cartões
-* Investimentos
-* Metas
-* Importação
-* Configurações
+`createdAt`, `updatedAt`, expiração e revogação são instantes ISO e usam `timestamptz`.
 
-O frontend consome apenas a API e não contém regras de negócio complexas.
+### Valores
 
-# 6. 🔁 **Comunicação Front ↔ Backend**
+- dinheiro: `numeric(15,2)` no banco e número JSON;
+- quantidade de investimento: `numeric(15,8)`;
+- conversão e arredondamento ficam nos helpers comuns.
 
-A comunicação entre frontend e backend ocorre totalmente via **REST API**.
+### Ownership
 
-Exemplos de endpoints (conceituais):
+Todos os recursos de usuário carregam `userId` ou são alcançados por um pai do usuário. Consultas por ID confirmam ownership. Um ID existente de outro tenant retorna 404 para não revelar sua existência.
 
-* `GET /accounts`
-* `POST /transactions`
-* `GET /dashboard?month=2025-11`
-* `POST /imports/preview`
-* `POST /imports/confirm`
-* `GET /market/prices?ticker=PETR4`
-* `POST /auth/login`
+## Fluxos principais
 
-O frontend nunca acessa o banco diretamente.
+### Dashboard
 
-# 7. 🔐 **Segurança**
+O backend resolve a janela (`week`, `month`, `year` ou `custom`) em `APP_TIMEZONE` e calcula a anterior. Agregados são feitos no banco, não sobre uma página de 20 itens. A resposta separa:
 
-Mesmo sendo um sistema pessoal, a arquitetura segue boas práticas:
+- caixa em contas não-investimento;
+- saldo de contas do tipo `investment`;
+- custo da carteira manual;
+- cartão no ciclo vigente;
+- totais atual/anterior e tendência;
+- série de 12 meses;
+- últimas transações, pendências recorrentes e contagem sem categoria.
 
-### **7.1. Autenticação**
+### Recorrências
 
-* Autenticação via **JWT**
-* Rotas protegidas com guardas no NestJS
-* Refresh tokens podem ser implementados futuramente
+O modelo mensal guarda dia de referência, margem, categoria e exatamente uma origem. O job das 03:00 gera snapshots por competência, com índice único e backfill limitado.
 
-### **7.2. Criptografia**
+O snapshot não muda quando o modelo histórico muda. Somente `pending -> confirmed` e `pending -> skipped` são permitidos. Confirmar cria a transação `source: fixed` e reivindica a ocorrência na mesma transação PostgreSQL.
 
-* Senhas: `bcrypt` ou `argon2`
-* Secrets: variáveis de ambiente, nunca commitadas
-* Tokens de APIs externas armazenados criptografados no banco (opcional)
+### Importação
 
-### **7.3. TLS**
+1. upload valida tamanho, extensão/conteúdo e escolhe parser CSV, OFX ou XLSX;
+2. estratégia `inter` ou `generic` normaliza cada linha;
+3. servidor persiste batch e linhas da prévia com expiração;
+4. frontend confirma por `batchId`, destino e números de linha;
+5. servidor recarrega as linhas, revalida ownership/destino e grava em transação;
+6. `externalId` determinístico e índice único protegem contra repetição e concorrência.
 
-* HTTPS garantido pela hospedagem (Vercel, Railway, Render)
+A prévia é estado transitório e não entra no backup.
 
-### **7.4. Controle de Acesso**
+### Backup
 
-* Middleware no backend que garante que cada request possui JWT válido
+A exportação pagina o grafo do usuário e inclui contas, cartões, categorias, transações, recorrências e ocorrências, ativos, investimentos, metas e histórico de arquivos importados. Não inclui hash de senha, tokens ou batches transitórios.
 
-# 8. 📦 **Importação de Arquivos**
+A restauração valida versão, forma, limites e referências antes de escrever. `replace` substitui o grafo do usuário; `merge` preserva o existente, reconcilia chaves únicas de categoria/ativo e ignora transações importadas com `externalId` já presente. Toda a operação é uma transação e falhas fazem rollback.
 
-A importação de extratos (Inter, MP, BTG, Binance, etc.) segue um pipeline:
+## Arquivamento
 
-1. **Upload** (frontend → backend)
-2. **Reader** (interpreta CSV, OFX, XLSX)
-3. **Parser especializado** (por origem)
-4. **Normalizer** (padroniza campos)
-5. **DuplicateChecker**
-6. **Preview** (usuário confirma ou cancela)
-7. **Importer** (salva no banco via domínios)
+Contas, cartões e categorias são removidos fisicamente apenas sem dependências; com histórico, são arquivados. Modelos recorrentes são sempre arquivados. Itens arquivados continuam resolvíveis no histórico e não podem receber novos lançamentos.
 
-Essa separação facilita a adição de novos formatos no futuro.
+Investimentos, metas e ativos sem dependentes podem ser excluídos porque não preservam um ledger próprio.
 
-# 9. 📈 **Dados de Mercado Financeiro**
+## Operação
 
-Módulo **MarketData**:
+### Desenvolvimento local
 
-* Obtém preços de ações, FIIs e criptos através de APIs externas.
-* Armazena cache de resultados no banco (opcional).
-* Um job pode atualizar valores periodicamente.
+`docker compose up -d db` sobe PostgreSQL. `pnpm dev` inicia os dois apps no host.
 
-Esse módulo é **desacoplado do módulo Investments**, permitindo trocar de API externa facilmente.
+### Compose completo
 
-# 10. 🔁 **Transações Fixas**
+`docker compose --profile full up --build` é uma stack local. O backend roda em desenvolvimento com cookies não seguros por usar HTTP. O frontend é compilado com a URL pública da API. O healthcheck do backend usa `/health/ready`.
 
-O sistema usa dois conceitos:
+### Produção
 
-### **FixedTransaction**
+Produção exige:
 
-* É o “template” da transação recorrente
-* Define valor, dia, margem, categoria, conta/cartão
+- Node.js 22 e PostgreSQL 16;
+- HTTPS;
+- `NODE_ENV=production` e `COOKIE_SECURE=true`;
+- CORS com origens exatas;
+- secret externo;
+- `prisma migrate deploy` antes do tráfego;
+- verificação de readiness e smoke do artefato.
 
-### **FixedTransactionOccurrence**
+Docker Compose local não é um manifesto de produção.
 
-* Registro mensal da ocorrência
-* Pode estar:
+## Decisões conscientemente adiadas
 
-  * “pendente”
-  * “confirmada”
-  * “pulada”
-
-Um **job diário** identifica ocorrências na janela e cria registros pendentes.
-
-# 11. 💾 **Backup**
-
-O sistema suporta dois modos:
-
-### **11.1. Backup local**
-
-* Exportação de todas as entidades em JSON
-* Importação manual pelo usuário
-
-### **11.2. Backup em nuvem (futuro)**
-
-* Upload do backup criptografado para backend
-* Possibilidade de restaurar em outro dispositivo
-
-# 12. 🏗️ **Infraestrutura e Deploy**
-
-### **12.1. Frontend**
-
-* Hospedado no **Vercel** (free tier)
-* Deploy automático a cada push para GitHub
-
-### **12.2. Backend**
-
-Opções:
-
-* **Railway** (sugerido)
-* Render (alternativa)
-* Fly.io (alternativa avançada)
-* Koyeb (alternativa experimental)
-
-### **12.3. Banco**
-
-* Railway Postgres
-* Render Postgres
-* Neon (Postgres serverless gratuito)
-
-# 13. 🌍 **Modo Offline**
-
-O sistema começará como **online-only**, para reduzir complexidade inicial.
-
-No futuro, poderá ser estendido para:
-
-* PWA
-* Cache local com IndexedDB
-* Sincronização inteligente de dados
-
-# ✔️ **Resumo Final da Arquitetura**
-
-* Frontend: **Next.js + TS, React Query, Zustand**
-* Backend: **NestJS + TS, módulos por domínio**
-* Banco: **Postgres + Prisma**
-* Jobs: **Nest Scheduler (cron)**, futuros workers
-* Importação estruturada em pipeline
-* Dados externos isolados em módulo próprio
-* Auth JWT, HTTPS, criptografia
-* Infra: **Vercel + Railway/Render/Neon**
-* Online-only na primeira versão
-* Arquitetura modular, escalável e fácil de evoluir
+Consulte [`backlog.md`](backlog.md). Em especial, `MarketAsset` é apenas catálogo manual; não existe preço corrente, lucro de mercado ou atualização externa.

@@ -177,17 +177,7 @@ const INCOME_WORDS = new Set([
   'rendimento',
 ]);
 
-const EXPENSE_WORDS = new Set([
-  'saida',
-  'despesa',
-  'debito',
-  'debit',
-  'expense',
-  'saque',
-  'd',
-  'db',
-  'compra',
-]);
+const EXPENSE_WORDS = new Set(['saida', 'despesa', 'debito', 'debit', 'expense', 'saque', 'd', 'db', 'compra']);
 
 /**
  * Reads an explicit direction column (`Tipo`, `Type`, `D/C`). Returns `null`

@@ -48,18 +48,33 @@ export function ImportHistory() {
                 <caption className="sr-only">Arquivos já importados, do mais recente para o mais antigo.</caption>
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                    <th scope="col" className="px-2 py-2 font-medium">Arquivo</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Origem</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Formato</th>
-                    <th scope="col" className="px-2 py-2 text-right font-medium">Registros</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Situação</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Importado em</th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Arquivo
+                    </th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Origem
+                    </th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Formato
+                    </th>
+                    <th scope="col" className="px-2 py-2 text-right font-medium">
+                      Registros
+                    </th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Situação
+                    </th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Importado em
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {files.map((file) => (
                     <tr key={file.id} className="border-b border-border last:border-0">
-                      <th scope="row" className="max-w-[16rem] truncate px-2 py-2 text-left font-normal text-foreground">
+                      <th
+                        scope="row"
+                        className="max-w-[16rem] truncate px-2 py-2 text-left font-normal text-foreground"
+                      >
                         {file.fileName}
                       </th>
                       <td className="px-2 py-2 text-muted-foreground">

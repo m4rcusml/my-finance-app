@@ -1,16 +1,16 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { API_PREFIX } from '@finance/contracts';
 import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent';
-import { AppModule } from '../../src/app.module';
 import { GlobalExceptionFilter } from '../../src/common/http-exception.filter';
 import { RequestIdMiddleware } from '../../src/common/request-id.middleware';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { assertDisposableDatabaseUrl } from './database-safety';
 
 /**
  * Boots the REAL application against the REAL PostgreSQL started by the Jest
@@ -21,7 +21,8 @@ import { PrismaService } from '../../src/prisma/prisma.service';
 export const PREFIX = API_PREFIX;
 
 export function testDatabaseUrl(): string {
-  return process.env.TEST_DATABASE_URL ?? readFileSync(join(__dirname, '.db-url'), 'utf8').trim();
+  const databaseUrl = process.env.TEST_DATABASE_URL ?? readFileSync(join(__dirname, '.db-url'), 'utf8').trim();
+  return assertDisposableDatabaseUrl(databaseUrl);
 }
 
 export interface TestApp {
@@ -36,7 +37,6 @@ export async function createTestApp(overrides: Record<string, string> = {}): Pro
     NODE_ENV: 'test',
     DATABASE_URL: testDatabaseUrl(),
     JWT_SECRET: 'integration-test-access-secret-value-32-chars-long',
-    JWT_REFRESH_SECRET: 'integration-test-refresh-secret-value-32-chars-long',
     CORS_ORIGINS: 'http://localhost:3000',
     APP_TIMEZONE: 'America/Sao_Paulo',
     COOKIE_SECURE: 'false',
@@ -46,6 +46,10 @@ export async function createTestApp(overrides: Record<string, string> = {}): Pro
     ...overrides,
   });
 
+  // ConfigModule.forRoot evaluates while AppModule is imported. Keep this
+  // import after the disposable DATABASE_URL is installed; a top-level import
+  // silently bound the suite to the developer's .env instead.
+  const { AppModule } = await import('../../src/app.module');
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: false });
 
@@ -84,24 +88,32 @@ export async function createTestApp(overrides: Record<string, string> = {}): Pro
  * far faster than re-running migrations.
  */
 export async function resetDatabase(prisma: PrismaService) {
-  await prisma.$executeRawUnsafe(`
-    TRUNCATE TABLE
-      "fixed_transaction_occurrences",
-      "import_batch_rows",
-      "import_batches",
-      "imported_files",
-      "transactions",
-      "fixed_transactions",
-      "investments",
-      "market_assets",
-      "goals",
-      "categories",
-      "credit_cards",
-      "accounts",
-      "refresh_tokens",
-      "users"
-    RESTART IDENTITY CASCADE
-  `);
+  try {
+    await prisma.$executeRawUnsafe(`
+      TRUNCATE TABLE
+        "fixed_transaction_occurrences",
+        "import_batch_rows",
+        "import_batches",
+        "imported_files",
+        "transactions",
+        "fixed_transactions",
+        "investments",
+        "market_assets",
+        "goals",
+        "categories",
+        "credit_cards",
+        "accounts",
+        "refresh_tokens",
+        "users"
+      RESTART IDENTITY CASCADE
+    `);
+  } catch (error) {
+    const databaseError = error as { code?: string; meta?: unknown };
+    throw new Error(
+      `Could not reset disposable integration database (${databaseError.code ?? 'unknown'}): ${JSON.stringify(databaseError.meta ?? null)}`,
+      { cause: error },
+    );
+  }
 }
 
 export interface TestUser {

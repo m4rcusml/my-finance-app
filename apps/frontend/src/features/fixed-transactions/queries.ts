@@ -2,6 +2,7 @@
 
 import type {
   FixedTransaction,
+  ListFixedTransactionsQuery,
   ListOccurrencesQuery,
   OccurrenceWithTemplate,
   PaginatedResponse,
@@ -22,22 +23,15 @@ import { useSessionKey } from '@/shared/session/session-provider';
  * `limit` included; otherwise page 2 would be served from page 1's cache entry.
  */
 
-export interface FixedTransactionListFilters {
-  page?: number;
-  limit?: number;
-  includeArchived?: boolean;
-}
-
 export function useFixedTransactionsQuery(
-  filters: FixedTransactionListFilters = {},
+  filters: ListFixedTransactionsQuery = {},
 ): UseQueryResult<PaginatedResponse<FixedTransaction>> {
   const session = useSessionKey();
-  // `false` would still be serialised as `includeArchived=false`; omit it instead
-  // so the key and the request agree on exactly one representation.
-  const query: FixedTransactionListFilters = {
+  const query: ListFixedTransactionsQuery = {
     page: filters.page,
     limit: filters.limit,
-    includeArchived: filters.includeArchived ? true : undefined,
+    isActive: filters.isActive,
+    type: filters.type,
   };
 
   return useQuery({

@@ -54,6 +54,14 @@ describe('FixedTransactionsService', () => {
     prisma.fixedTransactionOccurrence.updateMany.mockResolvedValue({ count: 0 });
     prisma.fixedTransactionOccurrence.deleteMany.mockResolvedValue({ count: 0 });
     prisma.fixedTransactionOccurrence.findMany.mockResolvedValue([]);
+    prisma.account.findUnique.mockResolvedValue({ id: accountId, userId, isActive: true });
+    prisma.creditCard.findUnique.mockResolvedValue({ id: creditCardId, userId, isActive: true });
+    prisma.category.findUnique.mockResolvedValue({
+      id: categoryId,
+      userId,
+      isActive: true,
+      type: 'expense',
+    });
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -72,8 +80,6 @@ describe('FixedTransactionsService', () => {
     };
 
     it('creates an account-backed template and returns the contract shape', async () => {
-      prisma.category.findFirst.mockResolvedValue({ id: categoryId, userId });
-      prisma.account.findFirst.mockResolvedValue({ id: accountId, userId });
       prisma.fixedTransaction.create.mockResolvedValue(baseTemplate);
 
       const result = await service.create(userId, dto);
@@ -99,17 +105,15 @@ describe('FixedTransactionsService', () => {
     });
 
     it('creates a card-backed template (the old DTO made these unreachable)', async () => {
-      prisma.category.findFirst.mockResolvedValue({ id: categoryId, userId });
-      prisma.creditCard.findFirst.mockResolvedValue({ id: creditCardId, userId });
       prisma.fixedTransaction.create.mockResolvedValue({ ...baseTemplate, accountId: null, creditCardId });
 
       const result = await service.create(userId, { ...dto, accountId: null, creditCardId });
 
-      expect(prisma.creditCard.findFirst).toHaveBeenCalledWith({
-        where: { id: creditCardId, userId },
-        select: { id: true, userId: true },
+      expect(prisma.creditCard.findUnique).toHaveBeenCalledWith({
+        where: { id: creditCardId },
+        select: { id: true, userId: true, isActive: true },
       });
-      expect(prisma.account.findFirst).not.toHaveBeenCalled();
+      expect(prisma.account.findUnique).not.toHaveBeenCalled();
       expect(result.creditCardId).toBe(creditCardId);
       expect(result.accountId).toBeNull();
     });
@@ -125,9 +129,23 @@ describe('FixedTransactionsService', () => {
     });
 
     it('404s on a category owned by somebody else', async () => {
-      prisma.category.findFirst.mockResolvedValue(null);
+      prisma.category.findUnique.mockResolvedValue(null);
 
       await expect(service.create(userId, dto)).rejects.toThrow(NotFoundException);
+      expect(prisma.fixedTransaction.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects archived resources and category/type mismatches', async () => {
+      prisma.account.findUnique.mockResolvedValue({ id: accountId, userId, isActive: false });
+      await expect(service.create(userId, dto)).rejects.toThrow(BadRequestException);
+
+      prisma.account.findUnique.mockResolvedValue({ id: accountId, userId, isActive: true });
+      prisma.category.findUnique.mockResolvedValue({ id: categoryId, userId, isActive: false, type: 'expense' });
+      await expect(service.create(userId, dto)).rejects.toThrow(BadRequestException);
+
+      prisma.category.findUnique.mockResolvedValue({ id: categoryId, userId, isActive: true, type: 'income' });
+      await expect(service.create(userId, dto)).rejects.toThrow(BadRequestException);
+
       expect(prisma.fixedTransaction.create).not.toHaveBeenCalled();
     });
   });
@@ -212,7 +230,6 @@ describe('FixedTransactionsService', () => {
 
     it('accepts swapping an account for a card in a single patch', async () => {
       prisma.fixedTransaction.findFirst.mockResolvedValue(baseTemplate);
-      prisma.creditCard.findFirst.mockResolvedValue({ id: creditCardId, userId });
       prisma.fixedTransaction.update.mockResolvedValue({ ...baseTemplate, accountId: null, creditCardId });
 
       const result = await service.update(userId, fixedId, { accountId: null, creditCardId });
@@ -233,10 +250,7 @@ describe('FixedTransactionsService', () => {
           fixedTransactionId: fixedId,
           userId,
           status: 'pending',
-          OR: [
-            { periodYear: { gt: period.year } },
-            { periodYear: period.year, periodMonth: { gt: period.month } },
-          ],
+          OR: [{ periodYear: { gt: period.year } }, { periodYear: period.year, periodMonth: { gt: period.month } }],
         },
         data: expect.objectContaining({ value: 1400 }),
       });
@@ -280,10 +294,7 @@ describe('FixedTransactionsService', () => {
           userId,
           status: 'pending',
           transactionId: null,
-          OR: [
-            { periodYear: { gt: period.year } },
-            { periodYear: period.year, periodMonth: { gt: period.month } },
-          ],
+          OR: [{ periodYear: { gt: period.year } }, { periodYear: period.year, periodMonth: { gt: period.month } }],
         },
       });
       expect(prisma.fixedTransactionOccurrence.updateMany).not.toHaveBeenCalled();
@@ -350,6 +361,15 @@ describe('FixedTransactionsService', () => {
         data: { isActive: true, archivedAt: null },
       });
       expect(result.isActive).toBe(true);
+    });
+
+    it('does not restore a template whose destination is archived', async () => {
+      prisma.fixedTransaction.findFirst.mockResolvedValue({ ...baseTemplate, isActive: false, archivedAt: new Date() });
+      prisma.account.findUnique.mockResolvedValue({ id: accountId, userId, isActive: false });
+
+      await expect(service.restore(userId, fixedId)).rejects.toThrow(BadRequestException);
+
+      expect(prisma.fixedTransaction.update).not.toHaveBeenCalled();
     });
 
     it('DELETE archives rather than destroying history', async () => {

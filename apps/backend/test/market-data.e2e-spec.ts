@@ -4,13 +4,14 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
 describe('MarketAssetsController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let authToken: string;
 
   const mockUser = {
@@ -18,6 +19,7 @@ describe('MarketAssetsController (e2e)', () => {
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -34,30 +36,13 @@ describe('MarketAssetsController (e2e)', () => {
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        marketAsset: {
-          create: jest.fn(),
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          findFirst: jest.fn(),
-          update: jest.fn(),
-          delete: jest.fn(),
-          count: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
       .compile();
-
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -71,7 +56,7 @@ describe('MarketAssetsController (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'test@example.com', password: 'password123' });
 
-    authToken = loginResponse.body.access_token;
+    authToken = loginResponse.body.accessToken;
   });
 
   afterEach(async () => {
@@ -81,7 +66,6 @@ describe('MarketAssetsController (e2e)', () => {
 
   describe('POST /api/v1/market-assets', () => {
     it('should create a market asset when authenticated', async () => {
-      prisma.marketAsset.findFirst.mockResolvedValue(null);
       prisma.marketAsset.create.mockResolvedValue(baseMarketAsset as any);
 
       const response = await request(app.getHttpServer())
@@ -100,7 +84,7 @@ describe('MarketAssetsController (e2e)', () => {
     });
 
     it('should return 409 when symbol+exchange already exists', async () => {
-      prisma.marketAsset.findFirst.mockResolvedValue(baseMarketAsset as any);
+      prisma.marketAsset.create.mockRejectedValue({ code: 'P2002' });
 
       await request(app.getHttpServer())
         .post('/api/v1/market-assets')
@@ -149,12 +133,9 @@ describe('MarketAssetsController (e2e)', () => {
   });
 
   describe('GET /api/v1/market-assets', () => {
-    it('should return global assets plus user assets', async () => {
-      prisma.marketAsset.findMany.mockResolvedValue([
-        { ...baseMarketAsset, userId: null, symbol: 'BTC' },
-        baseMarketAsset,
-      ] as any);
-      prisma.marketAsset.count.mockResolvedValue(2);
+    it('should return only the user assets', async () => {
+      prisma.marketAsset.findMany.mockResolvedValue([baseMarketAsset] as any);
+      prisma.marketAsset.count.mockResolvedValue(1);
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/market-assets')
@@ -162,8 +143,11 @@ describe('MarketAssetsController (e2e)', () => {
         .expect(200);
 
       expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data).toHaveLength(2);
-      expect(response.body.meta.totalItems).toBe(2);
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.meta.totalItems).toBe(1);
+      expect(prisma.marketAsset.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'user-1' } }),
+      );
     });
 
     it('should return 401 without token', async () => {
@@ -184,18 +168,16 @@ describe('MarketAssetsController (e2e)', () => {
       expect(response.body.symbol).toBe('PETR4');
     });
 
-    it('should return global asset even when not owned', async () => {
+    it('should hide a legacy global asset', async () => {
       prisma.marketAsset.findUnique.mockResolvedValue({
         ...baseMarketAsset,
         userId: null,
       } as any);
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .get('/api/v1/market-assets/asset-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.userId).toBeNull();
+        .expect(404);
     });
 
     it('should return 404 for non-existent asset', async () => {
@@ -207,7 +189,7 @@ describe('MarketAssetsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for asset owned by another user', async () => {
+    it('should return 404 for asset owned by another user', async () => {
       prisma.marketAsset.findUnique.mockResolvedValue({
         ...baseMarketAsset,
         userId: 'other-user',
@@ -216,7 +198,7 @@ describe('MarketAssetsController (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/v1/market-assets/asset-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -237,7 +219,7 @@ describe('MarketAssetsController (e2e)', () => {
       expect(response.body.name).toBe('Petrobras Updated');
     });
 
-    it('should return 403 when updating global asset', async () => {
+    it('should return 404 when updating a legacy global asset', async () => {
       prisma.marketAsset.findUnique.mockResolvedValue({
         ...baseMarketAsset,
         userId: null,
@@ -247,10 +229,10 @@ describe('MarketAssetsController (e2e)', () => {
         .patch('/api/v1/market-assets/asset-1')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'Updated' })
-        .expect(403);
+        .expect(404);
     });
 
-    it('should return 403 when updating another user asset', async () => {
+    it('should return 404 when updating another user asset', async () => {
       prisma.marketAsset.findUnique.mockResolvedValue({
         ...baseMarketAsset,
         userId: 'other-user',
@@ -260,7 +242,7 @@ describe('MarketAssetsController (e2e)', () => {
         .patch('/api/v1/market-assets/asset-1')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'Updated' })
-        .expect(403);
+        .expect(404);
     });
 
     it('should return 404 for non-existent asset', async () => {
@@ -277,6 +259,7 @@ describe('MarketAssetsController (e2e)', () => {
   describe('DELETE /api/v1/market-assets/:id', () => {
     it('should delete asset when owned', async () => {
       prisma.marketAsset.findUnique.mockResolvedValue(baseMarketAsset as any);
+      prisma.investment.count.mockResolvedValue(0);
       prisma.marketAsset.delete.mockResolvedValue(baseMarketAsset as any);
 
       await request(app.getHttpServer())
@@ -285,7 +268,7 @@ describe('MarketAssetsController (e2e)', () => {
         .expect(204);
     });
 
-    it('should return 403 when deleting global asset', async () => {
+    it('should return 404 when deleting a legacy global asset', async () => {
       prisma.marketAsset.findUnique.mockResolvedValue({
         ...baseMarketAsset,
         userId: null,
@@ -294,10 +277,10 @@ describe('MarketAssetsController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/api/v1/market-assets/asset-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
 
-    it('should return 403 when deleting another user asset', async () => {
+    it('should return 404 when deleting another user asset', async () => {
       prisma.marketAsset.findUnique.mockResolvedValue({
         ...baseMarketAsset,
         userId: 'other-user',
@@ -306,7 +289,7 @@ describe('MarketAssetsController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/api/v1/market-assets/asset-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
 
     it('should return 404 for non-existent asset', async () => {

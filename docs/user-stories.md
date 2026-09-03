@@ -1,184 +1,163 @@
-# 📚 User Stories — Aplicação de Finanças Pessoais
+# Histórias de usuário da V1
 
-Este documento contém o conjunto oficial de *User Stories* do sistema, servindo como base para requisitos funcionais, arquitetura, modelagem de dados e implementação.
-As histórias estão organizadas por domínio funcional para facilitar versionamento, priorização e refinamento.
+Estas histórias descrevem somente comportamentos da V1. Ideias futuras não são histórias aceitas nesta versão; ficam em [`backlog.md`](backlog.md).
 
-## 🟦 1. Visualização Geral / Dashboard
+## Sessão e perfil
 
-### **1.1 Saldo total**
+### US-1 — Criar conta
 
-**Como usuário**, quero ver o saldo total somando todas as minhas contas bancárias (sem incluir investimentos), **para saber quanto dinheiro líquido tenho disponível**.
+Como pessoa usuária, quero criar uma conta com e-mail e senha para começar meu controle financeiro.
 
-### **1.2 Saldo por conta**
+Critérios:
 
-**Como usuário**, quero ver o saldo individual de cada conta bancária, **para entender onde meu dinheiro está distribuído**.
+- e-mail é normalizado;
+- credenciais inválidas não revelam se o e-mail existe;
+- a sessão é aberta sem persistir o access token no armazenamento do navegador.
 
-### **1.3 Separação de saldo investido**
+### US-2 — Continuar e encerrar a sessão
 
-**Como usuário**, quero visualizar separadamente o saldo em conta corrente e o saldo investido, **para não confundir o dinheiro disponível com o que está aplicado**.
+Como pessoa usuária, quero que a sessão seja renovada com segurança e que o logout remova meus dados privados do navegador.
 
-### **1.4 Limite total de cartão**
+Critérios:
 
-**Como usuário**, quero ver o limite total de cartão utilizado e disponível, **para saber quanto ainda posso gastar no crédito**.
+- refresh opaco, rotativo e protegido por CSRF;
+- concorrência legítima não invalida o token vencedor;
+- logout, sessão terminal e troca de usuário limpam cache.
 
-### **1.5 Limite individual de cartão**
+### US-3 — Gerenciar perfil
 
-**Como usuário**, quero ver o limite usado e disponível de cada cartão, **para acompanhar meu endividamento com precisão**.
+Como pessoa usuária, quero alterar perfil/senha ou excluir minha conta com confirmação forte.
 
-### **1.6 Gastos por período**
+## Ledger
 
-**Como usuário**, quero ver o total de gastos por semana, mês e ano, **para entender meus hábitos de consumo ao longo do tempo**.
+### US-4 — Manter contas
 
-## 🟩 2. Transações (Ganhos e Gastos)
+Como pessoa usuária, quero cadastrar contas e ver o saldo derivado dos lançamentos para saber quanto dinheiro tenho disponível.
 
-### **2.1 Registrar transações**
+Critérios:
 
-**Como usuário**, quero registrar ganhos e gastos manualmente, **para manter meu controle financeiro atualizado**.
+- saldo de conta do tipo investimento fica separado do caixa;
+- recurso com histórico é arquivado em vez de apagado;
+- arquivados continuam legíveis no histórico.
 
-### **2.2 Categorizar transações**
+### US-5 — Acompanhar cartões
 
-**Como usuário**, quero atribuir uma categoria às transações, **para saber em que áreas estou gastando mais**.
+Como pessoa usuária, quero registrar cartões e ver limite usado no ciclo atual para não confundir faturas antigas com a atual.
 
-### **2.3 Página de transações sem categoria**
+Critérios:
 
-**Como usuário**, quero visualizar transações que não possuem categoria atribuída, **para categorizá-las rapidamente**.
+- ciclo respeita o dia de fechamento;
+- meses curtos e ano bissexto são calculados;
+- cartão arquivado não recebe lançamento novo.
 
-### **2.4 Sugestão automática de categoria**
+### US-6 — Organizar categorias
 
-**Como usuário**, quero que o sistema sugira categorias com base na descrição, **para economizar tempo**.
+Como pessoa usuária, quero manter categorias de receita, despesa ou ambas para identificar os lançamentos.
 
-### **2.5 Editar e excluir transações**
+### US-7 — Registrar e corrigir transações
 
-**Como usuário**, quero editar e excluir transações, **para corrigir erros ou ajustar valores**.
+Como pessoa usuária, quero criar, editar, filtrar e excluir receitas/despesas para manter o ledger fiel.
 
-### **2.6 Filtrar por período**
+Critérios:
 
-**Como usuário**, quero filtrar transações por semana, mês, ano ou intervalo customizado, **para facilitar análises**.
+- data permanece o mesmo dia em qualquer timezone;
+- há exatamente uma origem: conta ou cartão;
+- a edição consegue limpar categoria e trocar origem;
+- listas são paginadas e mostram nomes, não UUIDs.
 
-### **2.7 Filtrar por categoria**
+### US-8 — Categorizar pendências
 
-**Como usuário**, quero filtrar transações por categoria, **para entender o impacto de cada área nas minhas finanças**.
+Como pessoa usuária, quero percorrer lançamentos sem categoria em sequência para organizar rapidamente o histórico.
 
-### **2.8 Projeção de gastos**
+### US-9 — Entender totais e projeção
 
-**Como usuário**, quero projetar gastos do próximo mês com base em padrões observados, **para antecipar meu orçamento**.
+Como pessoa usuária, quero um resumo por período e uma média projetada baseada em meses completos para planejar gastos.
 
-### **2.9 Cadastrar transações fixas com margem de dias**
+## Visão geral
 
-**Como usuário**, quero cadastrar ganhos e gastos fixos com **margem de dias** em vez de uma data única, **para confirmar a data real próximo ao vencimento**.
+### US-10 — Comparar períodos
 
-### **2.10 Notificação de transação fixa próxima**
+Como pessoa usuária, quero alternar semana, mês, ano ou intervalo próprio e comparar com o período anterior.
 
-**Como usuário**, quero ser notificado quando estiver na margem de dias de uma transação fixa, **para confirmar a ocorrência real**.
+### US-11 — Ver patrimônios separados
 
-### **2.11 Confirmar ou rejeitar transação fixa**
+Como pessoa usuária, quero distinguir saldo em caixa, saldo de conta-investimento e custo da carteira manual.
 
-**Como usuário**, quero confirmar a ocorrência e data exata da transação fixa ou rejeitá-la, **para manter precisão no histórico**.
+### US-12 — Ver atividade relevante
 
-### **2.12 Registro automático após confirmação**
+Como pessoa usuária, quero ver cartões no ciclo, últimos 12 meses, transações recentes, recorrências pendentes e fila sem categoria em um painel.
 
-**Como usuário**, quero que o sistema gere automaticamente a transação normal após a confirmação, **para não cadastrá-la manualmente**.
+## Recorrências
 
-### **2.13 Histórico de transações fixas**
+### US-13 — Criar modelo mensal
 
-**Como usuário**, quero visualizar o histórico de confirmações e rejeições de transações fixas, **para acompanhar atrasos e padrões**.
+Como pessoa usuária, quero cadastrar uma receita ou despesa recorrente com dia, margem, categoria e origem.
 
-## 🟧 3. Contas, Cartões e Investimentos
+### US-14 — Confirmar a ocorrência real
 
-### **3.1 Cadastrar contas bancárias**
+Como pessoa usuária, quero informar data e valor reais para que o sistema crie exatamente um lançamento.
 
-**Como usuário**, quero cadastrar contas com nome, instituição e saldo, **para acompanhar minhas fontes de dinheiro**.
+Critérios:
 
-### **3.2 Cadastrar cartões de crédito**
+- só uma ocorrência pending pode ser confirmada;
+- duas confirmações concorrentes geram uma única transação;
+- o histórico guarda o snapshot do período.
 
-**Como usuário**, quero registrar meus cartões, **para acompanhar limite, fatura e dívidas**.
+### US-15 — Ignorar e consultar histórico
 
-### **3.3 Cadastrar investimentos manualmente**
+Como pessoa usuária, quero ignorar uma ocorrência que não aconteceu e consultar estados passados sem que editar/arquivar o modelo os altere.
 
-**Como usuário**, quero registrar meus investimentos manualmente, **para acompanhar aportes e posições**.
+## Investimentos e metas
 
-### **3.4 Diferenciar contas de investimentos**
+### US-16 — Registrar carteira manual
 
-**Como usuário**, quero que o sistema trate contas bancárias e investimentos como entidades separadas, **para evitar confusão no saldo total**.
+Como pessoa usuária, quero cadastrar ativos e aportes por custo de aquisição para reunir minhas posições sem depender de cotação externa.
 
-## 🟨 4. Importação de Arquivos (Bancos e Corretoras)
+### US-17 — Acompanhar meta manual
 
-### **4.1 Importar extratos**
+Como pessoa usuária, quero definir objetivo e atualizar seu valor alcançado manualmente para visualizar o progresso sem cálculo enganoso.
 
-**Como usuário**, quero importar arquivos de extrato (CSV, OFX, XLSX etc.), **para não inserir transações manualmente**.
+## Importação
 
-### **4.2 Importar de bancos específicos**
+### US-18 — Pré-visualizar extrato
 
-**Como usuário**, quero importar extratos do Inter, Mercado Pago e BTG, **para configurar rapidamente minhas contas**.
+Como pessoa usuária, quero enviar CSV, OFX ou planilha do Inter/formato genérico e revisar erros e duplicatas antes de gravar.
 
-### **4.3 Importar de corretoras**
+### US-19 — Confirmar linhas selecionadas
 
-**Como usuário**, quero importar extratos do Binance, Bipa, Coinbase e outras, **para registrar investimentos automaticamente**.
+Como pessoa usuária, quero escolher conta/cartão e linhas válidas para importar somente o que revisei.
 
-### **4.4 Detectar duplicatas**
+Critérios:
 
-**Como usuário**, quero que o sistema identifique transações duplicadas durante importações, **para evitar inconsistências**.
+- o servidor usa a prévia persistida;
+- destino e ownership são revalidados;
+- repetição ou concorrência não duplica `externalId`;
+- falha desfaz o lote.
 
-### **4.5 Pré-visualizar importação**
+## Backup
 
-**Como usuário**, quero visualizar previamente os dados antes de confirmar a importação, **para validar se tudo está correto**.
+### US-20 — Exportar meus dados
 
-## 🟫 5. Dados do Mercado Financeiro
+Como pessoa usuária, quero baixar um JSON versionado com todo o meu histórico financeiro e sem credenciais.
 
-### **5.1 Preço de ações**
+### US-21 — Restaurar com segurança
 
-**Como usuário**, quero ver preços atualizados de ações, **para acompanhar minhas posições**.
+Como pessoa usuária, quero mesclar ou substituir meu ledger, com confirmação explícita no modo destrutivo e rollback se algo falhar.
 
-### **5.2 Preço de FIIs**
+## Uso em diferentes telas
 
-**Como usuário**, quero visualizar cotações de FIIs, **para monitorar minha carteira imobiliária**.
+### US-22 — Usar pelo celular e teclado
 
-### **5.3 Preço de criptomoedas**
+Como pessoa usuária, quero navegar desde 320 px e operar diálogos por teclado.
 
-**Como usuário**, quero ver preços atualizados de criptomoedas, **para monitorar volatilidade**.
+Critérios:
 
-### **5.4 Atualização periódica dos preços**
+- menu móvel disponível;
+- foco não escapa do diálogo;
+- Escape fecha;
+- o foco retorna ao acionador;
+- loading, vazio e erro não são confundidos.
 
-**Como usuário**, quero que os preços se atualizem automaticamente, **para não precisar atualizar manualmente**.
+## Limite do compromisso
 
-## 🟪 6. Metas e Planejamento Financeiro
-
-### **6.1 Criar metas**
-
-**Como usuário**, quero criar metas financeiras (economia, limite de gastos, objetivos), **para me planejar melhor**.
-
-### **6.2 Acompanhar progresso**
-
-**Como usuário**, quero acompanhar graficamente o progresso das metas, **para saber se estou no caminho certo**.
-
-### **6.3 Alertas de meta**
-
-**Como usuário**, quero receber alertas quando estiver perto de ultrapassar uma meta, **para ajustar meu comportamento a tempo**.
-
-## 🟪 7. Otimizador de Investimentos (Futuro)
-
-### **7.1 Comparar oportunidades**
-
-**Como usuário**, quero ver alternativas de investimento para o dinheiro disponível, **para otimizar minha carteira**.
-
-### **7.2 Recomendações personalizadas**
-
-**Como usuário**, quero recomendações com base no meu histórico financeiro, **para tomar decisões mais inteligentes**.
-
-### **7.3 Simulações financeiras**
-
-**Como usuário**, quero simular rendimentos futuros (CDB, Tesouro, ETFs, staking), **para entender impactos no longo prazo**.
-
-## 🟦 8. Infraestrutura e Qualidade
-
-### **8.1 Backup**
-
-**Como usuário**, quero fazer backup dos meus dados localmente ou na nuvem, **para evitar perda de informação**.
-
-### **8.2 Segurança de dados**
-
-**Como usuário**, quero que meus dados sejam protegidos e criptografados, **porque são informações sensíveis**.
-
-### **8.3 Modo offline**
-
-**Como usuário**, quero conseguir usar o aplicativo offline e sincronizar depois, **para funcionar mesmo sem internet**.
+A V1 não promete cotação, integração direta com instituições, sugestão automática, alerta externo, recomendação, offline ou nuvem. A interface e a documentação devem comunicar isso sem “em breve” implícito.

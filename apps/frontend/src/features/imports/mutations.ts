@@ -35,11 +35,7 @@ export interface ConfirmImportVariables {
  * dashboard total — so all of those caches are invalidated, not just the
  * import history.
  */
-export function useConfirmImportMutation(): UseMutationResult<
-  ConfirmImportResponse,
-  unknown,
-  ConfirmImportVariables
-> {
+export function useConfirmImportMutation(): UseMutationResult<ConfirmImportResponse, unknown, ConfirmImportVariables> {
   const s = useSessionKey();
   const queryClient = useQueryClient();
 

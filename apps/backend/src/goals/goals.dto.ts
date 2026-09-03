@@ -8,7 +8,19 @@ import {
 } from '@finance/contracts';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, IsUUID, Matches, MaxLength, Min, ValidateIf } from 'class-validator';
+import {
+  IsIn,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 import { PaginationMetaDto } from '../common/pagination.dto';
 
 /**
@@ -47,7 +59,11 @@ export class CreateGoalDto implements CreateGoalRequest {
   @Min(0, { message: 'currentAmount não pode ser negativo.' })
   currentAmount?: number;
 
-  @ApiPropertyOptional({ example: '2026-12-31', nullable: true, description: 'Data civil alvo. Envie null para limpar.' })
+  @ApiPropertyOptional({
+    example: '2026-12-31',
+    nullable: true,
+    description: 'Data civil alvo. Envie null para limpar.',
+  })
   @ValidateIf((o: CreateGoalDto) => o.deadline !== undefined && o.deadline !== null)
   @Matches(CIVIL_DATE_PATTERN, { message: DEADLINE_MESSAGE })
   deadline?: string | null;
@@ -130,7 +146,12 @@ export class GoalResponseDto implements Goal {
   @ApiProperty({ example: '2026-12-31', nullable: true }) deadline!: string | null;
   @ApiProperty({ format: 'uuid', nullable: true }) relatedCategoryId!: string | null;
   @ApiProperty({ format: 'uuid', nullable: true }) relatedAccountId!: string | null;
-  @ApiProperty({ example: 0.3333, minimum: 0, maximum: 1, description: 'currentAmount / targetAmount, limitado a [0, 1].' })
+  @ApiProperty({
+    example: 0.3333,
+    minimum: 0,
+    maximum: 1,
+    description: 'currentAmount / targetAmount, limitado a [0, 1].',
+  })
   progress!: number;
   @ApiProperty({ enum: ['manual'], example: 'manual', description: 'Sempre manual na V1.' })
   progressSource!: 'manual';

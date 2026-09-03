@@ -2,8 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useSession } from '@/shared/session/session-provider';
+
+const DRAWER_FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * The application shell.
@@ -49,29 +52,77 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const drawerId = useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const focusAfterCloseRef = useRef<'toggle' | 'main' | null>(null);
+
+  const closeDrawerToToggle = useCallback(() => {
+    focusAfterCloseRef.current = 'toggle';
+    setDrawerOpen(false);
+  }, []);
+
+  const closeDrawerToMain = useCallback(() => {
+    focusAfterCloseRef.current = 'main';
+    setDrawerOpen(false);
+  }, []);
 
   // Close the drawer on navigation, and restore focus to the toggle.
   useEffect(() => {
-    setDrawerOpen(false);
+    if (pathname) setDrawerOpen(false);
   }, [pathname]);
+
+  // The toggle lives inside an inert header while the drawer is open. Restore
+  // focus only after React has committed the closed state and removed `inert`.
+  useEffect(() => {
+    const target = focusAfterCloseRef.current;
+    if (drawerOpen || !target) return;
+    focusAfterCloseRef.current = null;
+    (target === 'toggle' ? toggleRef : mainRef).current?.focus();
+  }, [drawerOpen]);
 
   useEffect(() => {
     if (!drawerOpen) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setDrawerOpen(false);
-        toggleRef.current?.focus();
+        closeDrawerToToggle();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+      const drawer = drawerRef.current;
+      if (!drawer) return;
+      const focusable = Array.from(drawer.querySelectorAll<HTMLElement>(DRAWER_FOCUSABLE)).filter(
+        (element) => element.tabIndex >= 0 && element.getAttribute('aria-hidden') !== 'true',
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        drawer.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !drawer.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener('keydown', onKeyDown);
     drawerRef.current?.querySelector<HTMLElement>('a,button')?.focus();
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [drawerOpen]);
+  }, [closeDrawerToToggle, drawerOpen]);
 
   return (
     <div className="min-h-dvh bg-layer00 text-foreground">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-layer00/95 px-4 py-3 backdrop-blur lg:hidden">
+      <header
+        inert={drawerOpen ? true : undefined}
+        aria-hidden={drawerOpen ? true : undefined}
+        className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-layer00/95 px-4 py-3 backdrop-blur lg:hidden"
+      >
         <button
           ref={toggleRef}
           type="button"
@@ -120,12 +171,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               type="button"
               aria-hidden="true"
               tabIndex={-1}
-              onClick={() => setDrawerOpen(false)}
+              onClick={closeDrawerToToggle}
               className="absolute inset-0 cursor-default bg-scrim"
             />
             <nav
               ref={drawerRef}
               id={drawerId}
+              tabIndex={-1}
               aria-label="Navegação principal"
               className="absolute inset-y-0 left-0 flex w-[min(20rem,85vw)] flex-col gap-3 overflow-y-auto border-r border-border bg-layer01 p-4"
             >
@@ -133,10 +185,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <p className="text-sm font-semibold">Menu</p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setDrawerOpen(false);
-                    toggleRef.current?.focus();
-                  }}
+                  onClick={closeDrawerToToggle}
                   className="rounded-lg px-3 py-2 text-sm hover:bg-layer02"
                 >
                   <span aria-hidden="true">×</span>
@@ -146,7 +195,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <ul className="flex flex-col gap-1">
                 {NAV_ITEMS.map((item) => (
                   <li key={item.href}>
-                    <NavLink item={item} active={isActive(pathname, item.href)} showDescription />
+                    <NavLink
+                      item={item}
+                      active={isActive(pathname, item.href)}
+                      showDescription
+                      onNavigate={closeDrawerToMain}
+                    />
                   </li>
                 ))}
               </ul>
@@ -164,7 +218,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         ) : null}
 
-        <main id="conteudo" tabIndex={-1} className="min-w-0 flex-1 pb-16 outline-none">
+        <main
+          ref={mainRef}
+          id="conteudo"
+          tabIndex={-1}
+          inert={drawerOpen ? true : undefined}
+          aria-hidden={drawerOpen ? true : undefined}
+          className="min-w-0 flex-1 pb-16 outline-none"
+        >
           {children}
         </main>
       </div>
@@ -172,13 +233,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavLink({ item, active, showDescription }: { item: NavItem; active: boolean; showDescription?: boolean }) {
+function NavLink({
+  item,
+  active,
+  showDescription,
+  onNavigate,
+}: {
+  item: NavItem;
+  active: boolean;
+  showDescription?: boolean;
+  onNavigate?: () => void;
+}) {
   return (
     <Link
       href={item.href}
+      onNavigate={onNavigate}
       aria-current={active ? 'page' : undefined}
       className={`block rounded-xl px-3 py-2 text-sm transition ${
-        active ? 'bg-layer02 font-semibold text-foreground' : 'text-muted-foreground hover:bg-layer02/70 hover:text-foreground'
+        active
+          ? 'bg-layer02 font-semibold text-foreground'
+          : 'text-muted-foreground hover:bg-layer02/70 hover:text-foreground'
       }`}
     >
       {/* The label is always rendered as text — never replaced by an icon alone,

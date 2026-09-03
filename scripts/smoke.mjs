@@ -17,7 +17,7 @@ const flag = (name, fallback) => {
   return i >= 0 && args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : fallback;
 };
 
-const BASE = (flag('base', process.env.SMOKE_BASE_URL ?? 'http://localhost:3001')).replace(/\/+$/, '');
+const BASE = flag('base', process.env.SMOKE_BASE_URL ?? 'http://localhost:3001').replace(/\/+$/, '');
 const API = `${BASE}/api/v1`;
 const KEEP = args.includes('--keep');
 
@@ -115,7 +115,11 @@ async function main() {
   const unknownLogin = await call('POST', '/auth/login', {
     body: { email: `nobody.${Date.now()}@example.com`, password },
   });
-  record('unknown e-mail is also 401 (no account enumeration)', unknownLogin.status === 401, `got ${unknownLogin.status}`);
+  record(
+    'unknown e-mail is also 401 (no account enumeration)',
+    unknownLogin.status === 401,
+    `got ${unknownLogin.status}`,
+  );
   record(
     'both login failures share one message',
     badLogin.body?.message === unknownLogin.body?.message,
@@ -159,7 +163,10 @@ async function main() {
     body: { name: 'Cartão Smoke', institution: 'Banco Smoke', limitTotal: 5000, closingDay: 10 },
     expect: 201,
   });
-  record('credit card exposes the current cycle', Boolean(card.body?.currentCycle?.start && card.body?.currentCycle?.end));
+  record(
+    'credit card exposes the current cycle',
+    Boolean(card.body?.currentCycle?.start && card.body?.currentCycle?.end),
+  );
 
   const tx = await call('POST', '/transactions', {
     token: authToken,
@@ -199,19 +206,25 @@ async function main() {
 
   // --- dashboard -----------------------------------------------------------
   const dashboard = await call('GET', '/dashboard', { token: authToken, expect: 200 });
-  record('dashboard separates cash from investment balances',
+  record(
+    'dashboard separates cash from investment balances',
     typeof dashboard.body?.totals?.netBalance === 'number' &&
-      typeof dashboard.body?.totals?.investedAccountBalance === 'number');
-  record('dashboard returns 12 months of history', dashboard.body?.annualBalance?.length === 12,
-    `got ${dashboard.body?.annualBalance?.length}`);
-  record('dashboard reports the window it used',
-    Boolean(dashboard.body?.period?.from && dashboard.body?.period?.to));
+      typeof dashboard.body?.totals?.investedAccountBalance === 'number',
+  );
+  record(
+    'dashboard returns 12 months of history',
+    dashboard.body?.annualBalance?.length === 12,
+    `got ${dashboard.body?.annualBalance?.length}`,
+  );
+  record('dashboard reports the window it used', Boolean(dashboard.body?.period?.from && dashboard.body?.period?.to));
 
   // --- error contract ------------------------------------------------------
   const missing = await call('GET', '/accounts/00000000-0000-0000-0000-000000000000', { token: authToken });
-  record('unknown id is 404 with the error contract',
+  record(
+    'unknown id is 404 with the error contract',
     missing.status === 404 && typeof missing.body?.requestId === 'string' && typeof missing.body?.error === 'string',
-    `status ${missing.status}, body ${JSON.stringify(missing.body).slice(0, 200)}`);
+    `status ${missing.status}, body ${JSON.stringify(missing.body).slice(0, 200)}`,
+  );
 
   // --- tenant isolation ----------------------------------------------------
   const otherEmail = `smoke.other.${Date.now()}@example.com`;
@@ -225,20 +238,27 @@ async function main() {
   record("another user cannot read this user's account", leak.status === 404, `got ${leak.status}`);
 
   const otherAccounts = await call('GET', '/accounts', { token: otherToken, expect: 200 });
-  record('a fresh user sees an empty, well-formed list',
-    Array.isArray(otherAccounts.body?.data) && otherAccounts.body.data.length === 0);
+  record(
+    'a fresh user sees an empty, well-formed list',
+    Array.isArray(otherAccounts.body?.data) && otherAccounts.body.data.length === 0,
+  );
 
   // --- cleanup -------------------------------------------------------------
   if (!KEEP) {
-    for (const [t, mail] of [[authToken, email], [otherToken, otherEmail]]) {
+    for (const [t, mail] of [
+      [authToken, email],
+      [otherToken, otherEmail],
+    ]) {
       const res = await call('DELETE', '/users/me', {
         token: t,
         body: { password, confirmation: 'EXCLUIR MINHA CONTA' },
       });
-      record(`DELETE /users/me (${mail.split('@')[0]}) returns 204 with no body`,
-        res.status === 204 && !res.body, `status ${res.status}`);
-      record('account deletion never returns a password hash',
-        !String(res.body ?? '').includes('passwordHash'));
+      record(
+        `DELETE /users/me (${mail.split('@')[0]}) returns 204 with no body`,
+        res.status === 204 && !res.body,
+        `status ${res.status}`,
+      );
+      record('account deletion never returns a password hash', !String(res.body ?? '').includes('passwordHash'));
     }
   }
 

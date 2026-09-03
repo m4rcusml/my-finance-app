@@ -76,7 +76,9 @@ export function resolveImportFileType(fileName: string, buffer: Buffer): ImportF
 
   const sniffed = sniffImportFileType(buffer);
   if (sniffed === null) {
-    throw new UnsupportedMediaTypeException('Não foi possível ler o arquivo enviado. Verifique se ele não está corrompido.');
+    throw new UnsupportedMediaTypeException(
+      'Não foi possível ler o arquivo enviado. Verifique se ele não está corrompido.',
+    );
   }
   if (sniffed !== byExtension) {
     throw new UnsupportedMediaTypeException('O conteúdo do arquivo não corresponde à sua extensão.');

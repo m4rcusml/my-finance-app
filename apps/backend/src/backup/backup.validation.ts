@@ -551,7 +551,7 @@ function checkRelations(r: BackupReader, file: BackupFile): void {
     assertUniqueKey(
       r,
       categoryKeys,
-      `${category.name} ${category.type}`,
+      `${category.name}\0${category.type}`,
       `categories[${i}]`,
       `categoria duplicada "${category.name}" (${category.type}) dentro do arquivo.`,
     );
@@ -563,7 +563,7 @@ function checkRelations(r: BackupReader, file: BackupFile): void {
     assertUniqueKey(
       r,
       assetKeys,
-      `${asset.symbol} ${asset.exchange}`,
+      `${asset.symbol}\0${asset.exchange}`,
       `marketAssets[${i}]`,
       `ativo duplicado "${asset.symbol}" em "${asset.exchange}" dentro do arquivo.`,
     );
@@ -606,7 +606,7 @@ function checkRelations(r: BackupReader, file: BackupFile): void {
     assertUniqueKey(
       r,
       periodKeys,
-      `${occurrence.fixedTransactionId} ${occurrence.periodYear} ${occurrence.periodMonth}`,
+      `${occurrence.fixedTransactionId}\0${occurrence.periodYear}\0${occurrence.periodMonth}`,
       path,
       'já existe outra ocorrência para este lançamento fixo neste período.',
     );

@@ -4,13 +4,14 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
 describe('InvestmentsController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let authToken: string;
 
   const mockUser = {
@@ -18,6 +19,7 @@ describe('InvestmentsController (e2e)', () => {
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -37,32 +39,13 @@ describe('InvestmentsController (e2e)', () => {
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        investment: {
-          create: jest.fn(),
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          update: jest.fn(),
-          delete: jest.fn(),
-          count: jest.fn(),
-        },
-        marketAsset: {
-          findUnique: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
       .compile();
-
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -76,7 +59,7 @@ describe('InvestmentsController (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'test@example.com', password: 'password123' });
 
-    authToken = loginResponse.body.access_token;
+    authToken = loginResponse.body.accessToken;
   });
 
   afterEach(async () => {
@@ -109,6 +92,7 @@ describe('InvestmentsController (e2e)', () => {
     it('should create an investment with marketAssetId when asset exists', async () => {
       prisma.marketAsset.findUnique.mockResolvedValue({
         id: 'asset-1',
+        userId: 'user-1',
         symbol: 'PETR4',
         type: 'stock',
         exchange: 'B3',
@@ -256,7 +240,7 @@ describe('InvestmentsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for investment owned by another user', async () => {
+    it('should hide an investment owned by another user with 404', async () => {
       prisma.investment.findUnique.mockResolvedValue({
         ...baseInvestment,
         userId: 'other-user',
@@ -265,7 +249,7 @@ describe('InvestmentsController (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/v1/investments/investment-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -310,7 +294,7 @@ describe('InvestmentsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for investment owned by another user', async () => {
+    it('should hide another user investment on update with 404', async () => {
       prisma.investment.findUnique.mockResolvedValue({
         ...baseInvestment,
         userId: 'other-user',
@@ -320,7 +304,7 @@ describe('InvestmentsController (e2e)', () => {
         .patch('/api/v1/investments/investment-1')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ broker: 'Nu Invest' })
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -344,7 +328,7 @@ describe('InvestmentsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for investment owned by another user', async () => {
+    it('should hide another user investment on delete with 404', async () => {
       prisma.investment.findUnique.mockResolvedValue({
         ...baseInvestment,
         userId: 'other-user',
@@ -353,7 +337,7 @@ describe('InvestmentsController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/api/v1/investments/investment-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 });

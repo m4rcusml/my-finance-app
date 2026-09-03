@@ -106,7 +106,12 @@ export class DashboardService {
       this.transactionsService.aggregateByPeriod(userId, previousWindow.from, previousWindow.to),
       this.accountsService.findAll(userId, { page: 1, limit: RESOURCE_LIST_LIMIT }),
       this.creditCardsService.findAll(userId, { page: 1, limit: RESOURCE_LIST_LIMIT }),
-      this.transactionsService.findAllByUser(userId, { page: 1, limit: LATEST_TRANSACTIONS_LIMIT }),
+      this.transactionsService.findAllByUser(userId, {
+        page: 1,
+        limit: LATEST_TRANSACTIONS_LIMIT,
+        fromDate: window.from,
+        toDate: window.to,
+      }),
       this.occurrencesService.findPendingForPeriod(userId, window.from, window.to, PENDING_OCCURRENCES_LIMIT),
       this.transactionsService.monthlyNetSeries(userId, firstSeriesMonth, referenceMonth),
       this.transactionsService.countUncategorized(userId),

@@ -149,7 +149,12 @@ describe('DashboardService', () => {
 
       // The only paginated transaction read is the 5-row "latest" list.
       expect(transactionsService.findAllByUser).toHaveBeenCalledTimes(1);
-      expect(transactionsService.findAllByUser).toHaveBeenCalledWith(userId, { page: 1, limit: 5 });
+      expect(transactionsService.findAllByUser).toHaveBeenCalledWith(userId, {
+        page: 1,
+        limit: 5,
+        fromDate: '2026-03-01',
+        toDate: '2026-03-31',
+      });
       expect(transactionsService.aggregateByPeriod).toHaveBeenCalledTimes(2);
     });
 

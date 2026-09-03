@@ -3,6 +3,7 @@ import { PayloadTooLargeException, UnprocessableEntityException } from '@nestjs/
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import { EXPORT_TRANSACTION_MAX_WAIT_MS, EXPORT_TRANSACTION_TIMEOUT_MS } from './backup.constants';
 import { BackupService } from './backup.service';
 
 /**
@@ -512,6 +513,7 @@ function canonical(file: BackupFile) {
 describe('BackupService', () => {
   let service: BackupService;
   let db: FakeDatabase;
+  let prisma: PrismaService;
 
   const OWNER = 'user-a';
   const TARGET = 'user-b';
@@ -519,6 +521,7 @@ describe('BackupService', () => {
   beforeEach(async () => {
     const fake = createFakePrisma();
     db = fake.db;
+    prisma = fake.client;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -583,6 +586,17 @@ describe('BackupService', () => {
       expect(serialized).not.toContain('$argon2id');
       expect(serialized).not.toContain('tokenVersion');
       expect(serialized).not.toContain('SEGREDOABSOLUTO');
+    });
+
+    it('lê o grafo inteiro em um único snapshot RepeatableRead', async () => {
+      await service.exportBackup(OWNER);
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+        isolationLevel: 'RepeatableRead',
+        maxWait: EXPORT_TRANSACTION_MAX_WAIT_MS,
+        timeout: EXPORT_TRANSACTION_TIMEOUT_MS,
+      });
     });
 
     it('nomeia o arquivo com a data civil corrente', () => {
@@ -675,6 +689,43 @@ describe('BackupService', () => {
       expect(result.created.categories).toBe(0);
       expect(db.tables.category.filter((row) => row.userId === TARGET)).toHaveLength(2);
       expect(db.tables.marketAsset.filter((row) => row.userId === TARGET)).toHaveLength(1);
+    });
+
+    it('preserva a ocorrência confirmada ao remapear uma transação deduplicada pelo externalId', async () => {
+      const original = await service.exportBackup(OWNER);
+      const confirmed = original.fixedTransactionOccurrences.find((occurrence) => occurrence.status === 'confirmed');
+      const linkedTransaction = original.transactions.find(
+        (transaction) => transaction.id === confirmed?.transactionId,
+      );
+      expect(linkedTransaction).toBeDefined();
+      if (!linkedTransaction) throw new Error('fixture sem transação confirmada');
+      linkedTransaction.externalId = 'fixed:salary:2026-03';
+
+      const existingState = structuredClone(original);
+      existingState.fixedTransactionOccurrences = [];
+      await service.restoreBackup(TARGET, 'replace', existingState);
+      const existing = db.tables.transaction.find(
+        (transaction) => transaction.userId === TARGET && transaction.externalId === linkedTransaction.externalId,
+      );
+      expect(existing).toBeDefined();
+
+      const first = await service.restoreBackup(TARGET, 'merge', original);
+      const second = await service.restoreBackup(TARGET, 'merge', original);
+
+      expect(first.created.transactions).toBe(1);
+      expect(first.created.fixedTransactionOccurrences).toBe(2);
+      expect(second.created.transactions).toBe(1);
+      expect(second.created.fixedTransactionOccurrences).toBe(1);
+      expect(
+        db.tables.transaction.filter(
+          (transaction) => transaction.userId === TARGET && transaction.externalId === linkedTransaction.externalId,
+        ),
+      ).toHaveLength(1);
+      expect(
+        db.tables.fixedTransactionOccurrence.filter(
+          (occurrence) => occurrence.userId === TARGET && occurrence.status === 'confirmed',
+        ),
+      ).toEqual([expect.objectContaining({ transactionId: existing?.id })]);
     });
   });
 

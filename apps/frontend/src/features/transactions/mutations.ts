@@ -1,10 +1,6 @@
 'use client';
 
-import type {
-  CreateTransactionRequest,
-  TransactionWithRelations,
-  UpdateTransactionRequest,
-} from '@finance/contracts';
+import type { CreateTransactionRequest, Transaction, UpdateTransactionRequest } from '@finance/contracts';
 import { useMutation, type UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { errorMessage, transactionsApi } from '@/shared/lib/api';
@@ -31,8 +27,8 @@ export interface UpdateTransactionVariables {
 }
 
 export interface TransactionMutations {
-  create: UseMutationResult<TransactionWithRelations, unknown, CreateTransactionRequest>;
-  update: UseMutationResult<TransactionWithRelations, unknown, UpdateTransactionVariables>;
+  create: UseMutationResult<Transaction, unknown, CreateTransactionRequest>;
+  update: UseMutationResult<Transaction, unknown, UpdateTransactionVariables>;
   remove: UseMutationResult<void, unknown, string>;
   /** True while any of the three is in flight — for disabling submit buttons. */
   isBusy: boolean;
@@ -53,7 +49,7 @@ export function useTransactionMutations(): TransactionMutations {
     ]);
   }, [queryClient, s]);
 
-  const create = useMutation<TransactionWithRelations, unknown, CreateTransactionRequest>({
+  const create = useMutation<Transaction, unknown, CreateTransactionRequest>({
     mutationFn: (body) => transactionsApi.create(body),
     onSuccess: async () => {
       await invalidateAffected();
@@ -62,7 +58,7 @@ export function useTransactionMutations(): TransactionMutations {
     onError: (error) => toast.error('Não foi possível criar a transação', errorMessage(error)),
   });
 
-  const update = useMutation<TransactionWithRelations, unknown, UpdateTransactionVariables>({
+  const update = useMutation<Transaction, unknown, UpdateTransactionVariables>({
     mutationFn: ({ id, body }) => transactionsApi.update(id, body),
     onSuccess: async () => {
       await invalidateAffected();

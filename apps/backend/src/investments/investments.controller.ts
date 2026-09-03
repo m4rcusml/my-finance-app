@@ -55,8 +55,7 @@ export class InvestmentsController {
   @Get('summary')
   @ApiOperation({
     summary: 'Resumo da carteira por custo de aquisição',
-    description:
-      'Somente custo: a V1 não tem preços, então não há valor atual, lucro nem rentabilidade neste resumo.',
+    description: 'Somente custo: a V1 não tem preços, então não há valor atual, lucro nem rentabilidade neste resumo.',
   })
   @ApiOkResponse({ type: PortfolioSummaryDto })
   getSummary(@CurrentUser() user: UserPayload) {

@@ -15,7 +15,8 @@ export const metadata: Metadata = {
     default: 'My Finance App',
     template: '%s · My Finance App',
   },
-  description: 'Gerenciador financeiro pessoal: contas, cartões, transações, recorrências, metas e importação de extratos.',
+  description:
+    'Gerenciador financeiro pessoal: contas, cartões, transações, recorrências, metas e importação de extratos.',
 };
 
 export const viewport: Viewport = {

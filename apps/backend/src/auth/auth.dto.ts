@@ -1,4 +1,4 @@
-import type { AuthSessionResponse, LoginRequest, RegisterRequest } from '@finance/contracts';
+import type { AuthSessionResponse, CsrfTokenResponse, LoginRequest, RegisterRequest } from '@finance/contracts';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
@@ -63,4 +63,12 @@ export class AuthSessionResponseDto implements AuthSessionResponse {
 
   @ApiProperty({ type: UserProfileDto })
   user!: UserProfileDto;
+}
+
+export class CsrfTokenResponseDto implements CsrfTokenResponse {
+  @ApiProperty({
+    description: 'Valor efêmero que deve ser enviado em `X-CSRF-Token` no próximo refresh.',
+    example: 'Z3VhcmRlLWVzdGUtdmFsb3ItYXBlbmFzLWVtLW1lbW9yaWE',
+  })
+  csrfToken!: string;
 }

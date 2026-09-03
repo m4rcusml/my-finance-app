@@ -33,7 +33,8 @@ export class FixedTransactionsOccurrencesController {
   @Get()
   @ApiOperation({
     summary: 'Lista ocorrências geradas pelos templates.',
-    description: '`year` e `month` são opcionais; omiti-los devolve todas as competências, da mais recente para a mais antiga.',
+    description:
+      '`year` e `month` são opcionais; omiti-los devolve todas as competências, da mais recente para a mais antiga.',
   })
   @ApiOkResponse({ type: PaginatedOccurrencesDto })
   list(

@@ -1,4 +1,3 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   buildPaginatedResponse,
   buildPaginationMeta,
@@ -8,11 +7,12 @@ import {
   type PaginatedResponse,
   type PaginationMeta,
 } from '@finance/contracts';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
-export { buildPaginatedResponse, buildPaginationMeta, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE };
 export type { PaginatedResponse, PaginationMeta };
+export { buildPaginatedResponse, buildPaginationMeta, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE };
 
 export class PaginationQueryDto {
   @ApiPropertyOptional({ minimum: 1, default: DEFAULT_PAGE, description: 'Página, 1-based.' })
@@ -47,7 +47,11 @@ export class PaginationMetaDto implements PaginationMeta {
 }
 
 /** Normalises possibly-absent query values into the clamped page/limit actually used. */
-export function resolvePagination(query?: { page?: number; limit?: number }): { page: number; limit: number; skip: number } {
+export function resolvePagination(query?: { page?: number; limit?: number }): {
+  page: number;
+  limit: number;
+  skip: number;
+} {
   const page = Math.max(1, Math.trunc(query?.page ?? DEFAULT_PAGE));
   const limit = Math.min(MAX_PAGE_SIZE, Math.max(1, Math.trunc(query?.limit ?? DEFAULT_PAGE_SIZE)));
   return { page, limit, skip: (page - 1) * limit };

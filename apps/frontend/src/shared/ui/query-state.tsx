@@ -13,13 +13,16 @@ import { errorDetails, errorMessage } from '@/shared/lib/api';
 
 export function LoadingState({ label = 'Carregando…' }: { label?: string }) {
   return (
-    <div role="status" aria-live="polite" className="flex items-center gap-3 rounded-lg border border-border bg-layer01 p-6 text-muted-foreground">
+    <output
+      aria-live="polite"
+      className="flex items-center gap-3 rounded-lg border border-border bg-layer01 p-6 text-muted-foreground"
+    >
       <span
         aria-hidden="true"
         className="size-4 animate-spin rounded-full border-2 border-layer03 border-t-muted-primary"
       />
       <span className="text-sm">{label}</span>
-    </div>
+    </output>
   );
 }
 
@@ -57,15 +60,7 @@ export function ErrorState({
   );
 }
 
-export function EmptyState({
-  title,
-  message,
-  action,
-}: {
-  title: string;
-  message?: string;
-  action?: React.ReactNode;
-}) {
+export function EmptyState({ title, message, action }: { title: string; message?: string; action?: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-dashed border-border-strong bg-layer01 p-8 text-center">
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>

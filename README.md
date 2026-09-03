@@ -1,355 +1,224 @@
 # My Finance App
 
-Gerenciador financeiro pessoal em português do Brasil. Monorepo pnpm com uma API
-NestJS + Prisma sobre PostgreSQL e um frontend Next.js.
+Gerenciador financeiro pessoal em pt-BR, organizado como monorepo pnpm. A V1 reúne uma API NestJS/Prisma, um frontend Next.js e contratos TypeScript compartilhados sobre PostgreSQL 16.
 
-Os dados ficam no banco que **você** configurar. Não há integração com bancos,
-corretoras ou serviços de cotação — veja [Fora do escopo](#fora-do-escopo-da-v1).
+O código da V1 está presente no worktree, mas uma versão só deve ser tratada como liberável depois da execução dos gates descritos em [Verificação](#verificação). Este documento não presume que esses comandos passaram no ambiente atual.
 
----
+## Escopo da V1
 
-## Sumário
+- cadastro, login, renovação e encerramento de sessão;
+- perfil, troca de senha e exclusão confirmada da conta;
+- contas, cartões e categorias, incluindo arquivamento e restauração;
+- receitas e despesas paginadas, com filtros, resumo, projeção e fila sem categoria;
+- dashboard por semana, mês, ano ou intervalo personalizado, comparado ao período anterior;
+- saldo em caixa separado de contas do tipo investimento e da carteira manual;
+- uso de cartão calculado no ciclo aberto segundo o dia de fechamento;
+- modelos mensais de lançamentos recorrentes, ocorrências, confirmação e ação de ignorar;
+- investimentos e catálogo de ativos preenchidos manualmente, por custo de aquisição;
+- metas cujo progresso é informado manualmente;
+- importação CSV, OFX e XLSX nos layouts Banco Inter e genérico, com prévia persistida;
+- backup JSON versionado, com restauração nos modos `replace` e `merge`.
 
-- [O que a V1 faz](#o-que-a-v1-faz)
-- [Fora do escopo da V1](#fora-do-escopo-da-v1)
-- [Requisitos](#requisitos)
-- [Instalação do zero](#instalação-do-zero)
-- [Variáveis de ambiente](#variáveis-de-ambiente)
-- [Banco de dados e migrations](#banco-de-dados-e-migrations)
-- [Rodando em desenvolvimento](#rodando-em-desenvolvimento)
-- [Testes](#testes)
-- [Build e produção](#build-e-produção)
-- [Docker](#docker)
-- [Scripts disponíveis](#scripts-disponíveis)
-- [Arquitetura](#arquitetura)
-- [Decisões que valem conhecer](#decisões-que-valem-conhecer)
-- [Solução de problemas](#solução-de-problemas)
+Rotas web autenticadas: `/dashboard`, `/accounts`, `/credit-cards`, `/categories`, `/transactions`, `/transactions/uncategorized`, `/fixed-transactions`, `/investments`, `/goals`, `/imports`, `/backup` e `/settings`.
 
----
+Não fazem parte da V1: cotações ao vivo, integração direta com bancos ou corretoras, categorização por ML, alertas externos, recomendação ou otimização de carteira, modo offline e backup em nuvem. A lista de possíveis evoluções está em [`docs/backlog.md`](docs/backlog.md).
 
-## O que a V1 faz
+## Stack e requisitos
 
-| Área | O que está pronto |
+| Componente | Versão ou escolha |
 |---|---|
-| Sessão | Cadastro, login, logout, renovação automática de sessão, perfil, troca de senha, exclusão da conta |
-| Cadastros | Contas, cartões de crédito, categorias — com arquivamento em vez de exclusão destrutiva |
-| Lançamentos | Receitas e despesas com categoria, filtros por período/conta/cartão/categoria, paginação real |
-| Sem categoria | Fila dedicada para categorizar lançamentos em sequência |
-| Painel | Saldo em caixa separado do que está em contas de investimento, comparação com o período anterior, série de 12 meses, filtros semana/mês/ano/personalizado |
-| Recorrentes | Modelos mensais, geração automática de ocorrências, confirmação na data real escolhida, pular, histórico imutável |
-| Investimentos | Carteira registrada manualmente (custo de aquisição). **Sem cotação de mercado.** |
-| Metas | Objetivos com progresso **informado manualmente** e rotulado como tal |
-| Importação | CSV, OFX e XLSX do Banco Inter e formato genérico, com pré-visualização, erro por linha e reimportação sem duplicatas |
-| Backup | Exportação completa em JSON e restauração nos modos substituir/mesclar, atômica |
+| Runtime | Node.js 22 |
+| Workspace | pnpm 10 (`packageManager: pnpm@10.25.0`) |
+| API | NestJS 11, TypeScript, Prisma 7 |
+| Web | Next.js 16, React 19, Tailwind CSS 4, TanStack Query |
+| Banco | PostgreSQL 16 |
+| Qualidade | Biome, Jest, Testing Library, Playwright |
 
-## Fora do escopo da V1
+Docker é opcional para desenvolvimento. As suítes que precisam de banco podem iniciar um PostgreSQL 16 descartável com `embedded-postgres`.
 
-Os itens abaixo **não existem** e não estão prometidos em lugar nenhum do produto.
-Estão registrados em [`docs/backlog.md`](docs/backlog.md):
-
-- cotação de mercado ao vivo e histórico de preços;
-- integrações com Mercado Pago, BTG, Binance, Bipa, Coinbase ou qualquer corretora;
-- categorização automática / aprendizado de máquina;
-- alertas externos (e-mail, push), otimizador de investimentos, modo offline, backup em nuvem.
-
-O CRUD de `market-assets` existe apenas como **catálogo manual** usado pelos
-investimentos. Ele não busca preços.
-
----
-
-## Requisitos
-
-| Ferramenta | Versão | Observação |
-|---|---|---|
-| Node.js | 22.x | `node --version` |
-| pnpm | 10.x | `corepack enable && corepack prepare pnpm@10.25.0 --activate` |
-| PostgreSQL | 16 | Local, gerenciado, ou via Docker (`pnpm db:up`) |
-| Docker | opcional | Só para subir o PostgreSQL e para o stack completo |
-
-Sem Docker? Os testes de integração sobem um PostgreSQL 16 real e descartável
-sozinhos (pacote `embedded-postgres`), então só o desenvolvimento interativo
-precisa de um banco seu.
-
----
-
-## Instalação do zero
+## Instalação local
 
 ```bash
-git clone <url-do-repositorio>
-cd my-finance-app
 corepack enable
+corepack prepare pnpm@10.25.0 --activate
 pnpm install --frozen-lockfile
 ```
 
-Copie os arquivos de ambiente e ajuste o que precisar:
+Copie os exemplos sem versionar os arquivos preenchidos:
 
 ```bash
 cp apps/backend/.env.example apps/backend/.env
 cp apps/frontend/.env.example apps/frontend/.env.local
 ```
 
-Gere dois segredos de verdade para o backend (32+ caracteres, **diferentes entre si**):
+Gere um segredo forte para assinar os access tokens:
 
 ```bash
-node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(48).toString('base64'))"
+node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
 ```
 
-Suba o banco, aplique as migrations e gere o cliente Prisma:
+Preencha `JWT_SECRET`, suba o banco e prepare o schema:
 
 ```bash
 pnpm db:up
 pnpm db:generate
 pnpm db:migrate
 pnpm db:seed
-```
-
-Rode tudo:
-
-```bash
 pnpm dev
 ```
 
-- Frontend: <http://localhost:3000>
+- frontend: <http://localhost:3000>
 - API: <http://localhost:3001/api/v1>
-- Swagger: <http://localhost:3001/api/v1/docs>
-- Liveness: <http://localhost:3001/health/live>
+- Swagger em desenvolvimento: <http://localhost:3001/api/v1/docs>
+- liveness: <http://localhost:3001/health/live>
+- readiness: <http://localhost:3001/health/ready>
 
-O seed cria o usuário `demo@example.com` com a senha `senha-demo-12345`.
+O seed é opcional e cria dados de demonstração. Consulte o próprio script antes de usá-lo em qualquer banco compartilhado.
 
----
+## Configuração
 
-## Variáveis de ambiente
+O backend valida a configuração ao iniciar e não imprime valores secretos nos erros.
 
-Todas são validadas no boot (`apps/backend/src/config/env.ts`). Um valor inválido
-**derruba o processo** com a lista de problemas — nunca com os valores em si.
+| Variável | Padrão | Uso |
+|---|---:|---|
+| `NODE_ENV` | `development` | `development`, `test` ou `production` |
+| `PORT` | `3001` | porta da API |
+| `DATABASE_URL` | — | URL PostgreSQL obrigatória |
+| `JWT_SECRET` | — | assinatura do access token; mínimo de 32 caracteres |
+| `ACCESS_TOKEN_TTL_SECONDS` | `900` | duração do access token |
+| `REFRESH_TOKEN_TTL_SECONDS` | `2592000` | duração da sessão renovável |
+| `CORS_ORIGINS` | `http://localhost:3000` | origens exatas separadas por vírgula |
+| `APP_TIMEZONE` | `America/Sao_Paulo` | datas de referência e job de recorrências |
+| `COOKIE_DOMAIN` | vazio | vazio cria cookie host-only |
+| `COOKIE_SECURE` | `false` | deve ser `true` em produção |
+| `COOKIE_SAMESITE` | `lax` | use `none` apenas com HTTPS e cookie seguro |
+| `MAX_UPLOAD_BYTES` | `5242880` | limite de arquivo de importação |
+| `MAX_IMPORT_ROWS` | `5000` | limite de linhas por importação |
+| `IMPORT_BATCH_TTL_MINUTES` | `60` | validade da prévia |
+| `MAX_BACKUP_BYTES` | `20971520` | limite do payload de restauração |
+| `ENABLE_CRON` | `true` | geração agendada de ocorrências |
+| `ENABLE_SWAGGER` | `true` | publicação da interface Swagger |
 
-### `apps/backend/.env`
+No frontend, `NEXT_PUBLIC_API_URL` deve conter a base completa, incluindo `/api/v1`. Ela é incorporada no build do Next.js.
 
-| Variável | Padrão | Para que serve |
-|---|---|---|
-| `NODE_ENV` | `development` | `development` \| `test` \| `production` |
-| `PORT` | `3001` | Porta HTTP |
-| `DATABASE_URL` | — | Conexão PostgreSQL (obrigatória) |
-| `JWT_SECRET` | — | Assina o access token. Mínimo 32 caracteres |
-| `JWT_REFRESH_SECRET` | — | Chave separada para refresh. Precisa ser **diferente** de `JWT_SECRET` |
-| `ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token é curto de propósito |
-| `REFRESH_TOKEN_TTL_SECONDS` | `2592000` | 30 dias |
-| `CORS_ORIGINS` | `http://localhost:3000` | Origens exatas, separadas por vírgula |
-| `APP_TIMEZONE` | `America/Sao_Paulo` | Define "hoje", limites de mês/semana e o job de recorrências |
-| `COOKIE_DOMAIN` | vazio | Vazio = cookie host-only |
-| `COOKIE_SECURE` | `false` | **Obrigatoriamente `true` em produção** |
-| `COOKIE_SAMESITE` | `lax` | `none` só com `COOKIE_SECURE=true` |
-| `MAX_UPLOAD_BYTES` | `5242880` | Limite do arquivo de importação |
-| `MAX_IMPORT_ROWS` | `5000` | Limite de linhas por importação |
-| `IMPORT_BATCH_TTL_MINUTES` | `60` | Validade da pré-visualização |
-| `MAX_BACKUP_BYTES` | `20971520` | Limite do payload de restauração |
-| `ENABLE_CRON` | `true` | Desligue em scripts e testes |
-| `ENABLE_SWAGGER` | `true` | Desligue em produção se não quiser a doc pública |
-
-### `apps/frontend/.env.local`
-
-| Variável | Padrão | Para que serve |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:3001/api/v1` | Base da API, **incluindo** `/api/v1` |
-
-> `NEXT_PUBLIC_*` é embutida no bundle em tempo de build. Em Docker ela é um
-> `--build-arg`, não uma variável de runtime.
-
----
-
-## Banco de dados e migrations
+## Comandos
 
 ```bash
-pnpm db:up            # sobe o PostgreSQL 16 do compose
-pnpm db:generate      # gera o cliente Prisma em apps/backend/src/generated (não versionado)
-pnpm db:migrate       # prisma migrate deploy — é o que roda em produção
-pnpm db:migrate:dev   # cria uma migration nova durante o desenvolvimento
-pnpm db:seed          # dados de demonstração, idempotente
+pnpm dev                 # API e frontend em paralelo
+pnpm dev:backend         # API com watch
+pnpm dev:frontend        # Next.js em desenvolvimento
+pnpm db:generate         # gera o cliente Prisma não versionado
+pnpm db:migrate          # prisma migrate deploy
+pnpm db:migrate:dev      # fluxo de criação de migration local
+pnpm db:seed             # dados de demonstração
+pnpm build               # backend e frontend
+pnpm start               # artefato de produção da API
 ```
 
-O histórico tem três migrations. A terceira (`20260903120000_v1_invariants`) é
-escrita à mão e faz o upgrade de uma base pré-V1 **sem apagar nada**: normaliza
-os enums, converte datas civis para `date`, adiciona chaves estrangeiras,
-índices e as constraints de integridade, e conserta as linhas que violavam as
-novas regras. O caminho de upgrade é verificado por
-`apps/backend/test/migrations/upgrade-check.mjs`, que popula uma base no schema
-antigo, migra e confere 45 asserções.
+`apps/backend/src/generated` e os diretórios `dist`, `.next`, cobertura e relatórios são artefatos; não devem ser versionados.
+
+## Verificação
+
+Execute os gates a partir da raiz. Eles são requisitos de aceite, não resultados registrados neste README:
 
 ```bash
-DATABASE_URL=postgresql://... node apps/backend/test/migrations/upgrade-check.mjs
+pnpm install --frozen-lockfile
+pnpm db:generate
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:e2e
+pnpm test:integration
+pnpm test:migration:upgrade
+pnpm build
+pnpm test:smoke
+pnpm test:browser
+pnpm audit --audit-level high
 ```
 
----
+`pnpm verify:all` executa essa cadeia completa (depois de `pnpm install` e `pnpm db:generate`); `pnpm verify` é um alias para ela.
 
-## Rodando em desenvolvimento
+As suítes têm papéis distintos:
+
+- `pnpm test`: unitários do backend e Jest/Testing Library no frontend;
+- `pnpm test:e2e`: contrato HTTP da API com Prisma substituído por mocks;
+- `pnpm test:integration`: API e migrations contra PostgreSQL real;
+- `pnpm test:migration:upgrade`: upgrade pré-V1 inconsistente em PostgreSQL 16 descartável;
+- `pnpm test:smoke`: inicia o artefato backend já compilado em ambiente de produção e banco descartável;
+- `pnpm test:browser`: jornadas completas com Playwright.
+
+Sem `TEST_DATABASE_URL`, integração e browser usam PostgreSQL descartável. Ao fornecer uma URL, o nome do banco precisa terminar em `_test`, `_ci` ou `_e2e`; o bloqueio só pode ser ignorado conscientemente com `ALLOW_DESTRUCTIVE_TEST_DB=true`.
+
+O workflow em `.github/workflows/ci.yml` separa análise estática, testes unitários/HTTP, migrations e integração, build/smoke, browser e auditoria. A existência do workflow não substitui verificar o resultado da execução correspondente.
+
+## Banco e migrations
+
+Há duas migrations históricas e a migration V1 `20260903120000_v1_invariants`. Em instalações novas, use sempre `pnpm db:migrate`. O caminho de upgrade pré-V1 pode ser exercitado de forma autocontida com:
 
 ```bash
-pnpm dev            # backend e frontend juntos
-pnpm dev:backend    # só a API, com watch
-pnpm dev:frontend   # só o Next
+pnpm test:migration:upgrade
 ```
 
----
+Para usar um PostgreSQL externo descartável, defina
+`MIGRATION_TEST_DATABASE_URL=postgresql://usuario:senha@localhost:5432/finance_upgrade_test`.
 
-## Testes
-
-```bash
-pnpm test               # unitários de backend e frontend
-pnpm test:e2e           # camada HTTP do backend (Prisma dublado)
-pnpm test:integration   # backend contra PostgreSQL REAL, com as migrations de verdade
-pnpm test:browser       # Playwright ponta a ponta
-pnpm verify             # lint + typecheck + testes + build
-```
-
-`pnpm test:integration` sobe um PostgreSQL 16 descartável automaticamente. Para
-apontar para um banco existente:
-
-```bash
-TEST_DATABASE_URL=postgresql://finance:finance@localhost:5432/finance_test pnpm test:integration
-```
-
-`test:e2e` roda o app inteiro sobre um `PrismaService` dublado: é um teste de
-contrato HTTP, **não** uma validação ponta a ponta. Quem prova o comportamento
-real contra o banco é `test:integration`.
-
----
-
-## Build e produção
-
-```bash
-pnpm build                        # backend + frontend
-pnpm --filter backend start:prod  # executa apps/backend/dist/main.js
-```
-
-A ordem em produção é sempre:
-
-1. `pnpm db:migrate` — migrations **antes** do start, nunca de dentro do app;
-2. `pnpm --filter backend start:prod`;
-3. verificar `GET /health/ready`.
-
-Checklist de deploy:
-
-- [ ] `COOKIE_SECURE=true` e HTTPS ponta a ponta;
-- [ ] `CORS_ORIGINS` com a origem exata do frontend (sem barra final, sem curinga);
-- [ ] frontend em outro site? `COOKIE_SAMESITE=none` **e** `COOKIE_SECURE=true`;
-- [ ] `JWT_SECRET` e `JWT_REFRESH_SECRET` distintos e rotacionáveis;
-- [ ] backup do PostgreSQL agendado (o backup do app é do usuário, não do operador);
-- [ ] rollback: as migrations são aditivas; para voltar, restaure o dump anterior
-      e faça deploy da versão anterior do código. Não há `migrate down`.
-
----
+Nunca execute migrations de teste ou restauração destrutiva contra um banco desconhecido. Em produção, faça backup do PostgreSQL antes do deploy; não existe fluxo automático de `migrate down`.
 
 ## Docker
 
 ```bash
-pnpm db:up                                   # só o banco
-docker compose --profile full up --build     # banco + backend + frontend
+pnpm db:up
+docker compose --profile full up --build
 ```
 
-O `docker-entrypoint.sh` do backend roda `prisma migrate deploy` antes de iniciar
-o servidor, e a imagem tem `HEALTHCHECK` apontando para `/health/live`.
+O primeiro comando sobe somente PostgreSQL. O perfil `full` sobe banco, backend e frontend e foi configurado como stack local: API em `NODE_ENV=development` e cookies não seguros sobre HTTP. Isso não é configuração de produção.
 
-> O Redis foi removido do compose: nada no caminho da V1 o usava. Sessões ficam
-> em `refresh_tokens`, o rate limit é em processo e as pré-visualizações de
-> importação são linhas em `import_batches`.
+Para produção, use HTTPS ponta a ponta, `NODE_ENV=production`, `COOKIE_SECURE=true`, origens CORS explícitas e um `JWT_SECRET` externo. A imagem do backend aplica `prisma migrate deploy` antes do start; os healthchecks consultam a readiness real do banco.
 
----
+## Contratos e invariantes
 
-## Scripts disponíveis
+`packages/contracts` é a fonte compartilhada de rotas, enums, tipos de recursos, paginação, datas, dinheiro e erros. O backend acrescenta DTOs de validação/Swagger; o frontend consome os mesmos tipos.
 
-| Script | O que faz |
-|---|---|
-| `pnpm dev` | Backend + frontend em paralelo |
-| `pnpm build` | Compila os dois apps |
-| `pnpm start` | Executa o artefato de produção do backend |
-| `pnpm lint` / `pnpm lint:fix` | Biome |
-| `pnpm format` / `pnpm format:check` | Biome format |
-| `pnpm typecheck` | `tsc --noEmit` nos três pacotes |
-| `pnpm test` / `test:e2e` / `test:integration` / `test:browser` | Ver [Testes](#testes) |
-| `pnpm db:*` | Ver [Banco de dados](#banco-de-dados-e-migrations) |
-| `pnpm verify` | Tudo o que a CI roda, localmente |
-| `node scripts/smoke.mjs` | Smoke HTTP contra um backend já no ar |
+- coleções retornam `{ data, meta }`, página baseada em 1, padrão 20 e máximo 100;
+- datas financeiras são strings civis `YYYY-MM-DD` e colunas PostgreSQL `DATE`;
+- timestamps ISO servem apenas para auditoria;
+- dinheiro sai como número JSON com duas casas; quantidades aceitam até oito;
+- uma transação ou recorrência usa exatamente uma origem: conta XOR cartão;
+- recursos arquivados ficam no histórico, mas saem dos seletores ativos;
+- acesso a recurso de outro usuário responde 404, evitando enumeração;
+- erros usam `{ statusCode, error, message, details?, timestamp, path, requestId }`.
 
----
+Mais detalhes: [arquitetura](docs/architecture.md), [convenções da API](docs/api-conventions.md), [endpoints](docs/api-v1-endpoints.md) e [modelo de dados](docs/data-model.md).
 
-## Arquitetura
+## Sessão e segurança
 
-```
-apps/
-  backend/     NestJS 11 + Prisma 7  ->  PostgreSQL 16
-  frontend/    Next.js 16 (App Router) + React Query
-packages/
-  contracts/   tipos, enums e helpers compartilhados pelos dois apps
-```
+O access token é um JWT curto mantido somente em memória. O refresh token é um valor opaco aleatório de 256 bits, enviado em cookie `HttpOnly` e persistido apenas como hash SHA-256 com família, expiração, revogação e sucessor.
 
-`packages/contracts` é a fonte única do contrato HTTP: enums, envelope de
-paginação, formato de erro, datas civis e a forma de cada recurso. Os dois lados
-importam daí, então uma divergência vira erro de compilação — e os testes de
-contrato em `apps/backend/test/integration/` conferem que as respostas reais
-batem com os tipos.
+Cada refresh rotaciona o token dentro de uma transação. Reuso conhecido fora da janela de concorrência revoga apenas a família afetada; token desconhecido não identifica nem altera sessões. Uma corrida legítima de até cinco segundos devolve 409 ao perdedor. O frontend coordena abas com Web Locks quando disponível e possui um único retry curto no fallback.
 
-Documentação detalhada em [`docs/`](docs/):
-[arquitetura](docs/architecture.md) ·
-[modelo de dados](docs/data-model.md) ·
-[endpoints](docs/api-v1-endpoints.md) ·
-[convenções da API](docs/api-conventions.md) ·
-[estado](docs/state.md) ·
-[backlog](docs/backlog.md)
+Antes de `POST /auth/refresh`, o frontend chama `GET /auth/csrf` e envia o valor retornado em `X-CSRF-Token`; ele não lê `document.cookie`. Logout, 401 terminal e troca de usuário descartam access token e cache privado.
 
----
+## Antes de publicar
 
-## Decisões que valem conhecer
+- execute todos os gates e registre seus resultados;
+- confirme duas builds consecutivas do backend e a presença de `apps/backend/dist/main.js`;
+- execute `pnpm test:smoke`; para diagnóstico manual, inicie `start:prod` e rode `node scripts/smoke.mjs`;
+- valide `GET /health/ready`: 200 com banco disponível e 503 sem banco;
+- valide o stack Docker e seus healthchecks no ambiente-alvo;
+- aplique migrations antes de receber tráfego;
+- mantenha Swagger desativado se a documentação pública não for desejada;
+- não faça push ou deploy a partir de uma máquina com mudanças locais não revisadas.
 
-**Sessão.** O access token é curto e vive **só em memória** no navegador — nunca
-em `localStorage`. A sessão durável é um refresh token opaco em cookie
-`HttpOnly`, guardado no banco como hash SHA-256 e **rotacionado a cada uso**;
-reapresentar um token já rotacionado revoga a família inteira. Como toda rota
-que altera dados autentica pelo Bearer (e não pelo cookie), um POST
-cross-site não consegue agir pelo usuário; a única rota autenticada por cookie,
-`POST /auth/refresh`, exige também um CSRF token de duplo envio.
+## Documentação
 
-**Datas civis.** A data de um lançamento é um dia do calendário, não um
-instante: coluna `date` no PostgreSQL e string `YYYY-MM-DD` no JSON. É isso que
-impede o lançamento de 15/01 virar 14/01 em `America/Sao_Paulo`.
-
-**Dinheiro.** `numeric(15,2)` no banco, número JSON com 2 casas na API. O
-intervalo cabe com folga na precisão exata de um float64 em centavos.
-
-**Histórico.** Contas, cartões, categorias e modelos de recorrência são
-arquivados, não apagados. As chaves estrangeiras são `RESTRICT` justamente para
-que o banco recuse apagar algo que ainda tem histórico.
-
-**Uma origem só.** Um lançamento tem conta **ou** cartão, nunca os dois nem
-nenhum — garantido por DTO, por serviço e por uma constraint `CHECK`.
-
----
-
-## Solução de problemas
-
-**`Invalid environment configuration` no start**
-A mensagem lista as variáveis problemáticas pelo nome. Compare com
-`apps/backend/.env.example`. Causas comuns: `JWT_SECRET` com menos de 32
-caracteres, os dois segredos iguais, ou `COOKIE_SECURE=false` com
-`NODE_ENV=production`.
-
-**`Cannot find module '../generated/prisma/client'`**
-O cliente Prisma não é versionado. Rode `pnpm db:generate`.
-
-**`NEXT_PUBLIC_API_URL não está definida`**
-Falta `apps/frontend/.env.local`. Se estiver usando Docker, lembre que essa
-variável é `--build-arg`, não runtime.
-
-**`P1001: Can't reach database server`**
-`pnpm db:up` e confira a porta em `DATABASE_URL`.
-
-**CORS bloqueando o frontend**
-`CORS_ORIGINS` precisa da origem exata (`https://app.exemplo.com`), sem caminho
-e sem barra no fim.
-
-**Sessão cai a cada recarga em produção**
-O cookie de refresh não está voltando: verifique `COOKIE_SECURE=true` sob HTTPS
-e, se o frontend estiver em outro site, `COOKIE_SAMESITE=none`.
-
-**Testes de integração falham subindo o banco**
-Se a porta 55433 estiver ocupada, use `TEST_PG_PORT=55444`, ou aponte
-`TEST_DATABASE_URL` para um PostgreSQL 16 que você já tenha.
+- [`docs/architecture.md`](docs/architecture.md): componentes e fluxos;
+- [`docs/api-conventions.md`](docs/api-conventions.md): formatos transversais;
+- [`docs/api-v1-endpoints.md`](docs/api-v1-endpoints.md): superfície HTTP;
+- [`docs/backend-modules.md`](docs/backend-modules.md): módulos NestJS;
+- [`docs/backend_tests.md`](docs/backend_tests.md): estratégia de testes;
+- [`docs/data-model.md`](docs/data-model.md): entidades e integridade;
+- [`docs/functional-requirements.md`](docs/functional-requirements.md): requisitos entregues;
+- [`docs/user-stories.md`](docs/user-stories.md): histórias da V1;
+- [`docs/state.md`](docs/state.md): fotografia do worktree;
+- [`docs/backlog.md`](docs/backlog.md): itens explicitamente posteriores.

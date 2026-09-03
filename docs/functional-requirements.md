@@ -1,289 +1,211 @@
-# 📄 Requisitos Funcionais (RF)
+# Requisitos funcionais da V1
 
-Este documento descreve os **Requisitos Funcionais** do Sistema de Gestão Financeira, derivados das User Stories e alinhados ao modelo de domínio e à arquitetura definida.
-Os requisitos abaixo definem **o que o sistema deve fazer**, independentemente da implementação técnica.
+Este é o escopo funcional implementado pela V1. Itens posteriores ficam exclusivamente em [`backlog.md`](backlog.md).
 
-Os requisitos estão agrupados por domínio funcional.
+## RF-1 — Conta e sessão
 
-## 🟦 1. Visualização Geral / Dashboard
+### RF-1.1 Cadastro e login
 
-### **RF-1.1 – Cálculo de saldo total (sem investimentos)**
+O usuário pode se cadastrar e entrar com e-mail e senha. O sistema normaliza o e-mail e não diferencia, na resposta de erro, conta inexistente de senha inválida.
 
-O sistema deve calcular e exibir o saldo total somando todas as contas bancárias cadastradas, **excluindo valores referentes a investimentos**.
+### RF-1.2 Continuidade da sessão
 
-### **RF-1.2 – Exibição de saldo por conta**
+O sistema renova a sessão por refresh token opaco em cookie `HttpOnly`, com rotação, CSRF e recuperação automática de uma chamada protegida que recebeu 401.
 
-O sistema deve exibir para o usuário uma lista com saldos individuais de cada conta bancária.
+### RF-1.3 Encerramento e isolamento
 
-### **RF-1.3 – Separação de saldo corrente e investido**
+Logout encerra a sessão atual. Logout, 401 terminal e troca de usuário limpam token em memória e cache privado.
 
-O sistema deve exibir separadamente:
+### RF-1.4 Perfil e credenciais
 
-* Saldo de contas correntes e semelhantes.
-* Saldo total em investimentos.
+O usuário pode alterar nome e e-mail, trocar senha informando a atual e excluir a conta após senha e confirmação textual reforçada.
 
-Esses valores não devem ser agregados no cálculo do saldo líquido.
+## RF-2 — Contas, cartões e categorias
 
-### **RF-1.4 – Limite total de cartão de crédito**
+### RF-2.1 Contas
 
-O sistema deve exibir:
+O usuário pode criar, listar, editar, arquivar e restaurar contas com nome, instituição, tipo e saldo inicial. O saldo é calculado a partir do ledger.
 
-* Limite total disponível em todos os cartões.
-* Valor total utilizado.
-* Valor total disponível.
+### RF-2.2 Cartões
 
-### **RF-1.5 – Limite individual de cartão de crédito**
+O usuário pode criar, listar, editar, arquivar e restaurar cartões com limite e dia de fechamento opcional.
 
-O sistema deve exibir, para cada cartão:
+### RF-2.3 Ciclo de cartão
 
-* Limite total.
-* Valor utilizado.
-* Valor restante.
+O uso considera somente despesas do ciclo aberto do cartão. Fechamentos de 28 a 31 respeitam meses curtos e anos bissextos.
 
-### **RF-1.6 – Total de gastos por período**
+### RF-2.4 Categorias
 
-O sistema deve permitir escolher um período (semana, mês, ano) e exibir o total de gastos registrados naquele intervalo.
+O usuário pode manter categorias `income`, `expense` ou `both`. Uma categoria precisa ser `both` ou corresponder ao tipo do lançamento; a API rejeita alterações de tipo que tornariam transações, modelos ou ocorrências históricas incompatíveis. Categorias arquivadas permanecem no histórico e não recebem novos lançamentos.
 
-## 🟩 2. Transações (Ganhos e Gastos)
+### RF-2.5 Preservação de histórico
 
-### **RF-2.1 – Cadastro de transações**
+Ao excluir conta, cartão ou categoria, o sistema remove fisicamente apenas se não houver dependências; caso contrário, arquiva. A interface permite incluir arquivados e restaurá-los.
 
-O sistema deve permitir cadastrar transações de ganho e gasto, com:
+## RF-3 — Transações
 
-* tipo (ganho/gasto),
-* valor,
-* data,
-* conta/cartão,
-* descrição opcional.
+### RF-3.1 Lançamento manual
 
-### **RF-2.2 – Associação de transações a categorias**
+O usuário pode criar receita ou despesa com valor, data civil, descrição e categoria opcional.
 
-O sistema deve permitir associar cada transação a uma categoria existente.
+### RF-3.2 Origem única
 
-### **RF-2.3 – Listagem de transações sem categoria**
+Toda transação pertence exatamente a uma conta ou a um cartão. A regra é validada na API e em PostgreSQL.
 
-O sistema deve exibir uma lista de transações que não possuem categoria atribuída.
+### RF-3.3 Consulta e paginação
 
-### **RF-2.4 – Alteração de categoria (individual ou em sequência)**
+A lista oferece paginação e filtros por tipo, origem de criação, período, conta, cartão e categoria, com nomes das relações.
 
-O sistema deve permitir alterar a categoria diretamente a partir da lista de “sem categoria”, possibilitando ajustar várias transações em sequência.
+### RF-3.4 Edição e remoção
 
-### **RF-2.5 – Sugestão automática de categoria**
+O usuário pode editar e excluir transações. PATCH aceita `null` explícito para limpar categoria ou trocar a origem sem manter a anterior.
 
-Ao cadastrar ou importar transações, o sistema deve:
+### RF-3.5 Sem categoria
 
-* analisar a descrição e/ou origem,
-* sugerir automaticamente uma categoria adequada,
-* permitir confirmação ou alteração pelo usuário.
+Há uma fila paginada dedicada para categorizar lançamentos um a um.
 
-### **RF-2.6 – Edição de transações**
+### RF-3.6 Resumo e projeção
 
-O sistema deve permitir editar:
+O sistema calcula receitas, despesas, saldo e contagem em intervalo inclusivo. A projeção usa a média de meses completos, incluindo meses sem movimento no denominador.
 
-* valor,
-* data,
-* conta/cartão,
-* categoria,
-* descrição.
+## RF-4 — Dashboard
 
-### **RF-2.7 – Exclusão de transações**
+### RF-4.1 Períodos
 
-O sistema deve permitir excluir transações, removendo-as de cálculos e relatórios.
+O usuário pode consultar semana, mês, ano ou intervalo personalizado. O backend devolve a janela resolvida e a janela anterior comparável.
 
-### **RF-2.8 – Filtro por período**
+### RF-4.2 Saldos separados
 
-O sistema deve permitir filtrar transações por:
+O dashboard mostra separadamente caixa em contas não-investimento, saldo em contas do tipo `investment` e custo da carteira manual.
 
-* semana,
-* mês,
-* ano,
-* período customizado.
+### RF-4.3 Cartões
 
-### **RF-2.9 – Filtro por categoria**
+Exibe limite total, uso agregado dos ciclos abertos e disponível.
 
-O sistema deve permitir filtrar transações por uma ou mais categorias.
+### RF-4.4 Histórico e pendências
 
-### **RF-2.10 – Projeção de gastos**
+Exibe os 12 meses terminando no mês de referência, últimas transações com nomes, ocorrências pendentes e quantidade sem categoria.
 
-O sistema deve calcular e exibir projeções de gastos futuros com base em padrões históricos.
+### RF-4.5 Estados de interface
 
-## 🟩 2.1. Transações Fixas (Recorrentes)
+Consultas apresentam loading, vazio, erro e retry; mutations apresentam sucesso ou erro.
 
-### **RF-2.11 – Cadastro de transações fixas com margem de dias**
+## RF-5 — Lançamentos recorrentes
 
-O sistema deve permitir cadastrar transações fixas contendo:
+### RF-5.1 Modelo mensal
 
-* tipo (ganho/gasto),
-* valor,
-* dia de referência,
-* margem de dias (janela de tolerância),
-* conta/cartão,
-* categoria,
-* descrição.
+O usuário pode criar modelo com tipo, valor, dia de referência, margem, categoria, descrição e uma origem. Criação, alteração de vínculos e restauração exigem conta/cartão/categoria ativos e categoria compatível com o tipo.
 
-### **RF-2.12 – Notificação de transações fixas dentro da margem**
+### RF-5.2 Geração
 
-Quando a data atual estiver dentro da janela definida, o sistema deve notificar o usuário para confirmação.
+Um job diário cria no máximo uma ocorrência por modelo/competência e recupera períodos recentes que não foram processados.
 
-### **RF-2.13 – Confirmação manual de transação fixa**
+### RF-5.3 Snapshot
 
-O sistema deve permitir:
+A ocorrência copia os dados do modelo. Editar o modelo não reescreve ocorrências passadas ou finalizadas.
 
-* confirmar a ocorrência da transação fixa,
-* registrar a data real,
-* ou informar que ela não ocorreu.
+### RF-5.4 Confirmação
 
-### **RF-2.14 – Registro automático após confirmação**
+Uma ocorrência pendente pode ser confirmada com data/valor real. A confirmação cria exatamente uma transação `fixed` de forma atômica.
 
-Ao confirmar, o sistema deve:
+### RF-5.5 Ignorar
 
-* criar automaticamente uma transação normal correspondente,
-* marcar a ocorrência do período como “confirmada”.
+Uma ocorrência pendente pode mudar para `skipped`. Estados finais não podem ser reabertos.
 
-### **RF-2.15 – Histórico de transações fixas**
+### RF-5.6 Arquivamento
 
-O sistema deve registrar e exibir:
+Modelos podem ser arquivados/restaurados. Nenhuma rota apaga definitivamente o histórico recorrente.
 
-* confirmações,
-* rejeições,
-* data real de ocorrência,
-* ocorrências passadas.
+## RF-6 — Investimentos manuais
 
-### **RF-2.16 – Edição e exclusão de transações fixas**
+### RF-6.1 Catálogo
 
-O sistema deve permitir editar ou excluir transações fixas, garantindo:
+O usuário pode cadastrar ativos por símbolo, tipo, exchange e nome. O catálogo não busca preços.
 
-* preservação do histórico,
-* aplicação das alterações apenas para futuras ocorrências.
+### RF-6.2 Posições
 
-## 🟧 3. Contas, Cartões e Investimentos
+O usuário registra corretora, tipo, quantidade, preço de compra, total investido e data civil.
 
-### **RF-3.1 – Cadastro de contas bancárias**
+### RF-6.3 Sumário
 
-O sistema deve permitir cadastrar contas bancárias com: nome, instituição, tipo e saldo inicial.
+A carteira soma custo de aquisição e agrupa por tipo. Não exibe valor de mercado, lucro ou rentabilidade.
 
-### **RF-3.2 – Edição e remoção de contas**
+## RF-7 — Metas manuais
 
-O sistema deve permitir editar contas ou desativá-las (mantendo histórico).
+### RF-7.1 Cadastro
 
-### **RF-3.3 – Cadastro de cartões de crédito**
+O usuário pode criar, editar e remover metas com tipo, valor alvo, prazo e relações opcionais.
 
-O sistema deve permitir cadastrar cartões com nome, instituição, limite total e opcionalmente data de fechamento.
+### RF-7.2 Progresso
 
-### **RF-3.4 – Edição e remoção de cartões**
+O usuário informa o valor atual. O sistema calcula a razão limitada entre zero e um e identifica a fonte como `manual`.
 
-O sistema deve permitir editar ou desativar cartões.
+## RF-8 — Importação
 
-### **RF-3.5 – Cadastro de investimentos**
+### RF-8.1 Formatos e layouts
 
-O sistema deve permitir cadastrar investimentos com tipo de ativo, corretora, valor investido e data.
+O sistema aceita CSV, OFX/QFX e planilhas XLSX/XLS/XLSM, interpretados pelos layouts `inter` ou `generic`.
 
-### **RF-3.6 – Separação de contas e investimentos**
+### RF-8.2 Prévia
 
-O sistema deve tratar contas e investimentos como entidades distintas e não adicionar investimentos ao saldo líquido.
+Upload gera batch persistido, expiração, contadores e erros por linha. Nenhuma transação é criada nessa etapa.
 
-## 🟨 4. Importação de Arquivos (Bancos e Corretoras)
+### RF-8.3 Confirmação segura
 
-### **RF-4.1 – Upload de arquivos**
+O cliente seleciona destino e números de linha. A API recarrega a prévia, valida ownership e origem XOR e grava tudo numa transação.
 
-O sistema deve aceitar arquivos em formatos: CSV, OFX, XLSX.
+### RF-8.4 Idempotência
 
-### **RF-4.2 – Suporte a formatos por origem**
+Cada linha importável recebe `externalId` determinístico. Duplicatas existentes, internas ou concorrentes não viram lançamentos repetidos.
 
-O sistema deve suportar parsing de extratos de:
+### RF-8.5 Histórico
 
-* Banco Inter,
-* Mercado Pago,
-* BTG.
+O usuário pode consultar os arquivos confirmados e reabrir a prévia pelo batch enquanto disponível.
 
-### **RF-4.3 – Importação de extratos de corretoras**
+## RF-9 — Backup local
 
-O sistema deve processar extratos de Binance, Bipa, Coinbase e outros, convertendo linhas em transações ou investimentos.
+### RF-9.1 Exportação
 
-### **RF-4.4 – Detecção de duplicatas**
+O usuário baixa um JSON versionado do grafo durável, inclusive ocorrências, sem credenciais ou tokens.
 
-Durante o parse, o sistema deve:
+### RF-9.2 Replace
 
-* comparar valores, datas, descrições e IDs externos,
-* indicar possíveis duplicatas,
-* evitar inserir registros repetidos.
+Após confirmação explícita na interface, `replace` remove somente o grafo financeiro do usuário e restaura o arquivo de forma atômica.
 
-### **RF-4.5 – Pré-visualização antes da importação**
+### RF-9.3 Merge
 
-O sistema deve exibir uma prévia dos dados parseados antes do usuário confirmar a importação.
+`merge` preserva o estado existente, reconcilia chaves únicas de categorias/ativos e evita duplicar transações importadas pelo `externalId`.
 
-### **RF-4.6 – Associação de conta/corretora**
+### RF-9.4 Integridade
 
-O sistema deve permitir selecionar manualmente a conta ou corretora alvo do extrato importado.
+O restore valida versão, forma, limites, referências e ownership antes de confirmar. Qualquer falha desfaz a operação.
 
-## 🟫 5. Dados de Mercado Financeiro
+## RF-10 — Operação e acessibilidade
 
-### **RF-5.1 – Consulta de preços de ações**
+### RF-10.1 Saúde
 
-O sistema deve exibir preços atualizados de ações (ticker, preço e variação).
+Liveness não depende do banco. Readiness consulta PostgreSQL e devolve 503 quando indisponível.
 
-### **RF-5.2 – Consulta de preços de FIIs**
+### RF-10.2 Navegação
 
-O sistema deve exibir preços atualizados de FIIs.
+Todas as rotas privadas usam uma guarda e shell únicos. A navegação funciona a partir de 320 px.
 
-### **RF-5.3 – Consulta de preços de criptomoedas**
+### RF-10.3 Diálogos
 
-O sistema deve exibir preços atualizados de criptomoedas cadastradas pelo usuário.
+Diálogos possuem nome acessível, foco inicial, Escape, focus trap e restauração de foco.
 
-### **RF-5.4 – Atualização periódica**
+### RF-10.4 Erros
 
-O sistema deve atualizar preços automaticamente em intervalos definidos.
+A API usa envelope uniforme com `requestId`; a interface mostra mensagens seguras e não expõe UUID como rótulo.
 
-### **RF-5.5 – Associação entre investimentos e ativos**
+## Requisitos não funcionais associados
 
-O sistema deve permitir relacionar investimentos cadastrados a ativos do mercado.
+- Node.js 22, pnpm 10 e PostgreSQL 16;
+- pt-BR e timezone padrão `America/Sao_Paulo`;
+- isolamento por usuário e 404 cross-tenant;
+- HTTPS e cookies seguros em produção;
+- build determinístico e artefato iniciável;
+- migrations verificadas em banco vazio e upgrade pré-V1;
+- CI, smoke, integração real e Playwright como gates de release.
 
-## 🟪 6. Metas e Planejamento Financeiro
-
-### **RF-6.1 – Cadastro de metas**
-
-O sistema deve permitir criar metas financeiras com valor alvo, prazo e categoria/conta opcional.
-
-### **RF-6.2 – Cálculo de progresso da meta**
-
-O sistema deve calcular o progresso automaticamente com base em dados financeiros.
-
-### **RF-6.3 – Visualização de progresso**
-
-O sistema deve exibir gráficos ou indicadores visuais do progresso.
-
-### **RF-6.4 – Alertas de meta**
-
-O sistema deve gerar alertas quando o usuário estiver prestes a ultrapassar uma meta.
-
-## 🟪 7. Otimizador de Investimentos (Futuro)
-
-### **RF-7.1 – Comparação de alternativas**
-
-O sistema deve comparar oportunidades (CDB, Tesouro, ETFs, cripto etc.) com base em parâmetros financeiros.
-
-### **RF-7.2 – Recomendações personalizadas**
-
-O sistema deve sugerir realocações baseadas no histórico do usuário.
-
-### **RF-7.3 – Simulação de rendimento futuro**
-
-O sistema deve permitir simular aportes, taxas e prazos, exibindo projeções.
-
-## 🟦 8. Infraestrutura e Qualidade
-
-### **RF-8.1 – Backup local**
-
-O sistema deve permitir exportar dados completos do usuário para backup.
-
-### **RF-8.2 – Restauração de backup**
-
-O sistema deve permitir restaurar backups gerados pelo próprio sistema.
-
-### **RF-8.3 – Criptografia de dados sensíveis**
-
-Dados sensíveis devem ser guardados de forma criptografada.
-
-### **RF-8.4 – Modo offline (futuro)**
-
-O sistema deve permitir uso básico offline e sincronizar posteriormente quando houver conexão.
+Os comandos de aceite estão em [`backend_tests.md`](backend_tests.md).

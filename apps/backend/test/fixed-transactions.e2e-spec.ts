@@ -4,13 +4,14 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
 describe('FixedTransactionsController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let authToken: string;
 
   const mockUser = {
@@ -18,6 +19,7 @@ describe('FixedTransactionsController (e2e)', () => {
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -34,6 +36,7 @@ describe('FixedTransactionsController (e2e)', () => {
     categoryId: '550e8400-e29b-41d4-a716-446655440002',
     description: 'Rent',
     isActive: true,
+    archivedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -44,53 +47,39 @@ describe('FixedTransactionsController (e2e)', () => {
     userId: 'user-1',
     periodYear: 2026,
     periodMonth: 4,
-    status: 'PENDING',
+    status: 'pending',
     realDate: null,
+    dueDate: new Date('2026-04-15T00:00:00.000Z'),
     transactionId: null,
+    type: 'expense',
+    value: 100,
+    description: 'Rent',
+    categoryId: '550e8400-e29b-41d4-a716-446655440002',
+    accountId: '550e8400-e29b-41d4-a716-446655440001',
+    creditCardId: null,
+    fixedTransaction: {
+      id: '550e8400-e29b-41d4-a716-446655440003',
+      description: 'Rent',
+      referenceDay: 15,
+      marginDays: 3,
+    },
+    category: {
+      id: '550e8400-e29b-41d4-a716-446655440002',
+      name: 'Moradia',
+      type: 'expense',
+    },
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        account: {
-          findUnique: jest.fn(),
-        },
-        category: {
-          findUnique: jest.fn(),
-        },
-        fixedTransaction: {
-          create: jest.fn(),
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          update: jest.fn(),
-          delete: jest.fn(),
-          count: jest.fn(),
-        },
-        fixedTransactionOccurrence: {
-          create: jest.fn(),
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          update: jest.fn(),
-          count: jest.fn(),
-        },
-        transaction: {
-          create: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
       .compile();
-
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -103,7 +92,7 @@ describe('FixedTransactionsController (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'test@example.com', password: 'password123' });
 
-    authToken = loginResponse.body.access_token;
+    authToken = loginResponse.body.accessToken;
   });
 
   afterEach(async () => {
@@ -116,12 +105,13 @@ describe('FixedTransactionsController (e2e)', () => {
       prisma.account.findUnique.mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440001',
         userId: 'user-1',
-        transactions: [],
-        initialBalance: 1000,
+        isActive: true,
       } as any);
       prisma.category.findUnique.mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440002',
         userId: 'user-1',
+        isActive: true,
+        type: 'expense',
       } as any);
       prisma.fixedTransaction.create.mockResolvedValue(baseFixedTransaction as any);
 
@@ -136,13 +126,9 @@ describe('FixedTransactionsController (e2e)', () => {
           accountId: '550e8400-e29b-41d4-a716-446655440001',
           categoryId: '550e8400-e29b-41d4-a716-446655440002',
           description: 'Rent',
-        });
+        })
+        .expect(201);
 
-      if (response.status !== 201) {
-        console.log('CREATE ERROR:', response.status, response.body);
-      }
-
-      expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
       expect(response.body.referenceDay).toBe(15);
     });
@@ -165,7 +151,7 @@ describe('FixedTransactionsController (e2e)', () => {
 
   describe('GET /api/v1/fixed-transactions/:id', () => {
     it('should return fixed transaction by id when owned', async () => {
-      prisma.fixedTransaction.findUnique.mockResolvedValue(baseFixedTransaction as any);
+      prisma.fixedTransaction.findFirst.mockResolvedValue(baseFixedTransaction as any);
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/fixed-transactions/550e8400-e29b-41d4-a716-446655440003')
@@ -178,7 +164,7 @@ describe('FixedTransactionsController (e2e)', () => {
 
   describe('PATCH /api/v1/fixed-transactions/:id', () => {
     it('should update fixed transaction when owned', async () => {
-      prisma.fixedTransaction.findUnique.mockResolvedValue(baseFixedTransaction as any);
+      prisma.fixedTransaction.findFirst.mockResolvedValue(baseFixedTransaction as any);
       prisma.fixedTransaction.update.mockResolvedValue({
         ...baseFixedTransaction,
         description: 'Updated Rent',
@@ -195,27 +181,33 @@ describe('FixedTransactionsController (e2e)', () => {
   });
 
   describe('DELETE /api/v1/fixed-transactions/:id', () => {
-    it('should delete fixed transaction when owned', async () => {
-      prisma.fixedTransaction.findUnique.mockResolvedValue(baseFixedTransaction as any);
-      prisma.fixedTransaction.delete.mockResolvedValue(baseFixedTransaction as any);
+    it('should archive fixed transaction when DELETE is called', async () => {
+      prisma.fixedTransaction.findFirst.mockResolvedValue(baseFixedTransaction as any);
+      prisma.fixedTransaction.update.mockResolvedValue({
+        ...baseFixedTransaction,
+        isActive: false,
+        archivedAt: new Date(),
+      } as any);
 
       await request(app.getHttpServer())
         .delete('/api/v1/fixed-transactions/550e8400-e29b-41d4-a716-446655440003')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(204);
+
+      expect(prisma.fixedTransaction.delete).not.toHaveBeenCalled();
     });
 
     it('should return 404 for non-existent fixed transaction', async () => {
-      prisma.fixedTransaction.findUnique.mockResolvedValue(null);
+      prisma.fixedTransaction.findFirst.mockResolvedValue(null);
 
       await request(app.getHttpServer())
-        .delete('/api/v1/fixed-transactions/nonexistent')
+        .delete('/api/v1/fixed-transactions/550e8400-e29b-41d4-a716-446655440099')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });
 
-    it('should return 403 for fixed transaction owned by another user', async () => {
-      prisma.fixedTransaction.findUnique.mockResolvedValue({
+    it('should return 404 for fixed transaction owned by another user', async () => {
+      prisma.fixedTransaction.findFirst.mockResolvedValue({
         ...baseFixedTransaction,
         userId: 'other-user',
       } as any);
@@ -223,22 +215,23 @@ describe('FixedTransactionsController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/api/v1/fixed-transactions/550e8400-e29b-41d4-a716-446655440003')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 
-  describe('PATCH /api/v1/fixed-transactions/:id/deactivate', () => {
-    it('should deactivate fixed transaction when owned', async () => {
-      prisma.fixedTransaction.findUnique.mockResolvedValue(baseFixedTransaction as any);
+  describe('POST /api/v1/fixed-transactions/:id/archive', () => {
+    it('should archive fixed transaction when owned', async () => {
+      prisma.fixedTransaction.findFirst.mockResolvedValue(baseFixedTransaction as any);
       prisma.fixedTransaction.update.mockResolvedValue({
         ...baseFixedTransaction,
         isActive: false,
+        archivedAt: new Date(),
       } as any);
 
       const response = await request(app.getHttpServer())
-        .patch('/api/v1/fixed-transactions/550e8400-e29b-41d4-a716-446655440003/deactivate')
+        .post('/api/v1/fixed-transactions/550e8400-e29b-41d4-a716-446655440003/archive')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
+        .expect(201);
 
       expect(response.body.isActive).toBe(false);
     });
@@ -261,73 +254,69 @@ describe('FixedTransactionsController (e2e)', () => {
     });
 
     it('should filter occurrences by status', async () => {
-      prisma.fixedTransactionOccurrence.findMany.mockResolvedValue([{ ...baseOccurrence, status: 'CONFIRMED' }] as any);
+      prisma.fixedTransactionOccurrence.findMany.mockResolvedValue([{ ...baseOccurrence, status: 'confirmed' }] as any);
       prisma.fixedTransactionOccurrence.count.mockResolvedValue(1);
 
       const response = await request(app.getHttpServer())
-        .get('/api/v1/fixed-transactions/occurrences?year=2026&month=4&status=CONFIRMED')
+        .get('/api/v1/fixed-transactions/occurrences?year=2026&month=4&status=confirmed')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.data[0].status).toBe('CONFIRMED');
+      expect(response.body.data[0].status).toBe('confirmed');
       expect(response.body.meta.totalItems).toBe(1);
     });
   });
 
-  describe('PATCH /api/v1/fixed-transactions/occurrences/:id/confirm', () => {
+  describe('POST /api/v1/fixed-transactions/occurrences/:id/confirm', () => {
     it('should confirm an occurrence and create a transaction', async () => {
-      prisma.fixedTransactionOccurrence.findUnique.mockResolvedValue({
+      const confirmedOccurrence = {
         ...baseOccurrence,
-        fixedTransaction: {
-          ...baseFixedTransaction,
-          value: { toNumber: () => 100 },
-        },
-      } as any);
-      prisma.fixedTransaction.findUnique.mockResolvedValue({
-        ...baseFixedTransaction,
-        value: { toNumber: () => 100 },
-      } as any);
+        status: 'confirmed',
+        realDate: new Date('2026-04-15T00:00:00.000Z'),
+        transactionId: '550e8400-e29b-41d4-a716-446655440005',
+      };
+      prisma.fixedTransactionOccurrence.findFirst
+        .mockResolvedValueOnce(baseOccurrence as any)
+        .mockResolvedValueOnce(confirmedOccurrence as any);
       prisma.account.findUnique.mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440001',
-        userId: 'user-1',
-        transactions: [],
+        id: baseOccurrence.accountId,
+        userId: baseOccurrence.userId,
+        isActive: true,
       } as any);
       prisma.category.findUnique.mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440002',
-        userId: 'user-1',
+        id: baseOccurrence.categoryId,
+        userId: baseOccurrence.userId,
+        isActive: true,
+        type: 'expense',
       } as any);
       prisma.transaction.create.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440005' } as any);
-      prisma.fixedTransactionOccurrence.update.mockResolvedValue({
-        ...baseOccurrence,
-        status: 'CONFIRMED',
-        transactionId: '550e8400-e29b-41d4-a716-446655440005',
-      } as any);
+      prisma.fixedTransactionOccurrence.updateMany.mockResolvedValue({ count: 1 });
 
       const response = await request(app.getHttpServer())
-        .patch('/api/v1/fixed-transactions/occurrences/550e8400-e29b-41d4-a716-446655440004/confirm')
+        .post('/api/v1/fixed-transactions/occurrences/550e8400-e29b-41d4-a716-446655440004/confirm')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ realDate: '2026-04-15' })
         .expect(200);
 
-      expect(response.body.status).toBe('CONFIRMED');
+      expect(response.body.status).toBe('confirmed');
       expect(response.body.transactionId).toBe('550e8400-e29b-41d4-a716-446655440005');
     });
   });
 
-  describe('PATCH /api/v1/fixed-transactions/occurrences/:id/skip', () => {
+  describe('POST /api/v1/fixed-transactions/occurrences/:id/skip', () => {
     it('should skip an occurrence', async () => {
-      prisma.fixedTransactionOccurrence.findUnique.mockResolvedValue(baseOccurrence as any);
-      prisma.fixedTransactionOccurrence.update.mockResolvedValue({
+      prisma.fixedTransactionOccurrence.findFirst.mockResolvedValueOnce(baseOccurrence as any).mockResolvedValueOnce({
         ...baseOccurrence,
-        status: 'SKIPPED',
+        status: 'skipped',
       } as any);
+      prisma.fixedTransactionOccurrence.updateMany.mockResolvedValue({ count: 1 });
 
       const response = await request(app.getHttpServer())
-        .patch('/api/v1/fixed-transactions/occurrences/550e8400-e29b-41d4-a716-446655440004/skip')
+        .post('/api/v1/fixed-transactions/occurrences/550e8400-e29b-41d4-a716-446655440004/skip')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body.status).toBe('SKIPPED');
+      expect(response.body.status).toBe('skipped');
     });
   });
 });

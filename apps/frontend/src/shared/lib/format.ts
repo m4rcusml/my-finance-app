@@ -32,8 +32,18 @@ export function formatCivilDate(date: CivilDate | null | undefined): string {
 }
 
 const MONTH_NAMES = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
 ];
 
 /** `2026-03` -> `março de 2026`. */

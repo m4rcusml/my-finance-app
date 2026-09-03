@@ -1,6 +1,13 @@
 'use client';
 
-import { type CreateGoalRequest, GOAL_TYPES, type Goal, type GoalType, isCivilDate, roundMoney } from '@finance/contracts';
+import {
+  type CreateGoalRequest,
+  GOAL_TYPES,
+  type Goal,
+  type GoalType,
+  isCivilDate,
+  roundMoney,
+} from '@finance/contracts';
 import { useEffect, useId, useState } from 'react';
 import { parseDecimal, toDecimalInput } from '@/features/goals/decimal';
 import { useCreateGoalMutation, useUpdateGoalMutation } from '@/features/goals/mutations';
@@ -57,15 +64,7 @@ function formFor(goal: Goal): FormState {
 
 const REFERENCE_HINT = 'Apenas referência — não afeta o progresso, que continua sendo informado por você.';
 
-export function GoalDialog({
-  open,
-  onClose,
-  goal,
-}: {
-  open: boolean;
-  onClose: () => void;
-  goal: Goal | null;
-}) {
+export function GoalDialog({ open, onClose, goal }: { open: boolean; onClose: () => void; goal: Goal | null }) {
   const toast = useToast();
   const formId = useId();
   const [form, setForm] = useState<FormState>(blankForm);

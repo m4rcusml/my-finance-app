@@ -1,4 +1,16 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
@@ -96,7 +108,10 @@ export class ImportsController {
   }
 
   @Get(':batchId')
-  @ApiOperation({ summary: 'Relê a prévia de um lote', description: 'Permite recarregar a tela sem reenviar o arquivo.' })
+  @ApiOperation({
+    summary: 'Relê a prévia de um lote',
+    description: 'Permite recarregar a tela sem reenviar o arquivo.',
+  })
   @ApiOkResponse({ type: ImportPreviewResponseDto })
   @ApiNotFoundResponse({ description: 'Lote não encontrado.' })
   findBatch(

@@ -48,8 +48,7 @@ export function useUpdateInvestmentMutation(): UseMutationResult<
   const toast = useToast();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateInvestmentRequest }) =>
-      investmentsApi.update(id, body),
+    mutationFn: ({ id, body }: { id: string; body: UpdateInvestmentRequest }) => investmentsApi.update(id, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.investments.all(s) });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all(s) });
@@ -78,11 +77,7 @@ export function useDeleteInvestmentMutation(): UseMutationResult<void, unknown, 
  * the "ativo" selector reads, so it is invalidated and the new asset appears in
  * the open dialog as soon as the refetch lands.
  */
-export function useCreateMarketAssetMutation(): UseMutationResult<
-  MarketAsset,
-  unknown,
-  CreateMarketAssetRequest
-> {
+export function useCreateMarketAssetMutation(): UseMutationResult<MarketAsset, unknown, CreateMarketAssetRequest> {
   const s = useSessionKey();
   const queryClient = useQueryClient();
   const toast = useToast();

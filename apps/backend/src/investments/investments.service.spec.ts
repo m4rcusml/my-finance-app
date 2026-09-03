@@ -141,7 +141,9 @@ describe('InvestmentsService', () => {
 
   describe('findAll', () => {
     it('returns the paginated envelope with the asset included', async () => {
-      prisma.investment.findMany.mockResolvedValue([{ ...investmentRow, marketAssetId: assetId, marketAsset: assetRow }]);
+      prisma.investment.findMany.mockResolvedValue([
+        { ...investmentRow, marketAssetId: assetId, marketAsset: assetRow },
+      ]);
       prisma.investment.count.mockResolvedValue(1);
 
       const result = await service.findAll(userA, { page: 1, limit: 20 });
@@ -233,7 +235,11 @@ describe('InvestmentsService', () => {
     });
 
     it('detaches the asset on an explicit null', async () => {
-      prisma.investment.findUnique.mockResolvedValue({ ...investmentRow, marketAssetId: assetId, marketAsset: assetRow });
+      prisma.investment.findUnique.mockResolvedValue({
+        ...investmentRow,
+        marketAssetId: assetId,
+        marketAsset: assetRow,
+      });
       prisma.investment.update.mockResolvedValue(investmentRow);
 
       const result = await service.update(userA, investmentId, { marketAssetId: null });

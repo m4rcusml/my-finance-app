@@ -1,6 +1,12 @@
 'use client';
 
-import type { ListTransactionsQuery, PaginatedResponse, TransactionWithRelations } from '@finance/contracts';
+import type {
+  ExpenseProjection,
+  ListTransactionsQuery,
+  PaginatedResponse,
+  TransactionSummary,
+  TransactionWithRelations,
+} from '@finance/contracts';
 import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { transactionsApi } from '@/shared/lib/api';
 import { queryKeys } from '@/shared/lib/query/keys';
@@ -22,9 +28,7 @@ export type TransactionFilters = ListTransactionsQuery;
 
 export type TransactionListResult = PaginatedResponse<TransactionWithRelations>;
 
-export function useTransactionsQuery(
-  filters: TransactionFilters = {},
-): UseQueryResult<TransactionListResult> {
+export function useTransactionsQuery(filters: TransactionFilters = {}): UseQueryResult<TransactionListResult> {
   const s = useSessionKey();
 
   return useQuery({
@@ -37,14 +41,34 @@ export function useTransactionsQuery(
   });
 }
 
-export function useUncategorizedQuery(
-  filters: TransactionFilters = {},
-): UseQueryResult<TransactionListResult> {
+export function useUncategorizedQuery(filters: TransactionFilters = {}): UseQueryResult<TransactionListResult> {
   const s = useSessionKey();
 
   return useQuery({
     queryKey: queryKeys.transactions.uncategorized(s, filters),
     queryFn: () => transactionsApi.uncategorized(filters),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useTransactionSummaryQuery(
+  filters: { from: string; to: string } | null,
+): UseQueryResult<TransactionSummary> {
+  const sessionKey = useSessionKey();
+  const keyFilters = filters ?? { from: '', to: '' };
+
+  return useQuery({
+    queryKey: queryKeys.transactions.summary(sessionKey, keyFilters),
+    queryFn: () => transactionsApi.summary(filters as { from: string; to: string }),
+    enabled: filters !== null,
+  });
+}
+
+export function useExpenseProjectionQuery(months = 3): UseQueryResult<ExpenseProjection> {
+  const sessionKey = useSessionKey();
+
+  return useQuery({
+    queryKey: queryKeys.transactions.projection(sessionKey, { months }),
+    queryFn: () => transactionsApi.projection({ months }),
   });
 }

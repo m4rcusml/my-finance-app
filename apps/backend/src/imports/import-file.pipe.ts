@@ -102,10 +102,7 @@ export class ImportFilePipe extends ParseFilePipe {
     const maxSize = Number(config.get('MAX_UPLOAD_BYTES', { infer: true }) ?? ABSOLUTE_MAX_UPLOAD_BYTES);
     super({
       fileIsRequired: true,
-      validators: [
-        new ImportFileSizeValidator({ maxSize }),
-        new ImportFileTypeValidator({} as Record<string, never>),
-      ],
+      validators: [new ImportFileSizeValidator({ maxSize }), new ImportFileTypeValidator({} as Record<string, never>)],
       exceptionFactory: importFileException,
     });
   }

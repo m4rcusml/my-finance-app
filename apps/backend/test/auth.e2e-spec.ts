@@ -4,39 +4,33 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
 
   const mockUser = {
     id: 'user-1',
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    tokenVersion: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
       .compile();
-
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -55,6 +49,7 @@ describe('AuthController (e2e)', () => {
         id: 'user-1',
         email: 'new@example.com',
         name: null,
+        tokenVersion: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as any);
@@ -62,23 +57,24 @@ describe('AuthController (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/api/v1/auth/register')
-        .send({ email: 'new@example.com', password: 'password123' })
+        .send({ email: 'new@example.com', password: 'Fresh-passphrase-2026!' })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body.email).toBe('new@example.com');
-      expect(response.body).not.toHaveProperty('passwordHash');
+      expect(response.body).toHaveProperty('accessToken');
+      expect(response.body.user.email).toBe('new@example.com');
+      expect(response.body.user).not.toHaveProperty('passwordHash');
     });
 
     it('should return 409 when email already exists', async () => {
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.create.mockRejectedValue(Object.assign(new Error('unique'), { code: 'P2002' }));
+      (argon2.hash as jest.Mock).mockResolvedValue('hashed-password');
 
       const response = await request(app.getHttpServer())
         .post('/api/v1/auth/register')
-        .send({ email: 'test@example.com', password: 'password123' })
+        .send({ email: 'test@example.com', password: 'Fresh-passphrase-2026!' })
         .expect(409);
 
-      expect(response.body.message).toContain('User already exists');
+      expect(response.body.message).toBe('Este e-mail já está em uso.');
     });
 
     it('should return 400 when email is invalid', async () => {
@@ -110,17 +106,17 @@ describe('AuthController (e2e)', () => {
         .send({ email: 'test@example.com', password: 'password123' })
         .expect(200);
 
-      expect(response.body).toHaveProperty('access_token');
-      expect(typeof response.body.access_token).toBe('string');
+      expect(response.body).toHaveProperty('accessToken');
+      expect(typeof response.body.accessToken).toBe('string');
     });
 
-    it('should return 404 for non-existent user', async () => {
+    it('should return the same 401 for a non-existent user', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
       await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({ email: 'unknown@example.com', password: 'password123' })
-        .expect(404);
+        .expect(401);
     });
 
     it('should return 401 for wrong password', async () => {
@@ -144,7 +140,7 @@ describe('AuthController (e2e)', () => {
         .post('/api/v1/auth/login')
         .send({ email: 'test@example.com', password: 'password123' });
 
-      const token = loginResponse.body.access_token;
+      const token = loginResponse.body.accessToken;
 
       const meResponse = await request(app.getHttpServer())
         .get('/api/v1/auth/me')

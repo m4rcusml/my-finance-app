@@ -2,12 +2,7 @@
 
 import type { PaginationMeta, TransactionWithRelations } from '@finance/contracts';
 import { categoryLabel, transactionOrigin } from '@/features/transactions/helpers';
-import {
-  formatCivilDate,
-  formatMoney,
-  TRANSACTION_SOURCE_LABELS,
-  TRANSACTION_TYPE_LABELS,
-} from '@/shared/lib/format';
+import { formatCivilDate, formatMoney, TRANSACTION_SOURCE_LABELS, TRANSACTION_TYPE_LABELS } from '@/shared/lib/format';
 import { IconButton } from '@/shared/ui/form';
 
 /**
@@ -55,18 +50,10 @@ function RowActions({
   const name = describe(transaction);
   return (
     <div className="flex justify-end gap-1">
-      <IconButton
-        label={`Editar transação ${name}`}
-        variant="secondary"
-        onClick={() => onEdit(transaction)}
-      >
+      <IconButton label={`Editar transação ${name}`} variant="secondary" onClick={() => onEdit(transaction)}>
         ✎
       </IconButton>
-      <IconButton
-        label={`Excluir transação ${name}`}
-        variant="secondary"
-        onClick={() => onDelete(transaction)}
-      >
+      <IconButton label={`Excluir transação ${name}`} variant="secondary" onClick={() => onDelete(transaction)}>
         🗑
       </IconButton>
     </div>
@@ -83,8 +70,7 @@ export function TransactionList({ items, meta, onEdit, onDelete }: TransactionLi
       <div className="hidden overflow-x-auto rounded-lg border border-border bg-layer01 sm:block">
         <table className="w-full min-w-[52rem] border-collapse text-left">
           <caption className="sr-only">
-            Transações filtradas. Página {meta.page} de {Math.max(1, meta.totalPages)}, {meta.totalItems} no
-            total.
+            Transações filtradas. Página {meta.page} de {Math.max(1, meta.totalPages)}, {meta.totalItems} no total.
           </caption>
           <thead>
             <tr className="border-b border-border">
@@ -125,9 +111,7 @@ export function TransactionList({ items, meta, onEdit, onDelete }: TransactionLi
                   <td className={`${TD} text-muted-foreground`}>{categoryLabel(transaction)}</td>
                   <td className={`${TD} text-muted-foreground`}>
                     {origin.name}
-                    {origin.kind ? (
-                      <span className="ml-1 text-xs text-placeholder">({origin.kind})</span>
-                    ) : null}
+                    {origin.kind ? <span className="ml-1 text-xs text-placeholder">({origin.kind})</span> : null}
                   </td>
                   <td className={`${TD} whitespace-nowrap text-muted-foreground`}>
                     {TRANSACTION_TYPE_LABELS[transaction.type]}

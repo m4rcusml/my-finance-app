@@ -4,93 +4,78 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { BackupService } from '../src/backup/backup.service';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
+const emptyCounts = {
+  accounts: 0,
+  creditCards: 0,
+  categories: 0,
+  transactions: 0,
+  fixedTransactions: 0,
+  fixedTransactionOccurrences: 0,
+  marketAssets: 0,
+  investments: 0,
+  goals: 0,
+  importedFiles: 0,
+};
+
 describe('BackupController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let authToken: string;
+  let backup: {
+    exportBackup: jest.Mock;
+    exportFileName: jest.Mock;
+    restoreBackup: jest.Mock;
+  };
 
   const mockUser = {
     id: 'user-1',
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
-  const now = new Date();
-
-  const baseBackupData = {
-    version: '1.0',
-    exportedAt: now.toISOString(),
-    user: { id: 'user-1', email: 'test@example.com', name: 'Test' },
-    accounts: [] as any[],
-    categories: [] as any[],
-    creditCards: [] as any[],
-    marketAssets: [] as any[],
-    transactions: [] as any[],
-    fixedTransactions: [] as any[],
-    investments: [] as any[],
-    goals: [] as any[],
-    importedFiles: [] as any[],
+  const backupFile = {
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    user: { email: 'test@example.com', name: null },
+    accounts: [],
+    creditCards: [],
+    categories: [],
+    transactions: [],
+    fixedTransactions: [],
+    fixedTransactionOccurrences: [],
+    marketAssets: [],
+    investments: [],
+    goals: [],
+    importedFiles: [],
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
+    backup = {
+      exportBackup: jest.fn(),
+      exportFileName: jest.fn().mockReturnValue('finance-backup-2026-09-03.json'),
+      restoreBackup: jest.fn(),
+    };
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        account: {
-          findMany: jest.fn(),
-          create: jest.fn(),
-        },
-        category: {
-          findMany: jest.fn(),
-          create: jest.fn(),
-        },
-        creditCard: {
-          findMany: jest.fn(),
-          create: jest.fn(),
-        },
-        marketAsset: {
-          findMany: jest.fn(),
-          create: jest.fn(),
-        },
-        transaction: {
-          findMany: jest.fn(),
-          create: jest.fn(),
-        },
-        fixedTransaction: {
-          findMany: jest.fn(),
-          create: jest.fn(),
-        },
-        investment: {
-          findMany: jest.fn(),
-          create: jest.fn(),
-        },
-        goal: {
-          findMany: jest.fn(),
-          create: jest.fn(),
-        },
-        importedFile: {
-          findMany: jest.fn(),
-          create: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
+      .overrideProvider(BackupService)
+      .useValue(backup)
       .compile();
 
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -98,12 +83,10 @@ describe('BackupController (e2e)', () => {
 
     prisma.user.findUnique.mockResolvedValue(mockUser as any);
     (argon2.verify as jest.Mock).mockResolvedValue(true);
-
     const loginResponse = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'test@example.com', password: 'password123' });
-
-    authToken = loginResponse.body.access_token;
+    authToken = loginResponse.body.accessToken;
   });
 
   afterEach(async () => {
@@ -111,74 +94,56 @@ describe('BackupController (e2e)', () => {
     await app.close();
   });
 
-  describe('GET /api/v1/backup/export', () => {
-    it('should export user data', async () => {
-      prisma.account.findMany.mockResolvedValue([]);
-      prisma.category.findMany.mockResolvedValue([]);
-      prisma.creditCard.findMany.mockResolvedValue([]);
-      prisma.marketAsset.findMany.mockResolvedValue([]);
-      prisma.transaction.findMany.mockResolvedValue([]);
-      prisma.fixedTransaction.findMany.mockResolvedValue([]);
-      prisma.investment.findMany.mockResolvedValue([]);
-      prisma.goal.findMany.mockResolvedValue([]);
-      prisma.importedFile.findMany.mockResolvedValue([]);
+  it('exports a versioned credential-free JSON download', async () => {
+    backup.exportBackup.mockResolvedValue(backupFile);
 
-      const response = await request(app.getHttpServer())
-        .get('/api/v1/backup/export')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/backup/export')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
 
-      expect(response.body.version).toBe('1.0');
-      expect(response.body.user.id).toBe('user-1');
-      expect(Array.isArray(response.body.accounts)).toBe(true);
-      expect(Array.isArray(response.body.transactions)).toBe(true);
-    });
-
-    it('should require authentication', async () => {
-      await request(app.getHttpServer()).get('/api/v1/backup/export').expect(401);
-    });
+    expect(response.body.schemaVersion).toBe(1);
+    expect(response.body.user).toEqual({ email: 'test@example.com', name: null });
+    expect(response.body.user).not.toHaveProperty('passwordHash');
+    expect(response.headers['content-disposition']).toContain('finance-backup-2026-09-03.json');
   });
 
-  describe('POST /api/v1/backup/import', () => {
-    it('should restore backup data', async () => {
-      const backupData = {
-        ...baseBackupData,
-        accounts: [
-          { id: 'acc-1', name: 'Account', institution: 'Bank', type: 'checking', initialBalance: 100, isActive: true },
-        ],
-        categories: [{ id: 'cat-1', name: 'Food', type: 'expense' }],
-      };
+  it('requires authentication to export', async () => {
+    await request(app.getHttpServer()).get('/api/v1/backup/export').expect(401);
+  });
 
-      prisma.account.create.mockResolvedValue({ id: 'new-acc-1' } as any);
-      prisma.category.create.mockResolvedValue({ id: 'new-cat-1' } as any);
-      prisma.creditCard.create.mockResolvedValue({ id: 'new-cc-1' } as any);
-      prisma.marketAsset.create.mockResolvedValue({ id: 'new-ma-1' } as any);
-      prisma.transaction.create.mockResolvedValue({ id: 'new-txn-1' } as any);
-      prisma.fixedTransaction.create.mockResolvedValue({ id: 'new-ft-1' } as any);
-      prisma.investment.create.mockResolvedValue({ id: 'new-inv-1' } as any);
-      prisma.goal.create.mockResolvedValue({ id: 'new-goal-1' } as any);
-      prisma.importedFile.create.mockResolvedValue({ id: 'new-imp-1' } as any);
-
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/backup/import')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ data: backupData })
-        .expect(201);
-
-      expect(response.body.restored.accounts).toBe(1);
-      expect(response.body.restored.categories).toBe(1);
+  it('restores through the current /restore contract', async () => {
+    backup.restoreBackup.mockResolvedValue({
+      mode: 'merge',
+      schemaVersion: 1,
+      created: { ...emptyCounts, accounts: 1 },
+      deleted: emptyCounts,
     });
 
-    it('should reject invalid backup data', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/backup/import')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ data: { invalid: true } })
-        .expect(400);
-    });
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/backup/restore')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ mode: 'merge', data: backupFile })
+      .expect(200);
 
-    it('should require authentication', async () => {
-      await request(app.getHttpServer()).post('/api/v1/backup/import').send({ data: baseBackupData }).expect(401);
-    });
+    expect(response.body.created.accounts).toBe(1);
+    expect(backup.restoreBackup).toHaveBeenCalledWith('user-1', 'merge', backupFile);
+  });
+
+  it('validates restore mode before calling the service', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/backup/restore')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ data: backupFile })
+      .expect(400);
+
+    expect(backup.restoreBackup).not.toHaveBeenCalled();
+  });
+
+  it('requires authentication to restore', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/backup/restore')
+      .send({ mode: 'replace', data: backupFile })
+      .expect(401);
   });
 });

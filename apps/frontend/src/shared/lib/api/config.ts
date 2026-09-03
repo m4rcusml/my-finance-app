@@ -7,9 +7,7 @@
 export function getApiBaseUrl(): string {
   const url = process.env.NEXT_PUBLIC_API_URL;
   if (!url) {
-    throw new Error(
-      'NEXT_PUBLIC_API_URL não está definida. Copie apps/frontend/.env.example para .env.local.',
-    );
+    throw new Error('NEXT_PUBLIC_API_URL não está definida. Copie apps/frontend/.env.example para .env.local.');
   }
   return url.replace(/\/+$/, '');
 }

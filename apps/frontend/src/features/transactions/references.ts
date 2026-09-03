@@ -29,9 +29,9 @@ export function useTransactionReferences(): TransactionReferences {
   const categories = useActiveCategoriesQuery();
 
   return {
-    accounts: accounts.items,
-    creditCards: creditCards.items,
-    categories: categories.items,
+    accounts: accounts.accounts,
+    creditCards: creditCards.creditCards,
+    categories: categories.categories,
     isPending: accounts.query.isPending || creditCards.query.isPending || categories.query.isPending,
     isError: accounts.query.isError || creditCards.query.isError || categories.query.isError,
   };

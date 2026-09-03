@@ -1,5 +1,6 @@
 import type {
   DashboardQuery,
+  ListFixedTransactionsQuery,
   ListOccurrencesQuery,
   ListTransactionsQuery,
   OccurrenceStatus,
@@ -18,7 +19,7 @@ import type {
 
 export type SessionKey = string;
 
-const stable = <T extends Record<string, unknown>>(filters: T): Record<string, unknown> =>
+const stable = <T extends object>(filters: T): Record<string, unknown> =>
   Object.fromEntries(
     Object.entries(filters)
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -52,10 +53,8 @@ export const queryKeys = {
 
   categories: {
     all: (s: SessionKey) => [...scope(s), 'categories'] as const,
-    list: (
-      s: SessionKey,
-      filters: { page?: number; limit?: number; includeArchived?: boolean; type?: string } = {},
-    ) => [...scope(s), 'categories', 'list', stable(filters)] as const,
+    list: (s: SessionKey, filters: { page?: number; limit?: number; includeArchived?: boolean; type?: string } = {}) =>
+      [...scope(s), 'categories', 'list', stable(filters)] as const,
     detail: (s: SessionKey, id: string) => [...scope(s), 'categories', 'detail', id] as const,
   },
 
@@ -74,7 +73,7 @@ export const queryKeys = {
 
   fixedTransactions: {
     all: (s: SessionKey) => [...scope(s), 'fixed-transactions'] as const,
-    list: (s: SessionKey, filters: { page?: number; limit?: number; includeArchived?: boolean } = {}) =>
+    list: (s: SessionKey, filters: ListFixedTransactionsQuery = {}) =>
       [...scope(s), 'fixed-transactions', 'list', stable(filters)] as const,
     detail: (s: SessionKey, id: string) => [...scope(s), 'fixed-transactions', 'detail', id] as const,
     occurrences: (s: SessionKey, filters: ListOccurrencesQuery & { status?: OccurrenceStatus } = {}) =>

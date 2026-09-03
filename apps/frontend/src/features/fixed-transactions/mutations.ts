@@ -130,11 +130,7 @@ export interface ConfirmOccurrenceVariables {
  * shows the backend message, and the invalidation below pulls the true state
  * back down.
  */
-export function useConfirmOccurrence(): UseMutationResult<
-  OccurrenceWithTemplate,
-  Error,
-  ConfirmOccurrenceVariables
-> {
+export function useConfirmOccurrence(): UseMutationResult<OccurrenceWithTemplate, Error, ConfirmOccurrenceVariables> {
   const invalidate = useInvalidateAfterOccurrence();
   const toast = useToast();
 

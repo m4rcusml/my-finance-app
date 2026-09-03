@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { ForbiddenException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { CookieOptions, Request, Response } from 'express';
@@ -8,6 +8,7 @@ import {
   CSRF_COOKIE_NAME,
   CSRF_COOKIE_PATH,
   CSRF_HEADER_NAME,
+  CSRF_TOKEN_BYTES,
   REFRESH_COOKIE_NAME,
 } from './constants';
 
@@ -30,9 +31,19 @@ export function refreshCookieOptions(config: TypedConfig): CookieOptions {
 }
 
 export function csrfCookieOptions(config: TypedConfig): CookieOptions {
-  // Not HttpOnly by design: the SPA has to read it to echo it in the header.
-  // That is safe — knowing the value is useless without a same-origin context.
-  return { ...baseCookieOptions(config), httpOnly: false, path: CSRF_COOKIE_PATH };
+  // The SPA obtains the matching value from GET /auth/csrf. Keeping the cookie
+  // HttpOnly prevents application code from treating document.cookie as a
+  // cross-host session API (which does not work in split-domain deployments).
+  return { ...baseCookieOptions(config), httpOnly: true, path: CSRF_COOKIE_PATH };
+}
+
+export function generateCsrfToken(): string {
+  return randomBytes(CSRF_TOKEN_BYTES).toString('base64url');
+}
+
+export function setCsrfCookie(res: Response, config: TypedConfig, csrfToken: string): void {
+  const maxAge = config.get('REFRESH_TOKEN_TTL_SECONDS', { infer: true }) * 1000;
+  res.cookie(CSRF_COOKIE_NAME, csrfToken, { ...csrfCookieOptions(config), maxAge });
 }
 
 /**
@@ -46,7 +57,7 @@ export function setSessionCookies(
 ): void {
   const maxAge = config.get('REFRESH_TOKEN_TTL_SECONDS', { infer: true }) * 1000;
   res.cookie(REFRESH_COOKIE_NAME, session.refreshToken, { ...refreshCookieOptions(config), maxAge });
-  res.cookie(CSRF_COOKIE_NAME, session.csrfToken, { ...csrfCookieOptions(config), maxAge });
+  setCsrfCookie(res, config, session.csrfToken);
 }
 
 /**

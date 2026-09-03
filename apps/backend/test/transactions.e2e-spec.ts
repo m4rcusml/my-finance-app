@@ -4,13 +4,14 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
 describe('TransactionsController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let authToken: string;
 
   const mockUser = {
@@ -18,6 +19,7 @@ describe('TransactionsController (e2e)', () => {
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -39,40 +41,13 @@ describe('TransactionsController (e2e)', () => {
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        account: {
-          findUnique: jest.fn(),
-          findMany: jest.fn(),
-        },
-        creditCard: {
-          findUnique: jest.fn(),
-          findMany: jest.fn(),
-        },
-        category: {
-          findUnique: jest.fn(),
-        },
-        transaction: {
-          create: jest.fn(),
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          update: jest.fn(),
-          delete: jest.fn(),
-          count: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
       .compile();
-
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -85,7 +60,7 @@ describe('TransactionsController (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'test@example.com', password: 'password123' });
 
-    authToken = loginResponse.body.access_token;
+    authToken = loginResponse.body.accessToken;
   });
 
   afterEach(async () => {
@@ -98,6 +73,7 @@ describe('TransactionsController (e2e)', () => {
       prisma.account.findUnique.mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440001',
         userId: 'user-1',
+        isActive: true,
         transactions: [],
       } as any);
       prisma.transaction.create.mockResolvedValue(baseTransaction as any);
@@ -115,12 +91,16 @@ describe('TransactionsController (e2e)', () => {
         .expect(201);
       expect(response.body).toHaveProperty('id');
       expect(response.body.accountId).toBe('550e8400-e29b-41d4-a716-446655440001');
+      expect(response.body).not.toHaveProperty('account');
+      expect(response.body).not.toHaveProperty('creditCard');
+      expect(response.body).not.toHaveProperty('category');
     });
 
     it('should create a transaction linked to a credit card', async () => {
       prisma.creditCard.findUnique.mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440002',
         userId: 'user-1',
+        isActive: true,
         transactions: [],
       } as any);
       prisma.transaction.create.mockResolvedValue({
@@ -266,9 +246,10 @@ describe('TransactionsController (e2e)', () => {
         .expect(200);
 
       expect(response.body.id).toBe('550e8400-e29b-41d4-a716-446655440000');
+      expect(response.body).not.toHaveProperty('account');
     });
 
-    it('should return 403 for transaction owned by another user', async () => {
+    it('should hide a transaction owned by another user with 404', async () => {
       prisma.transaction.findUnique.mockResolvedValue({
         ...baseTransaction,
         userId: 'other-user',
@@ -277,7 +258,7 @@ describe('TransactionsController (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/v1/transactions/tx-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -296,6 +277,7 @@ describe('TransactionsController (e2e)', () => {
         .expect(200);
 
       expect(response.body.description).toBe('Updated');
+      expect(response.body).not.toHaveProperty('category');
     });
   });
 
@@ -313,14 +295,13 @@ describe('TransactionsController (e2e)', () => {
 
   describe('GET /api/v1/transactions/summary', () => {
     it('should return total income, expense and net for the period', async () => {
-      prisma.transaction.findMany.mockResolvedValue([
-        { ...baseTransaction, type: 'income', value: 5000 },
-        { ...baseTransaction, type: 'expense', value: 2000 },
-        { ...baseTransaction, type: 'expense', value: 1500 },
+      prisma.transaction.groupBy.mockResolvedValue([
+        { type: 'income', _sum: { value: 5000 }, _count: { _all: 1 } },
+        { type: 'expense', _sum: { value: 3500 }, _count: { _all: 2 } },
       ] as any);
 
       const response = await request(app.getHttpServer())
-        .get('/api/v1/transactions/summary?fromDate=2026-04-01&toDate=2026-04-30')
+        .get('/api/v1/transactions/summary?from=2026-04-01&to=2026-04-30')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -330,19 +311,16 @@ describe('TransactionsController (e2e)', () => {
     });
 
     it('should return 401 without token', async () => {
-      await request(app.getHttpServer())
-        .get('/api/v1/transactions/summary?fromDate=2026-04-01&toDate=2026-04-30')
-        .expect(401);
+      await request(app.getHttpServer()).get('/api/v1/transactions/summary?from=2026-04-01&to=2026-04-30').expect(401);
     });
   });
 
   describe('GET /api/v1/transactions/projection', () => {
     it('should return projected expense based on last 3 months average', async () => {
-      prisma.transaction.findMany.mockResolvedValue([
-        { ...baseTransaction, type: 'expense', value: 3000, date: new Date('2026-01-15') },
-        { ...baseTransaction, type: 'expense', value: 3000, date: new Date('2026-02-15') },
-        { ...baseTransaction, type: 'expense', value: 3000, date: new Date('2026-03-15') },
-        { ...baseTransaction, type: 'expense', value: 3000, date: new Date('2026-04-15') },
+      prisma.transaction.groupBy.mockResolvedValue([
+        { date: new Date('2026-06-15'), type: 'expense', _sum: { value: 3000 } },
+        { date: new Date('2026-07-15'), type: 'expense', _sum: { value: 3000 } },
+        { date: new Date('2026-08-15'), type: 'expense', _sum: { value: 3000 } },
       ] as any);
 
       const response = await request(app.getHttpServer())
@@ -350,8 +328,8 @@ describe('TransactionsController (e2e)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('projectedExpense');
-      expect(response.body.projectedExpense).toBe(3000);
+      expect(response.body).toHaveProperty('projectedMonthlyExpense');
+      expect(response.body.projectedMonthlyExpense).toBe(3000);
     });
 
     it('should return 401 without token', async () => {

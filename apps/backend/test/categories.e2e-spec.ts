@@ -4,13 +4,14 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
 describe('CategoriesController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let authToken: string;
 
   const mockUser = {
@@ -18,6 +19,7 @@ describe('CategoriesController (e2e)', () => {
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -27,42 +29,20 @@ describe('CategoriesController (e2e)', () => {
     userId: 'user-1',
     name: 'Food',
     type: 'expense',
+    isActive: true,
+    archivedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        category: {
-          create: jest.fn(),
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          update: jest.fn(),
-          delete: jest.fn(),
-          count: jest.fn(),
-        },
-        transaction: {
-          findMany: jest.fn(),
-          count: jest.fn(),
-        },
-        fixedTransaction: {
-          findMany: jest.fn(),
-          count: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
       .compile();
-
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -75,7 +55,7 @@ describe('CategoriesController (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'test@example.com', password: 'password123' });
 
-    authToken = loginResponse.body.access_token;
+    authToken = loginResponse.body.accessToken;
   });
 
   afterEach(async () => {
@@ -159,7 +139,7 @@ describe('CategoriesController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for category owned by another user', async () => {
+    it('should hide a category owned by another user with 404', async () => {
       prisma.category.findUnique.mockResolvedValue({
         ...baseCategory,
         userId: 'other-user',
@@ -168,7 +148,7 @@ describe('CategoriesController (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/v1/categories/category-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -200,17 +180,24 @@ describe('CategoriesController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/api/v1/categories/category-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(204);
+        .expect(200);
     });
 
-    it('should return 409 when category has linked transactions', async () => {
+    it('should archive when category has linked transactions', async () => {
       prisma.category.findUnique.mockResolvedValue(baseCategory as any);
       prisma.transaction.count.mockResolvedValue(1);
+      prisma.category.update.mockResolvedValue({
+        ...baseCategory,
+        isActive: false,
+        archivedAt: new Date(),
+      } as any);
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .delete('/api/v1/categories/category-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(409);
+        .expect(200);
+
+      expect(response.body.isActive).toBe(false);
     });
 
     it('should return 404 for non-existent category', async () => {

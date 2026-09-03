@@ -1,5 +1,5 @@
-import type { AuthSessionResponse, UserProfile } from '@finance/contracts';
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import type { AuthSessionResponse, CsrfTokenResponse, UserProfile } from '@finance/contracts';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   ApiBearerAuth,
@@ -23,11 +23,18 @@ import { Public } from '../decorators/public.decorator';
 import { CurrentUser, type UserPayload } from '../decorators/user.decorator';
 import { UserProfileDto } from '../users/users.dto';
 import { UsersService } from '../users/users.service';
-import { AuthSessionResponseDto, LoginDto, RegisterDto } from './auth.dto';
+import { AuthSessionResponseDto, CsrfTokenResponseDto, LoginDto, RegisterDto } from './auth.dto';
 import type { IssuedSession } from './auth.service';
 import { AuthService } from './auth.service';
 import { AUTH_RATE_LIMIT } from './constants';
-import { assertDoubleSubmitCsrf, clearSessionCookies, readRefreshCookie, setSessionCookies } from './cookies';
+import {
+  assertDoubleSubmitCsrf,
+  clearSessionCookies,
+  generateCsrfToken,
+  readRefreshCookie,
+  setCsrfCookie,
+  setSessionCookies,
+} from './cookies';
 
 /**
  * Session endpoints. The full design (why the refresh token is opaque, why it
@@ -88,6 +95,28 @@ export class AuthController {
   }
 
   @Public()
+  @Get('csrf')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Prepara a proteção CSRF para renovar a sessão.',
+    description: [
+      'Define um cookie HttpOnly no domínio da API e devolve o valor pareado no',
+      'corpo. Envie esse valor em `X-CSRF-Token` no próximo POST /auth/refresh.',
+      'A resposta permite usar frontend e API em hosts diferentes sem ler',
+      '`document.cookie`.',
+    ].join(' '),
+  })
+  @ApiOkResponse({ type: CsrfTokenResponseDto })
+  csrf(@Res({ passthrough: true }) res: Response): CsrfTokenResponse {
+    const csrfToken = generateCsrfToken();
+    // This body is a per-browser secret paired with the cookie below. A shared
+    // cache must never replay it alongside a different client's Set-Cookie.
+    res.setHeader('Cache-Control', 'no-store');
+    setCsrfCookie(res, this.config, csrfToken);
+    return { csrfToken };
+  }
+
+  @Public()
   @Throttle({ global: { limit: AUTH_RATE_LIMIT.limit, ttl: AUTH_RATE_LIMIT.ttl } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -101,8 +130,8 @@ export class AuthController {
     summary: 'Rotaciona a sessão a partir do cookie `refresh_token`.',
     description: [
       'Única rota autenticada por cookie, e por isso a única que exige o token',
-      'CSRF. O refresh apresentado é apagado e um novo é emitido; apresentar um',
-      'token já rotacionado revoga todas as sessões do usuário.',
+      'CSRF. O refresh apresentado vira um tombstone ligado a um único sucessor.',
+      'Replay conhecido revoga somente aquela família de sessão.',
     ].join(' '),
   })
   @ApiOkResponse({ type: AuthSessionResponseDto })
@@ -114,8 +143,11 @@ export class AuthController {
     try {
       return this.respondWithSession(res, await this.auth.refresh(readRefreshCookie(req)));
     } catch (error) {
-      // The cookie is dead either way — do not leave the browser retrying it.
-      clearSessionCookies(res, this.config);
+      // A 409 is the expected loser of a concurrent refresh. It must not emit
+      // Set-Cookie tombstones that could overwrite the winning response.
+      // Likewise, infrastructure failures keep the cookie retryable. Only a
+      // terminal 401 proves this browser's cookie is unusable.
+      if (error instanceof UnauthorizedException) clearSessionCookies(res, this.config);
       throw error;
     }
   }
@@ -127,7 +159,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Encerra a sessão atual.',
     description: [
-      'Apaga a linha do refresh apresentado (apenas do próprio usuário) e limpa',
+      'Revoga o refresh apresentado (apenas do próprio usuário) e limpa',
       'os dois cookies. Idempotente: chamar sem cookie, ou duas vezes, também',
       'devolve 204. As demais sessões do usuário continuam válidas.',
     ].join(' '),

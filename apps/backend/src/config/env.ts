@@ -1,14 +1,5 @@
 import { plainToInstance, Transform } from 'class-transformer';
-import {
-  IsBoolean,
-  IsInt,
-  IsNotEmpty,
-  IsString,
-  Max,
-  Min,
-  MinLength,
-  validateSync,
-} from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
 
 /**
  * Every environment variable the server reads, validated once at boot.
@@ -43,13 +34,6 @@ export class EnvConfig {
   })
   JWT_SECRET!: string;
 
-  /** Separate key so a leaked access-token secret cannot mint refresh tokens. */
-  @IsString()
-  @MinLength(32, {
-    message: 'JWT_REFRESH_SECRET must be at least 32 characters and different from JWT_SECRET.',
-  })
-  JWT_REFRESH_SECRET!: string;
-
   /** Access-token lifetime in seconds. Short by design; the refresh cookie carries the session. */
   @Transform(({ value }) => Number(value ?? 900))
   @IsInt()
@@ -78,7 +62,7 @@ export class EnvConfig {
   COOKIE_DOMAIN = '';
 
   /** Send `Secure` on cookies. Must be true behind HTTPS; forced true in production. */
-  @Transform(({ value }) => value === undefined || value === '' ? undefined : value === 'true' || value === true)
+  @Transform(({ value }) => (value === undefined || value === '' ? undefined : value === 'true' || value === true))
   @IsBoolean()
   COOKIE_SECURE = false;
 
@@ -141,9 +125,6 @@ export function validateEnv(raw: Record<string, unknown>): EnvConfig {
   }
   if (!['lax', 'strict', 'none'].includes(config.COOKIE_SAMESITE)) {
     problems.push(`  - COOKIE_SAMESITE: must be lax, strict or none`);
-  }
-  if (config.JWT_SECRET && config.JWT_SECRET === config.JWT_REFRESH_SECRET) {
-    problems.push(`  - JWT_REFRESH_SECRET: must differ from JWT_SECRET`);
   }
   if (config.DATABASE_URL && !/^postgres(ql)?:\/\//.test(config.DATABASE_URL)) {
     problems.push(`  - DATABASE_URL: must be a postgresql:// connection string`);

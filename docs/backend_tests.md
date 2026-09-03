@@ -1,208 +1,240 @@
-# Backend API Verification Tests (Manual Execution)
+# Estratégia de testes
 
-This document details the manual verification steps executed against the local backend (`http://localhost:3000`). All commands were executed using `curl` on Windows (PowerShell), ensuring strict JSON parsing and authentication flows.
+Este documento descreve o que cada suíte deve provar e como executá-la. Ele não registra resultado, contagem de testes aprovados ou percentual de cobertura: essas informações pertencem à execução da CI ou ao relatório da release.
 
-**Date:** 2025-12-10
-**User Context:** `test_verification_05@example.com`
+## Pré-requisitos
 
----
-
-## 1. Authentication Flow
-
-### 1.1 User Registration
-**Goal:** Create a new user to ensure a clean test state.
-
-**Command:**
-```powershell
-curl.exe -X POST http://localhost:3000/api/v1/auth/register `
-  -H "Content-Type: application/json" `
-  -d '{\"email\": \"test_verification_05@example.com\", \"password\": \"password123\"}'
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+pnpm db:generate
 ```
 
-**Response Payload:**
-```json
-{
-  "id": "8295c7e7-1f3d-4526-8c8c-c476a23c50ec",
-  "email": "test_verification_05@example.com",
-  "name": null,
-  "createdAt": "2025-12-11T00:12:47.483Z",
-  "updatedAt": "2025-12-11T00:12:47.483Z"
-}
-```
-**Status:** ✅ 201 Created
+Use Node.js 22 e pnpm 10. O cliente Prisma é gerado, não versionado.
 
-### 1.2 User Login
-**Goal:** Authenticate and retrieve the JWT access token for subsequent requests.
+## Camadas
 
-**Command:**
-```powershell
-curl.exe -X POST http://localhost:3000/api/v1/auth/login `
-  -H "Content-Type: application/json" `
-  -d '{\"email\": \"test_verification_05@example.com\", \"password\": \"password123\"}'
+### Unitários do backend
+
+Comando:
+
+```bash
+pnpm --filter backend test
 ```
 
-**Response Payload:**
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-**Status:** ✅ 200 OK
+Os specs co-localizados em `apps/backend/src` cobrem services e regras sem servidor real, incluindo:
 
----
+- auth e cookies;
+- usuários;
+- contas, cartões, categorias e transações;
+- dashboard;
+- modelos e ocorrências recorrentes;
+- investimentos, metas e ativos;
+- importação, parsers e valores;
+- backup;
+- health;
+- job de geração.
 
-## 2. Resource Setup (Authenticated)
+Mocks precisam reproduzir a semântica usada pelo código, especialmente `PrismaService.$transaction`, claims condicionais e respostas paginadas. Um mock que sempre retorna sucesso não prova concorrência.
 
-**Note:** All subsequent requests included the header: `Authorization: Bearer <TOKEN>`
+### HTTP do backend com Prisma mockado
 
-### 2.1 Create Account
-**Goal:** Create a checking account ("Main Bank Manual") with an initial balance of 1000.
+Comando:
 
-**Command:**
-```powershell
-curl.exe -X POST http://localhost:3000/api/v1/accounts `
-  -H "Authorization: Bearer ..." `
-  -H "Content-Type: application/json" `
-  -d '{\"name\": \"Main Bank Manual\", \"institution\": \"Bank X\", \"type\": \"CHECKING\", \"initialBalance\": 1000}'
+```bash
+pnpm test:e2e
 ```
 
-**Response Payload:**
-```json
-{
-  "id": "5c6b4c23-364c-4d3e-9e39-743e2e8b99a4",
-  "userId": "8295c7e7-1f3d-4526-8c8c-c476a23c50ec",
-  "name": "Main Bank Manual",
-  "institution": "Bank X",
-  "type": "CHECKING",
-  "initialBalance": 1000,
-  "isActive": true,
-  "createdAt": "2025-12-11T00:14:49.922Z",
-  "updatedAt": "2025-12-11T00:14:49.922Z"
-}
-```
-**Status:** ✅ 201 Created
+Configuração: `apps/backend/test/jest-e2e.json`.
 
-### 2.2 Create Category
-**Goal:** Create an income category ("Salary Manual").
+Apesar do nome histórico `e2e`, esta suíte monta a aplicação NestJS e substitui o Prisma. Ela é adequada para:
 
-**Command:**
-```powershell
-curl.exe -X POST http://localhost:3000/api/v1/categories `
-  -H "Authorization: Bearer ..." `
-  -H "Content-Type: application/json" `
-  -d '{\"name\": \"Salary Manual\", \"type\": \"income\"}'
+- método, rota e status;
+- guard de autenticação;
+- DTO, transformação e validação;
+- envelope de erro;
+- serialização;
+- headers e cookies;
+- contrato de paginação.
+
+Ela não prova migration, constraint, SQL, transação real ou isolamento do PostgreSQL.
+
+### Integração PostgreSQL
+
+Comando:
+
+```bash
+pnpm test:integration
 ```
 
-**Response Payload:**
-```json
-{
-  "id": "50efb2ce-63b8-403c-97dd-a4daa1780ec6",
-  "userId": "8295c7e7-1f3d-4526-8c8c-c476a23c50ec",
-  "name": "Salary Manual",
-  "type": "income",
-  "createdAt": "2025-12-11T00:15:51.789Z",
-  "updatedAt": "2025-12-11T00:15:51.789Z"
-}
-```
-**Status:** ✅ 201 Created
+Configuração: `apps/backend/test/jest-integration.json`.
 
----
+Os specs em `apps/backend/test/integration` usam banco real e cobrem os casos que dependem do PostgreSQL:
 
-## 3. Transaction Verification
+- proteção de URL destrutiva;
+- sessão opaca, CSRF, rotação, replay e concorrência;
+- isolamento entre usuários;
+- paginação e invariantes do ledger;
+- datas civis, ciclos e concorrência de recorrência;
+- importação e backup atômicos.
 
-### 3.1 Create Income Transaction
-**Goal:** Record a salary deposit of 5000 linked to the created account and category.
+Sem `TEST_DATABASE_URL`, o harness inicia PostgreSQL 16 descartável via `embedded-postgres`. Com uma URL externa:
 
-**Command:**
-```powershell
-curl.exe -X POST http://localhost:3000/api/v1/transactions `
-  -H "Authorization: Bearer ..." `
-  -H "Content-Type: application/json" `
-  -d '{\"type\": \"income\", \"value\": 5000, \"date\": \"2025-12-10T10:00:00Z\", \"accountId\": \"5c6b4c23-364c-4d3e-9e39-743e2e8b99a4\", \"categoryId\": \"50efb2ce-63b8-403c-97dd-a4daa1780ec6\", \"description\": \"Manual Salary\"}'
+```bash
+TEST_DATABASE_URL=postgresql://finance:finance@localhost:5432/finance_test pnpm test:integration
 ```
 
-**Response Payload:**
-```json
-{
-  "id": "011f37cf-712f-4d28-8776-e352ead3902a",
-  "userId": "8295c7e7-1f3d-4526-8c8c-c476a23c50ec",
-  "type": "income",
-  "value": 5000,
-  "date": "2025-12-10T10:00:00.000Z",
-  "description": "Manual Salary",
-  "accountId": "5c6b4c23-364c-4d3e-9e39-743e2e8b99a4",
-  "categoryId": "50efb2ce-63b8-403c-97dd-a4daa1780ec6",
-  ...
-}
-```
-**Status:** ✅ 201 Created
+O nome precisa terminar em `_test`, `_ci` ou `_e2e`. `ALLOW_DESTRUCTIVE_TEST_DB=true` desativa o bloqueio e só deve ser usado após confirmação independente do alvo.
 
-### 3.2 Create Fixed Transaction
-**Goal:** Schedule a fixed recurring expense ("Manual Netflix").
+A suíte pode truncar tabelas. Nunca aponte para desenvolvimento compartilhado ou produção.
 
-**Command:**
-```powershell
-curl.exe -X POST http://localhost:3000/api/v1/fixed-transactions `
-  -H "Authorization: Bearer ..." `
-  -H "Content-Type: application/json" `
-  -d '{\"type\": \"expense\", \"value\": 50, \"referenceDay\": 5, \"marginDays\": 2, \"accountId\": \"5c6b4c23-364c-4d3e-9e39-743e2e8b99a4\", \"categoryId\": \"50efb2ce-63b8-403c-97dd-a4daa1780ec6\", \"description\": \"Manual Netflix\"}'
+### Migrations
+
+Banco vazio:
+
+```bash
+DATABASE_URL=postgresql://finance:finance@localhost:5432/finance_empty_test pnpm db:migrate
 ```
 
-**Response Payload:**
-```json
-{
-  "id": "6fa1f133-20a4-476f-8930-bf02b17d71d5",
-  "userId": "8295c7e7-1f3d-4526-8c8c-c476a23c50ec",
-  "type": "expense",
-  "value": 50,
-  "description": "Manual Netflix",
-  "isActive": true,
-  ...
-}
-```
-**Status:** ✅ 201 Created
+Upgrade pré-V1 com dados inconsistentes preparados pelo fixture:
 
----
-
-## 4. Final Validation
-
-### 4.1 Dashboard Overview
-**Goal:** Verify that the account balance correctly aggregates the initial balance and the income transaction.
-
-**Command:**
-```powershell
-curl.exe -X GET http://localhost:3000/api/v1/dashboard `
-  -H "Authorization: Bearer ..."
+```bash
+pnpm test:migration:upgrade
 ```
 
-**Response Payload (Snippet):**
-```json
-{
-  "period": { ... },
-  "totals": {
-    "totalBalance": 6000,
-    "currentMonth": {
-      "income": 5000,
-      "expense": 0,
-      "net": 5000
-    }
-  },
-  "accounts": [
-    {
-      "id": "5c6b4c23-364c-4d3e-9e39-743e2e8b99a4",
-      "name": "Main Bank Manual",
-      "initialBalance": 1000,
-      "balance": 6000 
-    }
-  ]
-}
+O comando cria PostgreSQL 16 descartável por padrão. Para um serviço já existente,
+use `MIGRATION_TEST_DATABASE_URL` com banco terminado em `_test`, `_ci` ou `_e2e`.
+
+Ambos os bancos devem ser descartáveis. Além de o comando sair com zero, confira que o schema aplicado corresponde a `prisma/schema.prisma` com `prisma migrate diff`.
+
+### Frontend
+
+Comando:
+
+```bash
+pnpm --filter frontend test
 ```
-**Calculation Check:**
-*   **Expected:** Initial (1000) + Income (5000) - Expense (0) = **6000**
-*   **Actual:** 6000
-*   **Result:** ✅ MATCH
 
----
+Jest + Testing Library cobre atualmente áreas críticas em:
 
-## Conclusion
-The backend API is functioning 100% as expected. Manual verification via `curl` confirmed that authentication, database writes (creates), and logic-based reads (dashboard calculations) are correct.
+- filtros do dashboard;
+- helpers e formulário de transação;
+- criação/isolamento do QueryClient;
+- bootstrap, refresh e limpeza de sessão;
+- diálogo;
+- paginação;
+- loading/empty/error/retry de queries.
+
+Novos componentes devem ser testados pelo comportamento observável e nome acessível, não por estrutura interna.
+
+### Browser
+
+Comando:
+
+```bash
+pnpm test:browser
+```
+
+Configuração: `playwright.config.ts`; testes em `e2e/`.
+
+O Playwright inicia:
+
+1. banco descartável e migrations por `scripts/e2e-database.mjs`;
+2. backend na porta 3001;
+3. frontend na porta 3000.
+
+As jornadas cobrem cadastro/login, ledger principal, dashboard, recorrências, importação/backup, troca de usuário, navegação móvel, tamanhos de viewport e teclado.
+
+Por padrão usa Chromium, locale pt-BR, timezone `America/Sao_Paulo`, um worker e artefatos somente em falha. Em CI há retry limitado. `playwright-report` e `test-results` não são versionados.
+
+## Gates da V1
+
+Execute na raiz e preserve a saída no relatório de release:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm db:generate
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:e2e
+pnpm test:integration
+pnpm build
+pnpm test:smoke
+pnpm test:browser
+pnpm audit --audit-level high
+```
+
+`pnpm verify:all` agrega essa cadeia completa e `pnpm verify` é seu alias. Instalação congelada e geração do Prisma continuam preparações explícitas anteriores ao agregador.
+
+## Build e smoke
+
+O typecheck não garante que o Nest emitiu o arquivo correto. Verifique duas builds consecutivas:
+
+```bash
+pnpm build:backend
+pnpm build:backend
+```
+
+Confirme `apps/backend/dist/main.js` e execute o gate autocontido:
+
+```bash
+pnpm test:smoke
+```
+
+Ele usa PostgreSQL descartável, aplica migrations, inicia exatamente o artefato em `NODE_ENV=production` com cookie seguro e chama `scripts/smoke.mjs`. Para diagnóstico contra um backend que você já iniciou, execute:
+
+```bash
+node scripts/smoke.mjs --base http://localhost:3001
+```
+
+O smoke faz chamadas reais de health, auth, paginação, CRUD mínimo, XOR, datas, dashboard, erro e isolamento. Ele cria usuários temporários e tenta removê-los; use `--keep` no script manual apenas para investigação.
+
+## Docker
+
+Quando Docker estiver disponível:
+
+```bash
+docker compose --profile full up --build
+```
+
+Critérios manuais complementares:
+
+- serviços ficam healthy;
+- frontend abre e usa a API;
+- `/health/ready` devolve 200;
+- ao interromper PostgreSQL, readiness passa a 503 e o backend não se declara pronto;
+- ao restaurar o banco, o healthcheck se recupera;
+- logs não contêm secrets ou cookies.
+
+Desligue sem remover volumes se quiser preservar o banco local:
+
+```bash
+docker compose --profile full down
+```
+
+## CI
+
+`.github/workflows/ci.yml` separa:
+
+- lint, formato e tipos;
+- unitários, HTTP e cobertura;
+- migrations vazia/upgrade e integração;
+- build e smoke do artefato;
+- Playwright;
+- auditoria de dependências.
+
+Não descreva a V1 como aprovada apenas porque o YAML existe. A evidência é uma execução verde no commit candidato.
+
+## Princípios para novos testes
+
+- fixe datas e timezone quando o resultado depende do calendário;
+- cubra 0, 1, 20, 21 e mais de 100 itens em paginação;
+- use dois usuários para toda regra de ownership;
+- teste o estado após falha para provar rollback;
+- dispare operações simultâneas para claims e idempotência;
+- não substitua PostgreSQL por SQLite;
+- não use banco sem sufixo descartável;
+- não faça snapshot de UUID, timestamp ou texto irrelevante;
+- mantenha fixtures bancários anonimizados.

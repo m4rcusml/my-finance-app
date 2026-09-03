@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import { API_PREFIX } from '@finance/contracts';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -6,7 +7,6 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import { writeFileSync } from 'node:fs';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/http-exception.filter';
 import { LoggingInterceptor } from './common/logging.interceptor';

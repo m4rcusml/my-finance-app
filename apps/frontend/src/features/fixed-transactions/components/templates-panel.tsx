@@ -43,7 +43,7 @@ export function TemplatesPanel({ lookups }: { lookups: SourceLookups }) {
   const [archiving, setArchiving] = useState<FixedTransaction | null>(null);
   const [restoring, setRestoring] = useState<FixedTransaction | null>(null);
 
-  const query = useFixedTransactionsQuery({ page, limit, includeArchived });
+  const query = useFixedTransactionsQuery({ page, limit, isActive: includeArchived ? undefined : true });
   const mutations = useFixedTransactionMutations();
 
   function openCreate() {
@@ -68,8 +68,8 @@ export function TemplatesPanel({ lookups }: { lookups: SourceLookups }) {
   return (
     <div className="flex flex-col gap-4">
       <Callout>
-        Editar ou arquivar um modelo afeta apenas as ocorrências futuras. O histórico já confirmado, e os
-        lançamentos criados a partir dele, permanecem intactos.
+        Editar ou arquivar um modelo afeta apenas as ocorrências futuras. O histórico já confirmado, e os lançamentos
+        criados a partir dele, permanecem intactos.
       </Callout>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -107,8 +107,8 @@ export function TemplatesPanel({ lookups }: { lookups: SourceLookups }) {
             <TableScroller label="Modelos recorrentes">
               <table className="w-full min-w-[56rem] border-collapse text-sm">
                 <caption className="sr-only">
-                  Modelos de transações recorrentes, com tipo, valor, dia de referência, margem, categoria, origem
-                  e status.
+                  Modelos de transações recorrentes, com tipo, valor, dia de referência, margem, categoria, origem e
+                  status.
                 </caption>
                 <thead>
                   <tr className="border-b border-border bg-layer01 text-left">
@@ -129,11 +129,7 @@ export function TemplatesPanel({ lookups }: { lookups: SourceLookups }) {
                         {template.description?.trim() || 'Sem descrição'}
                       </th>
                       <td className="px-3 py-3">
-                        <span
-                          className={
-                            template.type === 'income' ? 'text-success-text' : 'text-danger-text'
-                          }
-                        >
+                        <span className={template.type === 'income' ? 'text-success-text' : 'text-danger-text'}>
                           {TRANSACTION_TYPE_LABELS[template.type] ?? template.type}
                         </span>
                       </td>

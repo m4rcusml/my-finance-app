@@ -25,9 +25,7 @@ function useAccountMutationDeps() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts.all(s) }),
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all(s) }),
-      ...(alsoTransactions
-        ? [queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all(s) })]
-        : []),
+      ...(alsoTransactions ? [queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all(s) })] : []),
     ]);
   };
 

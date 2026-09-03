@@ -29,12 +29,10 @@ export function setRefreshHandler(handler: RefreshHandler | null) {
   refreshHandler = handler;
 }
 
-export type QueryValue = string | number | boolean | null | undefined | (string | number)[];
-
 export interface RequestOptions {
   method?: HttpMethod;
   body?: unknown;
-  query?: Record<string, QueryValue>;
+  query?: object;
   /** Attach the bearer token. Defaults to true — almost everything is private. */
   auth?: boolean;
   headers?: Record<string, string>;
@@ -49,7 +47,7 @@ export interface RequestOptions {
   skipAuthRedirect?: boolean;
 }
 
-function buildQueryString(query?: Record<string, QueryValue>): string {
+function buildQueryString(query?: object): string {
   if (!query) return '';
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
@@ -116,7 +114,7 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
 
   // A 401 on a normal call means the short access token expired: try one silent
   // refresh, then replay. Only when that fails do we tear the session down.
-  if (res.status === 401 && useAuth && !opts._retried && !opts.skipAuthRedirect && refreshHandler) {
+  if (res.status === 401 && useAuth && !opts._retried && refreshHandler) {
     const refreshed = await refreshHandler();
     if (refreshed) {
       return request<T>(path, { ...opts, _retried: true });
@@ -157,22 +155,48 @@ export async function upload<T>(
   opts: Omit<RequestOptions, 'body' | 'method'> = {},
 ): Promise<T> {
   const url = `${getApiBaseUrl()}${path}${buildQueryString(opts.query)}`;
+  const useAuth = opts.auth ?? true;
   const headers: Record<string, string> = { ...(opts.headers ?? {}) };
-  const token = tokenGetter();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (useAuth) {
+    const token = tokenGetter();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: formData,
-    signal: opts.signal,
-    credentials: 'include',
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+      signal: opts.signal,
+      credentials: 'include',
+    });
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === 'AbortError') throw cause;
+    throw new ApiError({
+      statusCode: 0,
+      code: 'network_error',
+      message: 'Não foi possível falar com o servidor. Verifique sua conexão e tente novamente.',
+      path,
+      cause,
+    });
+  }
 
-  if (res.ok) return (await parseJsonSafe(res)) as T;
+  if (res.ok) {
+    if (res.status === 204) return undefined as T;
+    return (await parseJsonSafe(res)) as T;
+  }
+
+  // Multipart requests participate in the exact same recovery path as JSON
+  // requests. FormData is reusable after fetch, so the preview can be replayed
+  // once after the access token is renewed without asking for the file again.
+  if (res.status === 401 && useAuth && !opts._retried && refreshHandler) {
+    const refreshed = await refreshHandler();
+    if (refreshed) return upload<T>(path, formData, { ...opts, _retried: true });
+  }
 
   const errBody = (await parseJsonSafe(res)) as ApiErrorResponse | undefined;
-  if (res.status === 401) await onUnauthorized();
+  if (res.status === 401 && !opts.skipAuthRedirect) await onUnauthorized();
   throw new ApiError({
     statusCode: errBody?.statusCode ?? res.status,
     code: errBody?.error ?? 'http_error',

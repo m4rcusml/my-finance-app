@@ -2,40 +2,40 @@
 
 @theme {
   /* Surfaces (dark theme) */
-  --color-layer00: #05051E;
-  --color-layer01: #14172F;
-  --color-layer02: #272B40;
-  --color-layer03: #363B54;
+  --color-layer00: #05051e;
+  --color-layer01: #14172f;
+  --color-layer02: #272b40;
+  --color-layer03: #363b54;
 
   /* Text */
-  --color-foreground: #FFFFFF;
-  --color-muted-foreground: #C0C2D6;
-  --color-placeholder: #9497B4;
+  --color-foreground: #ffffff;
+  --color-muted-foreground: #c0c2d6;
+  --color-placeholder: #9497b4;
 
   /* Brand */
-  --color-primary: #6747ED;
-  --color-muted-primary: #8970DD;
+  --color-primary: #6747ed;
+  --color-muted-primary: #8970dd;
 
   /* Status — solid fills, meant to carry white text */
   --color-green: #039155;
-  --color-red: #DE2D2D;
+  --color-red: #de2d2d;
   --color-success: #039155;
-  --color-danger: #DE2D2D;
-  --color-warning: #B45309;
+  --color-danger: #de2d2d;
+  --color-warning: #b45309;
 
   /*
    * Status — TEXT variants. The solid fills above sit at ~4.3:1 against
    * --color-layer00, just under the WCAG AA 4.5:1 floor for body text, so
    * coloured *text* uses these brighter tones instead (>= 7:1).
    */
-  --color-success-text: #34D399;
-  --color-danger-text: #FF7A7A;
-  --color-warning-text: #FBBF24;
+  --color-success-text: #34d399;
+  --color-danger-text: #ff7a7a;
+  --color-warning-text: #fbbf24;
 
   /* Borders and the modal scrim. `--color-background` used to be referenced but
      never defined, which is why the old overlay rendered fully transparent. */
-  --color-border: #2E3350;
-  --color-border-strong: #454B6B;
+  --color-border: #2e3350;
+  --color-border-strong: #454b6b;
   --color-scrim: rgba(5, 5, 30, 0.75);
 
   --font-sans: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;

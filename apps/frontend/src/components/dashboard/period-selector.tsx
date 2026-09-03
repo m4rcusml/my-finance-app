@@ -30,10 +30,7 @@ export function PeriodSelector({
   const isCustom = value.period === 'custom';
 
   return (
-    <section
-      aria-label="Período exibido"
-      className="rounded-2xl border border-border bg-layer01 p-4 sm:p-5"
-    >
+    <section aria-label="Período exibido" className="rounded-2xl border border-border bg-layer01 p-4 sm:p-5">
       <div className="flex flex-col gap-4">
         <fieldset className="min-w-0 border-0 p-0">
           <legend className="text-sm font-medium text-foreground">Período</legend>
@@ -48,9 +45,7 @@ export function PeriodSelector({
                   onChange={() => onChange({ ...value, period })}
                   className="peer absolute inset-0 size-full cursor-pointer opacity-0"
                 />
-                <span
-                  className="rounded-lg border border-border-strong bg-layer02 px-3 py-2 text-sm font-medium text-muted-foreground transition peer-checked:border-muted-primary peer-checked:bg-primary peer-checked:text-foreground peer-hover:bg-layer03 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-muted-primary"
-                >
+                <span className="rounded-lg border border-border-strong bg-layer02 px-3 py-2 text-sm font-medium text-muted-foreground transition peer-checked:border-muted-primary peer-checked:bg-primary peer-checked:text-foreground peer-hover:bg-layer03 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-muted-primary">
                   {PERIOD_LABELS[period]}
                 </span>
               </label>

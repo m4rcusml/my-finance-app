@@ -122,8 +122,6 @@ export function toOccurrenceWithTemplate(row: OccurrenceRowWithTemplate): Occurr
       description: row.fixedTransaction.description,
       referenceDay: row.fixedTransaction.referenceDay,
     },
-    category: row.category
-      ? { id: row.category.id, name: row.category.name, type: row.category.type }
-      : null,
+    category: row.category ? { id: row.category.id, name: row.category.name, type: row.category.type } : null,
   };
 }

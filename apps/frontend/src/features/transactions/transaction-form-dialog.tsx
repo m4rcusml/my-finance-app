@@ -42,10 +42,13 @@ interface FormState {
 
 type FieldErrors = Partial<Record<'value' | 'date' | 'accountId' | 'creditCardId', string>>;
 
-function initialState(transaction: TransactionWithRelations | null): FormState {
+function initialState(
+  transaction: TransactionWithRelations | null,
+  initialType: TransactionType = 'expense',
+): FormState {
   if (!transaction) {
     return {
-      type: 'expense',
+      type: initialType,
       value: '',
       date: todayCivil(),
       sourceKind: 'account',
@@ -71,12 +74,20 @@ function initialState(transaction: TransactionWithRelations | null): FormState {
 export interface TransactionFormDialogProps {
   /** `null` creates; a transaction edits it. */
   transaction: TransactionWithRelations | null;
+  /** Optional shortcut used by dashboard “Nova receita/despesa” actions. */
+  initialType?: TransactionType;
   onClose: () => void;
 }
 
-export function TransactionFormDialog({ transaction, onClose }: TransactionFormDialogProps) {
+export function TransactionFormDialog({ transaction, initialType = 'expense', onClose }: TransactionFormDialogProps) {
   const isEdit = transaction !== null;
-  const { accounts, creditCards, categories, isPending: referencesPending } = useTransactionReferences();
+  const {
+    accounts,
+    creditCards,
+    categories,
+    isPending: referencesPending,
+    isError: referencesError,
+  } = useTransactionReferences();
   const { create, update } = useTransactionMutations();
   const toast = useToast();
 
@@ -85,7 +96,7 @@ export function TransactionFormDialog({ transaction, onClose }: TransactionFormD
   const originHintId = `${baseId}-origin-hint`;
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [form, setForm] = useState<FormState>(() => initialState(transaction));
+  const [form, setForm] = useState<FormState>(() => initialState(transaction, initialType));
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitDetails, setSubmitDetails] = useState<string[]>([]);
@@ -183,13 +194,25 @@ export function TransactionFormDialog({ transaction, onClose }: TransactionFormD
           <ActionButton variant="secondary" onClick={onClose} disabled={pending}>
             Cancelar
           </ActionButton>
-          <ActionButton type="submit" form={formId} loading={pending} disabled={pending}>
+          <ActionButton
+            type="submit"
+            form={formId}
+            loading={pending}
+            disabled={pending || referencesPending || referencesError}
+          >
             {isEdit ? 'Salvar alterações' : 'Criar transação'}
           </ActionButton>
         </>
       }
     >
       <form ref={formRef} id={formId} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        {referencesError ? (
+          <div role="alert" className="rounded-lg border border-warning/60 bg-layer02 p-3 text-sm text-warning-text">
+            Não foi possível carregar todas as contas, cartões e categorias. Feche e tente novamente antes de enviar o
+            lançamento.
+          </div>
+        ) : null}
+
         {submitError ? (
           <div role="alert" className="rounded-lg border border-danger/60 bg-layer02 p-3">
             <p className="text-sm font-semibold text-danger-text">Não foi possível salvar</p>
@@ -255,10 +278,7 @@ export function TransactionFormDialog({ transaction, onClose }: TransactionFormD
             )}
           </Field>
 
-          <Field
-            label="Categoria"
-            hint="Opcional. Deixe em “Sem categoria” para classificar depois."
-          >
+          <Field label="Categoria" hint="Opcional. Deixe em “Sem categoria” para classificar depois.">
             {({ id, describedBy }) => (
               <Select
                 id={id}

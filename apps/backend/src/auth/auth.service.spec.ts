@@ -1,4 +1,4 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -7,8 +7,13 @@ import type { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import type { LoginDto, RegisterDto } from './auth.dto';
-import { AuthService, generateRefreshToken, parseRefreshToken } from './auth.service';
-import { CSRF_COOKIE_NAME, INVALID_CREDENTIALS_MESSAGE, INVALID_SESSION_MESSAGE } from './constants';
+import { AuthService, generateRefreshToken, hashRefreshToken } from './auth.service';
+import {
+  CSRF_COOKIE_NAME,
+  INVALID_CREDENTIALS_MESSAGE,
+  INVALID_SESSION_MESSAGE,
+  REFRESH_CONFLICT_MESSAGE,
+} from './constants';
 import { assertDoubleSubmitCsrf } from './cookies';
 
 jest.mock('argon2');
@@ -28,27 +33,29 @@ const storedUser = { ...sessionUser, passwordHash: '$argon2id$stored' };
 
 type PrismaMock = {
   refreshToken: {
-    findUnique: jest.Mock;
     create: jest.Mock;
-    delete: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
     deleteMany: jest.Mock;
   };
+  user: { findUnique: jest.Mock };
+  $queryRaw: jest.Mock;
   $transaction: jest.Mock;
 };
 
 function createPrismaMock(): PrismaMock {
   const mock: PrismaMock = {
     refreshToken: {
-      findUnique: jest.fn(),
       create: jest.fn().mockResolvedValue({ id: 'new-row' }),
-      delete: jest.fn().mockResolvedValue({ id: 'old-row' }),
+      update: jest.fn().mockResolvedValue({ id: 'old-row' }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
+    user: { findUnique: jest.fn() },
+    $queryRaw: jest.fn(),
     $transaction: jest.fn(),
   };
-  mock.$transaction.mockImplementation(async (ops: unknown) =>
-    Array.isArray(ops) ? Promise.all(ops) : (ops as (tx: PrismaMock) => unknown)(mock),
-  );
+  mock.$transaction.mockImplementation(async (operation: (tx: PrismaMock) => unknown) => operation(mock));
   return mock;
 }
 
@@ -92,21 +99,22 @@ describe('AuthService', () => {
   // -------------------------------------------------------------------------
 
   describe('opaque refresh tokens', () => {
-    it('binds the token to a user without storing the raw value', () => {
-      const { token, tokenHash } = generateRefreshToken(USER_ID);
+    it('contains 256 random bits and no user or family metadata', () => {
+      const { token, tokenHash } = generateRefreshToken();
 
-      expect(token.startsWith(`${USER_ID}.`)).toBe(true);
+      expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      expect(token).not.toContain(USER_ID);
       expect(tokenHash).toHaveLength(64);
       expect(tokenHash).not.toContain(token);
-      expect(parseRefreshToken(token)).toEqual({ userId: USER_ID, tokenHash });
+      expect(hashRefreshToken(token)).toBe(tokenHash);
     });
 
     it('rejects malformed cookie values instead of guessing', () => {
-      expect(parseRefreshToken(undefined)).toBeNull();
-      expect(parseRefreshToken('')).toBeNull();
-      expect(parseRefreshToken('no-separator')).toBeNull();
-      expect(parseRefreshToken('not-a-uuid.secret')).toBeNull();
-      expect(parseRefreshToken(`${USER_ID}.`)).toBeNull();
+      expect(hashRefreshToken(undefined)).toBeNull();
+      expect(hashRefreshToken('')).toBeNull();
+      expect(hashRefreshToken('short')).toBeNull();
+      expect(hashRefreshToken(`${USER_ID}.secret`)).toBeNull();
+      expect(hashRefreshToken('!'.repeat(43))).toBeNull();
     });
   });
 
@@ -146,9 +154,10 @@ describe('AuthService', () => {
       const issued = await service.login(dto);
 
       const created = prisma.refreshToken.create.mock.calls[0][0] as {
-        data: { userId: string; tokenHash: string; expiresAt: Date };
+        data: { userId: string; familyId: string; tokenHash: string; expiresAt: Date };
       };
       expect(created.data.userId).toBe(USER_ID);
+      expect(created.data.familyId).toMatch(/^[0-9a-f-]{36}$/);
       expect(created.data.tokenHash).toHaveLength(64);
       expect(created.data.tokenHash).not.toBe(issued.refreshToken);
       expect(created.data.expiresAt.getTime()).toBeGreaterThan(Date.now());
@@ -210,7 +219,7 @@ describe('AuthService', () => {
         name: 'Nova',
       });
       expect(issued.session.user.email).toBe('nova@exemplo.com.br');
-      expect(issued.refreshToken.startsWith(`${USER_ID}.`)).toBe(true);
+      expect(issued.refreshToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
       expect(issued.csrfToken.length).toBeGreaterThan(20);
       expect(JSON.stringify(issued)).not.toContain('passwordHash');
     });
@@ -219,121 +228,134 @@ describe('AuthService', () => {
   // -------------------------------------------------------------------------
 
   describe('refresh', () => {
+    const familyId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
     const live = {
       id: 'row-1',
       userId: USER_ID,
-      tokenHash: 'ignored',
+      familyId,
       revokedAt: null,
+      rotatedAt: null,
+      successorTokenId: null,
       expiresAt: new Date(Date.now() + 60_000),
-      createdAt: new Date(),
     };
 
-    it('rotates: the presented row is deleted and a new one created in one transaction', async () => {
-      const { token } = generateRefreshToken(USER_ID);
-      prisma.refreshToken.findUnique.mockResolvedValue(live);
-      users.findSessionUser.mockResolvedValue(sessionUser);
+    it('locks the predecessor and atomically links exactly one successor', async () => {
+      const { token } = generateRefreshToken();
+      prisma.$queryRaw.mockResolvedValue([live]);
+      prisma.user.findUnique.mockResolvedValue(sessionUser);
 
       const issued = await service.refresh(token);
 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { id: 'row-1' } });
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
       expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
-      // A brand new opaque value, not the one that was presented.
+      const successor = prisma.refreshToken.create.mock.calls[0][0].data;
+      expect(successor).toEqual(expect.objectContaining({ userId: USER_ID, familyId, tokenHash: expect.any(String) }));
+      expect(prisma.refreshToken.update).toHaveBeenCalledWith({
+        where: { id: 'row-1' },
+        data: expect.objectContaining({
+          revokedAt: expect.any(Date),
+          rotatedAt: expect.any(Date),
+          successorTokenId: successor.id,
+        }),
+      });
       expect(issued.refreshToken).not.toBe(token);
-      // ... and a brand new CSRF token, rotated in lockstep.
       expect(issued.csrfToken).toBeTruthy();
     });
 
-    it('detects reuse: a token that matches no row revokes the whole family', async () => {
-      const { token } = generateRefreshToken(USER_ID);
-      prisma.refreshToken.findUnique.mockResolvedValue(null);
+    it('rejects a forged but well-shaped token without revoking any family', async () => {
+      const { token } = generateRefreshToken();
+      prisma.$queryRaw.mockResolvedValue([]);
 
       await expect(service.refresh(token)).rejects.toThrow(INVALID_SESSION_MESSAGE);
 
-      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { userId: USER_ID } });
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
       expect(prisma.refreshToken.create).not.toHaveBeenCalled();
     });
 
-    it('treats a rotated-then-replayed token as reuse', async () => {
-      const { token } = generateRefreshToken(USER_ID);
-      // First call rotates it away...
-      prisma.refreshToken.findUnique.mockResolvedValueOnce(live);
-      users.findSessionUser.mockResolvedValue(sessionUser);
-      await service.refresh(token);
+    it('returns 409 for a tombstone created inside the response race window', async () => {
+      const { token } = generateRefreshToken();
+      prisma.$queryRaw.mockResolvedValue([
+        {
+          ...live,
+          revokedAt: new Date(),
+          rotatedAt: new Date(),
+          successorTokenId: 'row-2',
+        },
+      ]);
 
-      // ... the second presentation of the same cookie finds nothing.
-      prisma.refreshToken.findUnique.mockResolvedValueOnce(null);
-      await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
-
-      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { userId: USER_ID } });
+      await expect(service.refresh(token)).rejects.toThrow(ConflictException);
+      await expect(service.refresh(token)).rejects.toThrow(REFRESH_CONFLICT_MESSAGE);
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
     });
 
-    it('revokes the family when the row was explicitly revoked', async () => {
-      const { token } = generateRefreshToken(USER_ID);
-      prisma.refreshToken.findUnique.mockResolvedValue({ ...live, revokedAt: new Date() });
+    it('revokes only the known family when a tombstone is replayed later', async () => {
+      const { token } = generateRefreshToken();
+      const rotatedAt = new Date(Date.now() - 6_000);
+      prisma.$queryRaw.mockResolvedValue([{ ...live, revokedAt: rotatedAt, rotatedAt, successorTokenId: 'row-2' }]);
 
       await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
 
-      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { userId: USER_ID } });
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { familyId, revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
     });
 
     it('drops only the expired row — expiry is not an attack', async () => {
-      const { token } = generateRefreshToken(USER_ID);
-      prisma.refreshToken.findUnique.mockResolvedValue({
-        ...live,
-        expiresAt: new Date(Date.now() - 1_000),
-      });
+      const { token } = generateRefreshToken();
+      prisma.$queryRaw.mockResolvedValue([
+        {
+          ...live,
+          expiresAt: new Date(Date.now() - 1_000),
+        },
+      ]);
 
       await expect(service.refresh(token)).rejects.toThrow(INVALID_SESSION_MESSAGE);
 
       expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { id: 'row-1' } });
-      expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalledWith({
-        where: { userId: USER_ID },
-      });
-    });
-
-    it('rejects a row whose user id does not match the token prefix', async () => {
-      const { token } = generateRefreshToken(USER_ID);
-      prisma.refreshToken.findUnique.mockResolvedValue({ ...live, userId: 'someone-else' });
-
-      await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
-      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
     });
 
     it('rejects a missing or malformed cookie without touching the database', async () => {
       await expect(service.refresh(undefined)).rejects.toThrow(INVALID_SESSION_MESSAGE);
       await expect(service.refresh('garbage')).rejects.toThrow(INVALID_SESSION_MESSAGE);
 
-      expect(prisma.refreshToken.findUnique).not.toHaveBeenCalled();
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
       expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
     });
 
     it('fails closed when the user behind a live token is gone', async () => {
-      const { token } = generateRefreshToken(USER_ID);
-      prisma.refreshToken.findUnique.mockResolvedValue(live);
-      users.findSessionUser.mockResolvedValue(null);
+      const { token } = generateRefreshToken();
+      prisma.$queryRaw.mockResolvedValue([live]);
+      prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(service.refresh(token)).rejects.toThrow(UnauthorizedException);
-      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { userId: USER_ID } });
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { familyId, revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
     });
   });
 
   // -------------------------------------------------------------------------
 
   describe('logout', () => {
-    it('deletes only the presented row, scoped to the authenticated user', async () => {
-      const { token, tokenHash } = generateRefreshToken(USER_ID);
+    it('revokes only the presented row, scoped to the authenticated user', async () => {
+      const { token, tokenHash } = generateRefreshToken();
 
       await service.logout(USER_ID, token);
 
-      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-        where: { userId: USER_ID, tokenHash },
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: USER_ID, tokenHash, revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
       });
     });
 
     it('is idempotent with no cookie at all', async () => {
       await expect(service.logout(USER_ID, undefined)).resolves.toBeUndefined();
-      expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
     });
   });
 });

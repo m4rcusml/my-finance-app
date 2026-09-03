@@ -29,6 +29,7 @@ import {
   type TransactionType,
   type TransactionWithRelations,
   type TrendedValue,
+  type YearMonth,
 } from '@finance/contracts';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional, Matches } from 'class-validator';
@@ -152,7 +153,7 @@ export class DashboardTotalsDto implements DashboardTotals {
 }
 
 export class MonthlyNetDto implements MonthlyNet {
-  @ApiProperty({ example: '2026-03', description: 'Rótulo `YYYY-MM`.' }) month!: CivilDate;
+  @ApiProperty({ example: '2026-03', description: 'Rótulo `YYYY-MM`.' }) month!: YearMonth;
   @ApiProperty({ example: 8500.0 }) income!: Money;
   @ApiProperty({ example: 6120.35 }) expense!: Money;
   @ApiProperty({ example: 2379.65 }) net!: Money;

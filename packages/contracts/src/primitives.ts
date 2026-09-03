@@ -132,10 +132,24 @@ export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
  */
 export type CivilDate = string;
 
+/** A calendar month with no day or timezone, serialised as `YYYY-MM`. */
+export type YearMonth =
+  `${number}-${'01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10' | '11' | '12'}`;
+
 /** An instant, ISO-8601 with offset. Used only for audit fields (`createdAt`). */
 export type IsoTimestamp = string;
 
 export const CIVIL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+export const YEAR_MONTH_PATTERN = /^\d{4}-(?:0[1-9]|1[0-2])$/;
+
+export function isYearMonth(value: unknown): value is YearMonth {
+  return typeof value === 'string' && YEAR_MONTH_PATTERN.test(value);
+}
+
+export function toYearMonth(value: string): YearMonth {
+  if (!isYearMonth(value)) throw new RangeError(`Invalid calendar month: ${String(value)}`);
+  return value;
+}
 
 /** True only for a syntactically well-formed AND calendar-valid civil date. */
 export function isCivilDate(value: unknown): value is CivilDate {

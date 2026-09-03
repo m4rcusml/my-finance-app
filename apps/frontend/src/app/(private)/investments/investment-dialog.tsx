@@ -299,10 +299,7 @@ export function InvestmentDialog({
             )}
           </Field>
 
-          <Field
-            label="Informar valor investido manualmente"
-            hint="Por padrão o valor é quantidade × preço de compra."
-          >
+          <Field label="Informar valor investido manualmente" hint="Por padrão o valor é quantidade × preço de compra.">
             {({ id, describedBy }) => (
               <input
                 id={id}

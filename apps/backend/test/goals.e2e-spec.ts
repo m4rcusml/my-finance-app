@@ -4,13 +4,14 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
 describe('GoalsController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let authToken: string;
 
   const mockUser = {
@@ -18,6 +19,7 @@ describe('GoalsController (e2e)', () => {
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -26,7 +28,7 @@ describe('GoalsController (e2e)', () => {
     id: 'goal-1',
     userId: 'user-1',
     name: 'Viagem Japão',
-    type: 'purchase',
+    type: 'saving',
     targetAmount: 15000,
     currentAmount: 5000,
     deadline: new Date('2025-12-31'),
@@ -37,35 +39,13 @@ describe('GoalsController (e2e)', () => {
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        goal: {
-          create: jest.fn(),
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          update: jest.fn(),
-          delete: jest.fn(),
-          count: jest.fn(),
-        },
-        account: {
-          findUnique: jest.fn(),
-        },
-        category: {
-          findUnique: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
       .compile();
-
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -79,7 +59,7 @@ describe('GoalsController (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'test@example.com', password: 'password123' });
 
-    authToken = loginResponse.body.access_token;
+    authToken = loginResponse.body.accessToken;
   });
 
   afterEach(async () => {
@@ -96,7 +76,7 @@ describe('GoalsController (e2e)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Viagem Japão',
-          type: 'purchase',
+          type: 'saving',
           targetAmount: 15000,
           currentAmount: 5000,
           deadline: '2025-12-31',
@@ -119,7 +99,7 @@ describe('GoalsController (e2e)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Emergency Fund',
-          type: 'savings',
+          type: 'saving',
           targetAmount: 10000,
         })
         .expect(201);
@@ -128,34 +108,36 @@ describe('GoalsController (e2e)', () => {
       expect(response.body.progress).toBe(0);
     });
 
-    it('should return 400 when relatedAccount does not belong to user', async () => {
-      prisma.account.findUnique.mockResolvedValue({ id: 'account-1', userId: 'other-user' } as any);
+    it('should return 404 when relatedAccount does not belong to user', async () => {
+      const accountId = '550e8400-e29b-41d4-a716-446655440001';
+      prisma.account.findUnique.mockResolvedValue({ id: accountId, userId: 'other-user' } as any);
 
       await request(app.getHttpServer())
         .post('/api/v1/goals')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Viagem Japão',
-          type: 'purchase',
+          type: 'saving',
           targetAmount: 15000,
-          relatedAccountId: 'account-1',
+          relatedAccountId: accountId,
         })
-        .expect(400);
+        .expect(404);
     });
 
-    it('should return 400 when relatedCategory does not belong to user', async () => {
-      prisma.category.findUnique.mockResolvedValue({ id: 'category-1', userId: 'other-user' } as any);
+    it('should return 404 when relatedCategory does not belong to user', async () => {
+      const categoryId = '550e8400-e29b-41d4-a716-446655440002';
+      prisma.category.findUnique.mockResolvedValue({ id: categoryId, userId: 'other-user' } as any);
 
       await request(app.getHttpServer())
         .post('/api/v1/goals')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Viagem Japão',
-          type: 'purchase',
+          type: 'saving',
           targetAmount: 15000,
-          relatedCategoryId: 'category-1',
+          relatedCategoryId: categoryId,
         })
-        .expect(400);
+        .expect(404);
     });
 
     it('should return 400 when type is invalid', async () => {
@@ -176,7 +158,7 @@ describe('GoalsController (e2e)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Viagem Japão',
-          type: 'purchase',
+          type: 'saving',
           targetAmount: -100,
         })
         .expect(400);
@@ -187,7 +169,7 @@ describe('GoalsController (e2e)', () => {
         .post('/api/v1/goals')
         .send({
           name: 'Viagem Japão',
-          type: 'purchase',
+          type: 'saving',
           targetAmount: 15000,
         })
         .expect(401);
@@ -238,7 +220,7 @@ describe('GoalsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for goal owned by another user', async () => {
+    it('should return 404 for goal owned by another user', async () => {
       prisma.goal.findUnique.mockResolvedValue({
         ...baseGoal,
         userId: 'other-user',
@@ -247,7 +229,7 @@ describe('GoalsController (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/v1/goals/goal-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -278,7 +260,7 @@ describe('GoalsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for goal owned by another user', async () => {
+    it('should return 404 for goal owned by another user', async () => {
       prisma.goal.findUnique.mockResolvedValue({
         ...baseGoal,
         userId: 'other-user',
@@ -288,7 +270,7 @@ describe('GoalsController (e2e)', () => {
         .patch('/api/v1/goals/goal-1')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'Updated' })
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -312,7 +294,7 @@ describe('GoalsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for goal owned by another user', async () => {
+    it('should return 404 for goal owned by another user', async () => {
       prisma.goal.findUnique.mockResolvedValue({
         ...baseGoal,
         userId: 'other-user',
@@ -321,7 +303,7 @@ describe('GoalsController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/api/v1/goals/goal-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -350,7 +332,7 @@ describe('GoalsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for goal owned by another user', async () => {
+    it('should return 404 for goal owned by another user', async () => {
       prisma.goal.findUnique.mockResolvedValue({
         ...baseGoal,
         userId: 'other-user',
@@ -359,7 +341,7 @@ describe('GoalsController (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/v1/goals/goal-1/progress')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 });

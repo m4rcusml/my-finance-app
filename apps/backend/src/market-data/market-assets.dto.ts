@@ -58,7 +58,11 @@ export class CreateMarketAssetDto implements CreateMarketAssetRequest {
 }
 
 export class UpdateMarketAssetDto implements UpdateMarketAssetRequest {
-  @ApiPropertyOptional({ example: 'PETR4', maxLength: 32, description: 'Código do ativo. Normalizado para maiúsculas.' })
+  @ApiPropertyOptional({
+    example: 'PETR4',
+    maxLength: 32,
+    description: 'Código do ativo. Normalizado para maiúsculas.',
+  })
   @ValidateIf((o: UpdateMarketAssetDto) => o.symbol !== undefined)
   @Transform(toUpperTrimmed)
   @IsString({ message: 'symbol deve ser um texto.' })

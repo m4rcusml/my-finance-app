@@ -36,17 +36,23 @@ ALTER TABLE "users" ADD COLUMN "token_version" INTEGER NOT NULL DEFAULT 0;
 CREATE TABLE "refresh_tokens" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
+    "family_id" TEXT NOT NULL,
     "token_hash" TEXT NOT NULL,
     "expires_at" TIMESTAMP(3) NOT NULL,
     "revoked_at" TIMESTAMP(3),
+    "rotated_at" TIMESTAMP(3),
+    "successor_token_id" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
 );
 CREATE UNIQUE INDEX "refresh_tokens_token_hash_key" ON "refresh_tokens"("token_hash");
-CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens"("user_id");
+CREATE UNIQUE INDEX "refresh_tokens_successor_token_id_key" ON "refresh_tokens"("successor_token_id");
+CREATE INDEX "refresh_tokens_user_id_family_id_idx" ON "refresh_tokens"("user_id", "family_id");
 CREATE INDEX "refresh_tokens_expires_at_idx" ON "refresh_tokens"("expires_at");
 ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_fkey"
   FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_successor_token_id_fkey"
+  FOREIGN KEY ("successor_token_id") REFERENCES "refresh_tokens"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- ---------------------------------------------------------------------------
 -- 3. accounts
@@ -88,23 +94,90 @@ ALTER TABLE "categories" ALTER COLUMN "type" TYPE "category_type" USING (
   END::"category_type"
 );
 
--- De-duplicate (user, name, type) before adding the unique key: keep the oldest
--- row untouched and suffix the newer ones so nothing is lost.
-WITH ranked AS (
-  SELECT "id", row_number() OVER (PARTITION BY "user_id", "name", "type" ORDER BY "created_at", "id") AS rn
-  FROM "categories"
-)
-UPDATE "categories" c
-SET "name" = c."name" || ' (' || r.rn || ')'
-FROM ranked r
-WHERE c."id" = r."id" AND r.rn > 1;
+-- De-duplicate (user, name, type) before adding the unique key. A simple
+-- " (2)" suffix can itself collide with an existing legitimate category, so
+-- derive a stable name from the row id and still guard the pathological case
+-- where a user already chose that exact generated name. No category is lost.
+DO $$
+DECLARE
+  duplicate_row RECORD;
+  original_name TEXT;
+  candidate_name TEXT;
+  attempt INTEGER;
+BEGIN
+  FOR duplicate_row IN
+    SELECT "id", "user_id", "name", "type"
+    FROM (
+      SELECT
+        "id",
+        "user_id",
+        "name",
+        "type",
+        row_number() OVER (
+          PARTITION BY "user_id", "name", "type"
+          ORDER BY "created_at", "id"
+        ) AS duplicate_number
+      FROM "categories"
+    ) ranked
+    WHERE duplicate_number > 1
+  LOOP
+    original_name := duplicate_row."name";
+    attempt := 0;
+
+    LOOP
+      candidate_name := original_name || ' (migração ' || duplicate_row."id" ||
+        CASE WHEN attempt = 0 THEN '' ELSE '-' || attempt::text END || ')';
+      EXIT WHEN NOT EXISTS (
+        SELECT 1
+        FROM "categories" existing
+        WHERE existing."user_id" = duplicate_row."user_id"
+          AND existing."type" = duplicate_row."type"
+          AND existing."name" = candidate_name
+          AND existing."id" <> duplicate_row."id"
+      );
+      attempt := attempt + 1;
+    END LOOP;
+
+    UPDATE "categories" SET "name" = candidate_name WHERE "id" = duplicate_row."id";
+  END LOOP;
+END $$;
 
 CREATE UNIQUE INDEX "categories_user_id_name_type_key" ON "categories"("user_id", "name", "type");
 CREATE INDEX "categories_user_id_is_active_idx" ON "categories"("user_id", "is_active");
 
 -- ---------------------------------------------------------------------------
--- 6. Placeholder account for orphaned rows (created only when needed)
+-- 6. Repair legacy ownership and create placeholders only when needed
 -- ---------------------------------------------------------------------------
+-- The old foreign keys guaranteed that a referenced row existed, but not that
+-- it belonged to the same user. Treat missing and cross-tenant references as
+-- invalid before deciding which users need a placeholder.
+UPDATE "transactions" t SET "account_id" = NULL
+WHERE t."account_id" IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM "accounts" a WHERE a."id" = t."account_id" AND a."user_id" = t."user_id"
+);
+UPDATE "transactions" t SET "credit_card_id" = NULL
+WHERE t."credit_card_id" IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM "credit_cards" c WHERE c."id" = t."credit_card_id" AND c."user_id" = t."user_id"
+);
+UPDATE "transactions" t SET "category_id" = NULL
+WHERE t."category_id" IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM "categories" c WHERE c."id" = t."category_id" AND c."user_id" = t."user_id"
+);
+UPDATE "transactions" SET "credit_card_id" = NULL
+WHERE "account_id" IS NOT NULL AND "credit_card_id" IS NOT NULL;
+
+UPDATE "fixed_transactions" f SET "account_id" = NULL
+WHERE f."account_id" IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM "accounts" a WHERE a."id" = f."account_id" AND a."user_id" = f."user_id"
+);
+UPDATE "fixed_transactions" f SET "credit_card_id" = NULL
+WHERE f."credit_card_id" IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM "credit_cards" c WHERE c."id" = f."credit_card_id" AND c."user_id" = f."user_id"
+);
+UPDATE "fixed_transactions" SET "credit_card_id" = NULL
+WHERE "account_id" IS NOT NULL AND "credit_card_id" IS NOT NULL;
+
+-- Any source that became empty during the cleanup above is repaired too.
 INSERT INTO "accounts" ("id", "user_id", "name", "institution", "type", "initial_balance", "is_active", "archived_at", "created_at", "updated_at")
 SELECT
   md5('migration-placeholder-' || u."id")::uuid::text,
@@ -124,6 +197,50 @@ WHERE EXISTS (
 ) OR EXISTS (
   SELECT 1 FROM "fixed_transactions" f
   WHERE f."user_id" = u."id" AND f."account_id" IS NULL AND f."credit_card_id" IS NULL
+);
+
+-- Fixed templates require a category. Cross-tenant or otherwise invalid legacy
+-- links are moved to one archived migration category owned by the right user.
+INSERT INTO "categories" ("id", "user_id", "name", "type", "is_active", "archived_at", "created_at", "updated_at")
+SELECT
+  md5('migration-category-' || u."id")::uuid::text,
+  u."id",
+  'Categoria não especificada (migração)',
+  'both'::"category_type",
+  false,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+FROM "users" u
+WHERE EXISTS (
+  SELECT 1
+  FROM "fixed_transactions" f
+  WHERE f."user_id" = u."id"
+    AND NOT EXISTS (
+      SELECT 1 FROM "categories" c
+      WHERE c."id" = f."category_id" AND c."user_id" = f."user_id"
+    )
+)
+AND NOT EXISTS (
+  SELECT 1 FROM "categories" c
+  WHERE c."user_id" = u."id"
+    AND c."name" = 'Categoria não especificada (migração)'
+    AND c."type" = 'both'::"category_type"
+);
+
+UPDATE "fixed_transactions" f
+SET "category_id" = (
+  SELECT c."id"
+  FROM "categories" c
+  WHERE c."user_id" = f."user_id"
+    AND c."name" = 'Categoria não especificada (migração)'
+    AND c."type" = 'both'::"category_type"
+  ORDER BY c."id"
+  LIMIT 1
+)
+WHERE NOT EXISTS (
+  SELECT 1 FROM "categories" c
+  WHERE c."id" = f."category_id" AND c."user_id" = f."user_id"
 );
 
 -- ---------------------------------------------------------------------------
@@ -159,7 +276,25 @@ WHERE t."account_id" IS NULL AND t."credit_card_id" IS NULL;
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_exactly_one_source"
   CHECK (("account_id" IS NOT NULL) <> ("credit_card_id" IS NOT NULL));
 
--- Same externalId can only be imported once per user.
+-- Preserve every legacy transaction while making the new idempotency key
+-- enforceable. The oldest row keeps the ambiguous external id; later rows lose
+-- only that unusable duplicate key, never the financial record itself.
+WITH duplicate_external_ids AS (
+  SELECT
+    "id",
+    row_number() OVER (
+      PARTITION BY "user_id", "external_id"
+      ORDER BY "created_at", "id"
+    ) AS duplicate_number
+  FROM "transactions"
+  WHERE "external_id" IS NOT NULL
+)
+UPDATE "transactions" t
+SET "external_id" = NULL
+FROM duplicate_external_ids duplicate
+WHERE t."id" = duplicate."id" AND duplicate.duplicate_number > 1;
+
+-- Same externalId can only be imported once per user from now on.
 CREATE UNIQUE INDEX "transactions_user_id_external_id_key"
   ON "transactions"("user_id", "external_id") WHERE "external_id" IS NOT NULL;
 
@@ -263,6 +398,60 @@ SET
 FROM "fixed_transactions" f
 WHERE f."id" = o."fixed_transaction_id";
 
+-- The old schema allowed an occurrence, template and booked transaction to
+-- belong to different users. The template owns the historical occurrence.
+UPDATE "fixed_transaction_occurrences" o
+SET "user_id" = f."user_id"
+FROM "fixed_transactions" f
+WHERE f."id" = o."fixed_transaction_id" AND o."user_id" <> f."user_id";
+
+-- A link to a missing or cross-tenant transaction is not a confirmation.
+UPDATE "fixed_transaction_occurrences" o
+SET "transaction_id" = NULL, "status" = 'pending', "real_date" = NULL
+WHERE o."transaction_id" IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM "transactions" t
+  WHERE t."id" = o."transaction_id" AND t."user_id" = o."user_id"
+);
+
+-- If legacy data links one transaction to several occurrences, keep the oldest
+-- occurrence confirmed and return the others to pending without deleting them.
+WITH duplicate_transaction_links AS (
+  SELECT
+    "id",
+    row_number() OVER (
+      PARTITION BY "transaction_id"
+      ORDER BY "created_at", "id"
+    ) AS duplicate_number
+  FROM "fixed_transaction_occurrences"
+  WHERE "transaction_id" IS NOT NULL
+)
+UPDATE "fixed_transaction_occurrences" o
+SET "transaction_id" = NULL, "status" = 'pending', "real_date" = NULL
+FROM duplicate_transaction_links duplicate
+WHERE o."id" = duplicate."id" AND duplicate.duplicate_number > 1;
+
+-- A persisted transaction is the strongest historical evidence: normalise the
+-- occurrence to confirmed and recover a missing civil date from the ledger.
+UPDATE "fixed_transaction_occurrences" o
+SET "status" = 'confirmed', "real_date" = COALESCE(o."real_date", t."date")
+FROM "transactions" t
+WHERE t."id" = o."transaction_id";
+
+-- Conversely, a legacy "confirmed" row without a usable transaction cannot
+-- satisfy the V1 invariant and becomes pending for explicit user confirmation.
+UPDATE "fixed_transaction_occurrences"
+SET "status" = 'pending', "real_date" = NULL
+WHERE "status" = 'confirmed' AND "transaction_id" IS NULL;
+UPDATE "fixed_transaction_occurrences"
+SET "real_date" = NULL
+WHERE "status" <> 'confirmed';
+
+UPDATE "transactions" t
+SET "source" = 'fixed'
+WHERE EXISTS (
+  SELECT 1 FROM "fixed_transaction_occurrences" o WHERE o."transaction_id" = t."id"
+);
+
 ALTER TABLE "fixed_transaction_occurrences" ALTER COLUMN "due_date" SET NOT NULL;
 ALTER TABLE "fixed_transaction_occurrences" ALTER COLUMN "type" SET NOT NULL;
 ALTER TABLE "fixed_transaction_occurrences" ALTER COLUMN "value" SET NOT NULL;
@@ -278,7 +467,9 @@ CREATE UNIQUE INDEX "fixed_transaction_occurrences_transaction_id_key"
   ON "fixed_transaction_occurrences"("transaction_id");
 CREATE INDEX "fixed_transaction_occurrences_user_id_status_idx"
   ON "fixed_transaction_occurrences"("user_id", "status");
-CREATE INDEX "fixed_transaction_occurrences_user_id_period_year_period_month_idx"
+-- Keep the Prisma-generated <=63-byte name; PostgreSQL would otherwise
+-- truncate the longer spelling differently and report permanent schema drift.
+CREATE INDEX "fixed_transaction_occurrences_user_id_period_year_period_mo_idx"
   ON "fixed_transaction_occurrences"("user_id", "period_year", "period_month");
 
 ALTER TABLE "fixed_transaction_occurrences" ADD CONSTRAINT "fixed_transaction_occurrences_category_id_fkey"
@@ -369,6 +560,19 @@ ALTER TABLE "goals" ALTER COLUMN "current_amount" SET NOT NULL;
 ALTER TABLE "goals" ALTER COLUMN "current_amount" SET DEFAULT 0;
 ALTER TABLE "goals" ALTER COLUMN "deadline" TYPE DATE USING ("deadline"::date);
 CREATE INDEX "goals_user_id_idx" ON "goals"("user_id");
+
+-- Related resources are optional; detach cross-tenant legacy links rather than
+-- exposing another user's account/category through a goal.
+UPDATE "goals" g SET "related_account_id" = NULL
+WHERE g."related_account_id" IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM "accounts" a
+  WHERE a."id" = g."related_account_id" AND a."user_id" = g."user_id"
+);
+UPDATE "goals" g SET "related_category_id" = NULL
+WHERE g."related_category_id" IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM "categories" c
+  WHERE c."id" = g."related_category_id" AND c."user_id" = g."user_id"
+);
 
 ALTER TABLE "goals" DROP CONSTRAINT IF EXISTS "goals_related_account_id_fkey";
 ALTER TABLE "goals" ADD CONSTRAINT "goals_related_account_id_fkey"

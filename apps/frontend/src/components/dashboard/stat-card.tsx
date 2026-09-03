@@ -19,11 +19,7 @@ export function StatCard({
   children?: React.ReactNode;
 }) {
   const toneClass =
-    tone === 'positive'
-      ? 'text-success-text'
-      : tone === 'negative'
-        ? 'text-danger-text'
-        : 'text-foreground';
+    tone === 'positive' ? 'text-success-text' : tone === 'negative' ? 'text-danger-text' : 'text-foreground';
 
   return (
     <div className="rounded-xl border border-border bg-layer02 p-4">

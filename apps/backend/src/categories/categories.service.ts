@@ -95,32 +95,46 @@ export class CategoriesService {
   }
 
   async update(userId: string, categoryId: string, dto: UpdateCategoryDto): Promise<Category> {
-    const existing = assertOwned(
-      await this.prisma.category.findUnique({ where: { id: categoryId } }),
-      userId,
-      NOT_FOUND,
-    );
-
-    // Validate the FINAL state, not the patch: renaming only the type still has
-    // to respect the (userId, name, type) uniqueness.
-    const name = dto.name !== undefined ? dto.name : existing.name;
-    const type = dto.type !== undefined ? dto.type : (existing.type as CategoryType);
-
-    if (name !== existing.name || type !== existing.type) {
-      await this.assertNameAvailable(userId, name, type, categoryId);
-    }
-
     try {
-      const row = await this.prisma.category.update({
-        where: { id: categoryId },
-        data: {
-          ...(dto.name !== undefined ? { name: dto.name } : {}),
-          ...(dto.type !== undefined ? { type: dto.type } : {}),
-        },
+      const row = await this.prisma.$transaction(async (tx) => {
+        // Ledger writes take the same row lock before attaching a category.
+        // This makes the compatibility check and the type update one atomic
+        // decision even when another request is creating a transaction.
+        await tx.$queryRaw`SELECT id FROM categories WHERE id = ${categoryId}::text FOR UPDATE`;
+        const existing = assertOwned(await tx.category.findUnique({ where: { id: categoryId } }), userId, NOT_FOUND);
+
+        // Validate the FINAL state, not the patch: renaming only the type still
+        // has to respect the (userId, name, type) uniqueness.
+        const name = dto.name !== undefined ? dto.name : existing.name;
+        const type = dto.type !== undefined ? dto.type : (existing.type as CategoryType);
+
+        if (name !== existing.name || type !== existing.type) {
+          const clash = await tx.category.findFirst({
+            where: { userId, name, type, id: { not: categoryId } },
+            select: { id: true },
+          });
+          if (clash) throw new ConflictException(duplicateMessage(name, type));
+        }
+
+        if (type !== existing.type && type !== 'both') {
+          await this.assertReferencedTypesCompatible(tx, userId, categoryId, type);
+        }
+
+        return tx.category.update({
+          where: { id: categoryId },
+          data: {
+            ...(dto.name !== undefined ? { name: dto.name } : {}),
+            ...(dto.type !== undefined ? { type: dto.type } : {}),
+          },
+        });
       });
       return this.toResource(row as CategoryRow);
     } catch (error) {
-      if (isUniqueViolation(error)) throw new ConflictException(duplicateMessage(name, type));
+      if (isUniqueViolation(error)) {
+        const name = dto.name ?? 'informada';
+        const type = dto.type ?? 'both';
+        throw new ConflictException(duplicateMessage(name, type));
+      }
       throw error;
     }
   }
@@ -208,6 +222,25 @@ export class CategoriesService {
       tx.goal.count({ where: { userId, relatedCategoryId: categoryId } }),
     ]);
     return transactions + fixedTransactions + occurrences + goals;
+  }
+
+  private async assertReferencedTypesCompatible(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    categoryId: string,
+    type: Exclude<CategoryType, 'both'>,
+  ): Promise<void> {
+    const incompatible = { not: type };
+    const [transactions, fixedTransactions, occurrences] = await Promise.all([
+      tx.transaction.count({ where: { userId, categoryId, type: incompatible } }),
+      tx.fixedTransaction.count({ where: { userId, categoryId, type: incompatible } }),
+      tx.fixedTransactionOccurrence.count({ where: { userId, categoryId, type: incompatible } }),
+    ]);
+    if (transactions + fixedTransactions + occurrences > 0) {
+      throw new ConflictException(
+        'Não é possível alterar o tipo: a categoria já possui lançamentos incompatíveis no histórico.',
+      );
+    }
   }
 
   private toResource(row: CategoryRow): Category {

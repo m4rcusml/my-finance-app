@@ -249,12 +249,7 @@ export function TemplateDialog({
             )}
           </Field>
 
-          <Field
-            label="Valor"
-            required
-            error={errors.value}
-            hint="Use vírgula para os centavos. Ex.: 1.250,00"
-          >
+          <Field label="Valor" required error={errors.value} hint="Use vírgula para os centavos. Ex.: 1.250,00">
             {({ id, describedBy, invalid }) => (
               <TextInput
                 id={id}
@@ -381,9 +376,7 @@ export function TemplateDialog({
                   onChange={(event) => set('accountId', event.target.value)}
                 >
                   <option value="">Selecione uma conta</option>
-                  {accountMissing ? (
-                    <option value={form.accountId}>Conta indisponível (arquivada)</option>
-                  ) : null}
+                  {accountMissing ? <option value={form.accountId}>Conta indisponível (arquivada)</option> : null}
                   {lookups.accounts.map((account) => (
                     <option key={account.id} value={account.id}>
                       {account.name} · {account.institution}
@@ -403,9 +396,7 @@ export function TemplateDialog({
                   onChange={(event) => set('creditCardId', event.target.value)}
                 >
                   <option value="">Selecione um cartão</option>
-                  {cardMissing ? (
-                    <option value={form.creditCardId}>Cartão indisponível (arquivado)</option>
-                  ) : null}
+                  {cardMissing ? <option value={form.creditCardId}>Cartão indisponível (arquivado)</option> : null}
                   {lookups.creditCards.map((card) => (
                     <option key={card.id} value={card.id}>
                       {card.name} · {card.institution}
@@ -418,8 +409,8 @@ export function TemplateDialog({
         </fieldset>
 
         <Callout>
-          Alterar um modelo afeta apenas as ocorrências futuras. As ocorrências já confirmadas e os lançamentos
-          criados por elas permanecem exatamente como estão.
+          Alterar um modelo afeta apenas as ocorrências futuras. As ocorrências já confirmadas e os lançamentos criados
+          por elas permanecem exatamente como estão.
         </Callout>
       </form>
     </Dialog>

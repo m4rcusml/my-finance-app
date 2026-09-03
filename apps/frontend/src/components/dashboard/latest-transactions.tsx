@@ -64,8 +64,7 @@ export function LatestTransactions({ transactions }: { transactions: Transaction
             <tbody>
               {transactions.map((transaction) => {
                 const isIncome = transaction.type === 'income';
-                const origin =
-                  transaction.account?.name ?? transaction.creditCard?.name ?? 'Sem origem';
+                const origin = transaction.account?.name ?? transaction.creditCard?.name ?? 'Sem origem';
 
                 return (
                   <tr key={transaction.id} className="border-b border-border/60 last:border-b-0">
@@ -75,16 +74,12 @@ export function LatestTransactions({ transactions }: { transactions: Transaction
                     <th scope="row" className="max-w-[16rem] truncate py-2 pr-3 font-medium text-foreground">
                       {transaction.description?.trim() || 'Sem descrição'}
                     </th>
-                    <td className="py-2 pr-3 text-muted-foreground">
-                      {transaction.category?.name ?? 'Sem categoria'}
-                    </td>
+                    <td className="py-2 pr-3 text-muted-foreground">{transaction.category?.name ?? 'Sem categoria'}</td>
                     <td className="py-2 pr-3 text-muted-foreground">{origin}</td>
                     <td className="py-2 pr-3">
                       <span
                         className={`inline-block rounded-md border px-2 py-0.5 text-xs font-medium ${
-                          isIncome
-                            ? 'border-success text-success-text'
-                            : 'border-danger text-danger-text'
+                          isIncome ? 'border-success text-success-text' : 'border-danger text-danger-text'
                         }`}
                       >
                         {TRANSACTION_TYPE_LABELS[transaction.type]}

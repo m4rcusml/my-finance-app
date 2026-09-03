@@ -1,5 +1,17 @@
 import type { FixedTransaction, PaginatedResponse } from '@finance/contracts';
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -110,7 +122,8 @@ export class FixedTransactionsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Arquiva o template (equivalente a POST /:id/archive).',
-    description: 'Não existe exclusão definitiva: a FK das ocorrências é RESTRICT justamente para o histórico sobreviver.',
+    description:
+      'Não existe exclusão definitiva: a FK das ocorrências é RESTRICT justamente para o histórico sobreviver.',
   })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiNoContentResponse({ description: 'Template arquivado.' })

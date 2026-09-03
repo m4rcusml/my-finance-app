@@ -27,9 +27,6 @@ type CreditCardRow = {
 /** Each card carries its own cycle window, so a page needs its own bound. */
 type CycleUsage = { cycle: BillingCycle; used: number };
 
-/** Hard ceiling for the dashboard aggregate; nobody has 200 cards. */
-const MAX_CARDS_FOR_TOTALS = 200;
-
 const NOT_FOUND = 'Cartão';
 
 function toIso(value: Date | string): string {
@@ -84,14 +81,14 @@ export class CreditCardsService {
   /**
    * Dashboard helper: limite, uso do ciclo aberto e disponível somados. The
    * per-card windows differ (each card has its own `closingDay`), so the card
-   * rows are read once — bounded — and the expenses are folded by a single
-   * `groupBy` aggregate. No transaction row ever reaches Node.
+   * rows are read once and the expenses are folded by a single `groupBy`
+   * aggregate. No transaction row ever reaches Node. This aggregate must not
+   * inherit a UI page limit: every active card contributes to the total.
    */
   async getCycleTotals(userId: string): Promise<{ totalLimit: number; totalUsed: number; totalAvailable: number }> {
     const cards = await this.prisma.creditCard.findMany({
       where: { userId, isActive: true },
       select: { id: true, limitTotal: true, closingDay: true },
-      take: MAX_CARDS_FOR_TOTALS,
     });
 
     const usage = await this.cycleUsage(userId, cards, this.today());

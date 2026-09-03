@@ -79,11 +79,7 @@ export class GoalsController {
   @ApiOkResponse({ type: GoalResponseDto })
   @ApiBadRequestResponse({ description: 'currentAmount inválido.' })
   @ApiNotFoundResponse({ description: 'Objetivo não encontrado.' })
-  updateProgress(
-    @CurrentUser() user: UserPayload,
-    @Param('id') id: string,
-    @Body() body: UpdateGoalProgressDto,
-  ) {
+  updateProgress(@CurrentUser() user: UserPayload, @Param('id') id: string, @Body() body: UpdateGoalProgressDto) {
     return this.goalsService.updateProgress(user.sub, id, body.currentAmount);
   }
 

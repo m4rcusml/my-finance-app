@@ -14,42 +14,42 @@ import { API_PREFIX } from '@finance/contracts';
  *   it as `Authorization: Bearer <token>`.
  *
  * REFRESH TOKEN
- *   An opaque value, never a JWT, shaped `<userId>.<base64url(32 random bytes)>`.
+ *   An opaque value, never a JWT: `base64url(32 random bytes)`. It contains no
+ *   user id, family id, or other metadata.
  *   It exists in exactly two places: the `refresh_token` HttpOnly cookie, and
  *   the `refresh_tokens` table as a SHA-256 hash. A dump of the table therefore
- *   cannot be replayed. The `userId` prefix is not a secret and is not trusted
- *   for authentication — it exists only so that reuse detection can identify
- *   *which family* to kill once the row itself is gone (see below).
+ *   cannot be replayed. Only a successful hash lookup identifies its owner or
+ *   family, so a forged token can never revoke another user's sessions.
  *
  * ROTATION + REUSE DETECTION
- *   Every `POST /auth/refresh` deletes the presented row and inserts a fresh
- *   one, inside a single transaction. A token that hashes to no row was either
- *   forged or already rotated — i.e. somebody is replaying a stolen cookie — so
- *   the whole family (`DELETE FROM refresh_tokens WHERE user_id = ...`) is
- *   revoked and the response is a generic 401. The legitimate user is logged
- *   out and has to sign in again, which is the correct outcome for a theft.
+ *   Every `POST /auth/refresh` locks the presented row, marks it revoked, links
+ *   it to one successor, and inserts that successor in the same transaction.
+ *   Rotated rows remain as tombstones until expiry. Replaying a known tombstone
+ *   revokes only its family; an unknown hash is rejected without side effects.
+ *   A second legitimate request during the five-second response race gets 409
+ *   without having its new cookie cleared.
  *
  * COOKIE SCOPE
  *   `refresh_token`: HttpOnly, `Secure`/`SameSite`/`Domain` from config, and
  *   `Path=/api/v1/auth` so it is never attached to any business endpoint —
- *   only the four auth routes can ever see it.
- *   `csrf_token`: NOT HttpOnly (the SPA must read it) and `Path=/` so
- *   `document.cookie` can see it from the app's own path.
+ *   only auth routes can ever see it.
+ *   `csrf_token`: HttpOnly and `Path=/`. The SPA obtains the matching value from
+ *   `GET /auth/csrf`, so this also works when app and API use different hosts.
  *
  * CSRF
  *   Every state-changing business request authenticates with the Bearer access
  *   token, which a cross-site form post cannot set — so those routes need no
  *   CSRF token. The single exception is `POST /auth/refresh`, which is
  *   authenticated by a cookie and therefore *is* reachable by a cross-site
- *   request. It requires a double-submit token: the `csrf_token` cookie value
- *   must equal the `X-CSRF-Token` header, which only same-origin JavaScript can
- *   read and set. Both are rotated on every refresh.
+ *   request. It requires a double-submit token: first call `GET /auth/csrf`,
+ *   then echo its JSON value in `X-CSRF-Token`; the browser supplies the
+ *   matching HttpOnly cookie. Both values rotate after a successful refresh.
  */
 
 /** HttpOnly cookie carrying the opaque refresh token. */
 export const REFRESH_COOKIE_NAME = 'refresh_token';
 
-/** Readable-by-JS cookie echoed back in `X-CSRF-Token` (double submit). */
+/** HttpOnly cookie paired with the value returned by `GET /auth/csrf`. */
 export const CSRF_COOKIE_NAME = 'csrf_token';
 
 /** Header the SPA must echo the `csrf_token` cookie in. */
@@ -62,10 +62,10 @@ export const CSRF_HEADER_NAME = 'x-csrf-token';
  */
 export const AUTH_COOKIE_PATH = `${API_PREFIX}/auth`;
 
-/** The CSRF cookie must be readable from the SPA's own path. */
+/** The API needs this cookie on both the bootstrap and refresh endpoints. */
 export const CSRF_COOKIE_PATH = '/';
 
-/** Entropy of the secret half of a refresh token. */
+/** Entropy of the entire opaque refresh token. */
 export const REFRESH_TOKEN_BYTES = 32;
 
 /** Entropy of a CSRF token. */
@@ -86,6 +86,12 @@ export const INVALID_CREDENTIALS_MESSAGE = 'E-mail ou senha inválidos.';
 
 /** Same reasoning for a bad/expired/replayed refresh cookie. */
 export const INVALID_SESSION_MESSAGE = 'Sessão inválida ou expirada.';
+
+/** A concurrent refresh already claimed this predecessor. */
+export const REFRESH_CONFLICT_MESSAGE = 'Uma renovação desta sessão já está em andamento.';
+
+/** Grace window for two requests that left the browser with the same cookie. */
+export const REFRESH_CONCURRENCY_WINDOW_MS = 5_000;
 
 /** Typed exactly, accents included, before an account is destroyed. */
 export const ACCOUNT_DELETION_CONFIRMATION = 'EXCLUIR MINHA CONTA';

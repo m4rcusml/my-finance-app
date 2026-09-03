@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { AuthSessionResponse } from '@finance/contracts';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
@@ -12,6 +12,8 @@ import {
   CSRF_TOKEN_BYTES,
   INVALID_CREDENTIALS_MESSAGE,
   INVALID_SESSION_MESSAGE,
+  REFRESH_CONCURRENCY_WINDOW_MS,
+  REFRESH_CONFLICT_MESSAGE,
   REFRESH_TOKEN_BYTES,
 } from './constants';
 
@@ -25,33 +27,37 @@ export interface IssuedSession {
   csrfToken: string;
 }
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+interface LockedRefreshToken {
+  id: string;
+  userId: string;
+  familyId: string;
+  expiresAt: Date;
+  revokedAt: Date | null;
+  rotatedAt: Date | null;
+  successorTokenId: string | null;
+}
+
+type RefreshOutcome =
+  | { kind: 'issued'; refreshToken: string; user: SessionUser }
+  | { kind: 'concurrent' }
+  | { kind: 'invalid' };
+
+const OPAQUE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-/**
- * A refresh token is `<userId>.<base64url(32 random bytes)>`.
- *
- * The random half is the whole secret; the id prefix is public and is never
- * trusted for authentication (the row lookup is by hash of the *full* string).
- * It exists solely so reuse detection can name the family to revoke after the
- * row it pointed at has already been deleted by rotation. A uuid contains no
- * `.`, so splitting on the first one is unambiguous.
- */
-export function generateRefreshToken(userId: string): { token: string; tokenHash: string } {
-  const token = `${userId}.${randomBytes(REFRESH_TOKEN_BYTES).toString('base64url')}`;
+/** Creates a 256-bit value that carries no user or family metadata. */
+export function generateRefreshToken(): { token: string; tokenHash: string } {
+  const token = randomBytes(REFRESH_TOKEN_BYTES).toString('base64url');
   return { token, tokenHash: sha256(token) };
 }
 
-export function parseRefreshToken(raw: string | undefined | null): { userId: string; tokenHash: string } | null {
-  if (typeof raw !== 'string' || raw.length === 0) return null;
-  const separator = raw.indexOf('.');
-  if (separator <= 0 || separator === raw.length - 1) return null;
-  const userId = raw.slice(0, separator);
-  if (!UUID_PATTERN.test(userId)) return null;
-  return { userId, tokenHash: sha256(raw) };
+/** Hash only syntactically valid values, keeping garbage away from the store. */
+export function hashRefreshToken(raw: string | undefined | null): string | null {
+  if (typeof raw !== 'string' || !OPAQUE_TOKEN_PATTERN.test(raw)) return null;
+  return sha256(raw);
 }
 
 @Injectable()
@@ -111,38 +117,105 @@ export class AuthService {
   }
 
   /**
-   * Rotates the presented refresh token.
+   * Atomically claims and rotates one refresh token.
    *
-   * A token that matches no row was either forged or already rotated. Both mean
-   * somebody is replaying a cookie, so the entire family for that user is
-   * deleted before answering with the generic 401.
+   * The raw value contains no identity. Only a successful hash lookup can name
+   * a family, so an arbitrary forged cookie is a side-effect-free 401. A row is
+   * locked before inspection: a concurrent waiter observes the committed
+   * tombstone and cannot mint a second successor.
    */
   async refresh(rawToken: string | undefined): Promise<IssuedSession> {
-    const parsed = parseRefreshToken(rawToken);
-    if (!parsed) throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
+    const tokenHash = hashRefreshToken(rawToken);
+    if (!tokenHash) throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
 
-    const row = await this.prisma.refreshToken.findUnique({
-      where: { tokenHash: parsed.tokenHash },
+    const outcome = await this.prisma.$transaction(async (tx): Promise<RefreshOutcome> => {
+      const rows = await tx.$queryRaw<LockedRefreshToken[]>`
+        SELECT
+          "id",
+          "user_id" AS "userId",
+          "family_id" AS "familyId",
+          "expires_at" AS "expiresAt",
+          "revoked_at" AS "revokedAt",
+          "rotated_at" AS "rotatedAt",
+          "successor_token_id" AS "successorTokenId"
+        FROM "refresh_tokens"
+        WHERE "token_hash" = ${tokenHash}
+        FOR UPDATE
+      `;
+      const row = rows[0];
+      if (!row) return { kind: 'invalid' };
+
+      const now = new Date();
+      if (row.expiresAt.getTime() <= now.getTime()) {
+        // Tombstones only need to survive until expiry.
+        await tx.refreshToken.deleteMany({ where: { id: row.id } });
+        return { kind: 'invalid' };
+      }
+
+      if (row.revokedAt) {
+        const isConcurrent =
+          row.rotatedAt !== null &&
+          row.successorTokenId !== null &&
+          now.getTime() - row.rotatedAt.getTime() <= REFRESH_CONCURRENCY_WINDOW_MS;
+
+        if (isConcurrent) return { kind: 'concurrent' };
+
+        // Known replay outside the response race: revoke this session family,
+        // never all sessions belonging to the user.
+        await tx.refreshToken.updateMany({
+          where: { familyId: row.familyId, revokedAt: null },
+          data: { revokedAt: now },
+        });
+        return { kind: 'invalid' };
+      }
+
+      const user = await tx.user.findUnique({
+        where: { id: row.userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          tokenVersion: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      if (!user) {
+        await tx.refreshToken.updateMany({
+          where: { familyId: row.familyId, revokedAt: null },
+          data: { revokedAt: now },
+        });
+        return { kind: 'invalid' };
+      }
+
+      const next = generateRefreshToken();
+      const nextId = randomUUID();
+      const expiresAt = new Date(now.getTime() + this.refreshTtlSeconds() * 1000);
+
+      await tx.refreshToken.create({
+        data: {
+          id: nextId,
+          userId: row.userId,
+          familyId: row.familyId,
+          tokenHash: next.tokenHash,
+          expiresAt,
+        },
+      });
+      await tx.refreshToken.update({
+        where: { id: row.id },
+        data: {
+          revokedAt: now,
+          rotatedAt: now,
+          successorTokenId: nextId,
+        },
+      });
+
+      return { kind: 'issued', refreshToken: next.token, user };
     });
 
-    if (!row || row.userId !== parsed.userId || row.revokedAt !== null) {
-      await this.revokeFamily(parsed.userId);
-      throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
-    }
-
-    if (row.expiresAt.getTime() <= Date.now()) {
-      // Plain expiry is not an attack; drop this row only.
-      await this.prisma.refreshToken.deleteMany({ where: { id: row.id } });
-      throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
-    }
-
-    const user = await this.users.findSessionUser(row.userId);
-    if (!user) {
-      await this.revokeFamily(parsed.userId);
-      throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
-    }
-
-    return this.issueSession(user, row.id);
+    if (outcome.kind === 'concurrent') throw new ConflictException(REFRESH_CONFLICT_MESSAGE);
+    if (outcome.kind === 'invalid') throw new UnauthorizedException(INVALID_SESSION_MESSAGE);
+    return this.finishSession(outcome.user, outcome.refreshToken);
   }
 
   /**
@@ -151,10 +224,11 @@ export class AuthService {
    * call with no cookie at all) is a no-op rather than a `P2025`.
    */
   async logout(userId: string, rawToken: string | undefined): Promise<void> {
-    const parsed = parseRefreshToken(rawToken);
-    if (!parsed) return;
-    await this.prisma.refreshToken.deleteMany({
-      where: { userId, tokenHash: parsed.tokenHash },
+    const tokenHash = hashRefreshToken(rawToken);
+    if (!tokenHash) return;
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, tokenHash, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
   }
 
@@ -162,28 +236,22 @@ export class AuthService {
   // Session minting
   // -------------------------------------------------------------------------
 
-  /**
-   * Signs an access token and persists a fresh refresh row. When `rotatesRowId`
-   * is given, deleting the old row and inserting the new one happen in one
-   * transaction, so a crash can never leave two live tokens for one session.
-   */
-  private async issueSession(user: SessionUser, rotatesRowId?: string): Promise<IssuedSession> {
+  /** A login/register starts an independent family, so logout remains local. */
+  private async issueSession(user: SessionUser): Promise<IssuedSession> {
+    const refresh = generateRefreshToken();
+    await this.prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        familyId: randomUUID(),
+        tokenHash: refresh.tokenHash,
+        expiresAt: new Date(Date.now() + this.refreshTtlSeconds() * 1000),
+      },
+    });
+    return this.finishSession(user, refresh.token);
+  }
+
+  private async finishSession(user: SessionUser, refreshToken: string): Promise<IssuedSession> {
     const accessTtl = this.config.get('ACCESS_TOKEN_TTL_SECONDS', { infer: true });
-    const refreshTtl = this.config.get('REFRESH_TOKEN_TTL_SECONDS', { infer: true });
-
-    const { token, tokenHash } = generateRefreshToken(user.id);
-    const expiresAt = new Date(Date.now() + refreshTtl * 1000);
-    const created = { data: { userId: user.id, tokenHash, expiresAt } };
-
-    if (rotatesRowId) {
-      await this.prisma.$transaction([
-        this.prisma.refreshToken.deleteMany({ where: { id: rotatesRowId } }),
-        this.prisma.refreshToken.create(created),
-      ]);
-    } else {
-      await this.prisma.refreshToken.create(created);
-    }
-
     const accessToken = await this.jwt.signAsync(
       { sub: user.id, email: user.email, tokenVersion: user.tokenVersion },
       {
@@ -194,13 +262,13 @@ export class AuthService {
 
     return {
       session: { accessToken, expiresIn: accessTtl, user: toUserProfile(user) },
-      refreshToken: token,
+      refreshToken,
       csrfToken: randomBytes(CSRF_TOKEN_BYTES).toString('base64url'),
     };
   }
 
-  private async revokeFamily(userId: string): Promise<void> {
-    await this.prisma.refreshToken.deleteMany({ where: { userId } });
+  private refreshTtlSeconds(): number {
+    return this.config.get('REFRESH_TOKEN_TTL_SECONDS', { infer: true });
   }
 
   /** Spends the same argon2 budget as a real verify, then discards the result. */

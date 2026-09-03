@@ -110,9 +110,7 @@ export function Dialog({
     // Move focus in on the next frame, after the panel has painted.
     const raf = requestAnimationFrame(() => {
       const target =
-        initialFocusRef?.current ??
-        panelRef.current?.querySelector<HTMLElement>(FOCUSABLE) ??
-        panelRef.current;
+        initialFocusRef?.current ?? panelRef.current?.querySelector<HTMLElement>(FOCUSABLE) ?? panelRef.current;
       target?.focus();
     });
 
@@ -231,9 +229,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={busy}
             className={`rounded-lg px-4 py-2 text-sm font-semibold text-foreground transition disabled:opacity-50 ${
-              destructive
-                ? 'bg-danger hover:brightness-110'
-                : 'bg-primary hover:bg-muted-primary'
+              destructive ? 'bg-danger hover:brightness-110' : 'bg-primary hover:bg-muted-primary'
             }`}
           >
             {busy ? 'Processando…' : confirmLabel}

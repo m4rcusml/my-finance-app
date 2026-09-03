@@ -11,18 +11,9 @@ import { ActionButton } from '@/shared/ui/form';
  * The three counters always add up to what the user selected, so a row that
  * silently vanished is impossible to miss.
  */
-export function ResultStep({
-  result,
-  onRestart,
-}: {
-  result: ConfirmImportResponse;
-  onRestart: () => void;
-}) {
+export function ResultStep({ result, onRestart }: { result: ConfirmImportResponse; onRestart: () => void }) {
   return (
-    <section
-      aria-labelledby="import-result-heading"
-      className="rounded-2xl border border-border bg-layer01 p-4 sm:p-6"
-    >
+    <section aria-labelledby="import-result-heading" className="rounded-2xl border border-border bg-layer01 p-4 sm:p-6">
       <h2 id="import-result-heading" className="text-md font-semibold text-foreground">
         3. Importação concluída
       </h2>

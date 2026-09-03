@@ -219,7 +219,9 @@ describe('FixedTransactionsJob', () => {
       prisma.fixedTransaction.findMany.mockResolvedValue([
         template({ createdAt: new Date('2026-04-02T00:00:00.000Z') }),
       ]);
-      prisma.fixedTransactionOccurrence.upsert.mockRejectedValue(Object.assign(new Error('duplicate'), { code: 'P2002' }));
+      prisma.fixedTransactionOccurrence.upsert.mockRejectedValue(
+        Object.assign(new Error('duplicate'), { code: 'P2002' }),
+      );
 
       const summary = await job.run('2026-04-15');
 

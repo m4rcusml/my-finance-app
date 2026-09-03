@@ -37,12 +37,12 @@ services:
       db:
         condition: service_healthy
     environment:
-      NODE_ENV: production
+      # This profile is a local stack: insecure cookies are intentional here.
+      NODE_ENV: development
       PORT: 3001
       DATABASE_URL: postgresql://finance:finance@db:5432/finance?schema=public
       # Compose-only development values. Never reuse these anywhere real.
       JWT_SECRET: compose-development-access-secret-32-chars
-      JWT_REFRESH_SECRET: compose-development-refresh-secret-32-chars
       CORS_ORIGINS: http://localhost:3000
       APP_TIMEZONE: America/Sao_Paulo
       COOKIE_SECURE: "false"

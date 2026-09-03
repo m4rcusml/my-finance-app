@@ -5,15 +5,10 @@ import { useState } from 'react';
 import { useDeleteInvestmentMutation } from '@/features/investments/mutations';
 import { useInvestmentsQuery } from '@/features/investments/queries';
 import { errorMessage } from '@/shared/lib/api';
-import {
-  INVESTMENT_TYPE_LABELS,
-  formatCivilDate,
-  formatMoney,
-  formatQuantity,
-} from '@/shared/lib/format';
+import { INVESTMENT_TYPE_LABELS, formatCivilDate, formatMoney, formatQuantity } from '@/shared/lib/format';
 import { PageHeader } from '@/shared/ui/app-shell';
 import { ConfirmDialog } from '@/shared/ui/dialog';
-import { ActionButton, IconButton, Select } from '@/shared/ui/form';
+import { ActionButton, Field, IconButton, Select } from '@/shared/ui/form';
 import { Pagination } from '@/shared/ui/pagination';
 import { PaginatedBoundary } from '@/shared/ui/query-state';
 import { useToast } from '@/shared/ui/toast';
@@ -82,31 +77,34 @@ export function InvestmentsClient() {
           <h2 id="lista-investimentos" className="text-sm font-semibold text-foreground">
             Posições registradas
           </h2>
-          <label className="flex flex-col gap-1.5 text-sm sm:w-56">
-            <span className="font-medium text-foreground">Filtrar por tipo</span>
-            <Select
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value as InvestmentType | '');
-                setPage(1);
-              }}
-            >
-              <option value="">Todos os tipos</option>
-              {INVESTMENT_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {INVESTMENT_TYPE_LABELS[type]}
-                </option>
-              ))}
-            </Select>
-          </label>
+          <div className="sm:w-56">
+            <Field label="Filtrar por tipo">
+              {({ id, describedBy }) => (
+                <Select
+                  id={id}
+                  aria-describedby={describedBy}
+                  value={typeFilter}
+                  onChange={(e) => {
+                    setTypeFilter(e.target.value as InvestmentType | '');
+                    setPage(1);
+                  }}
+                >
+                  <option value="">Todos os tipos</option>
+                  {INVESTMENT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {INVESTMENT_TYPE_LABELS[type]}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          </div>
         </div>
 
         <PaginatedBoundary
           query={investmentsQuery}
           loadingLabel="Carregando investimentos…"
-          emptyTitle={
-            typeFilter === '' ? 'Nenhum investimento registrado' : 'Nenhum investimento deste tipo'
-          }
+          emptyTitle={typeFilter === '' ? 'Nenhum investimento registrado' : 'Nenhum investimento deste tipo'}
           emptyMessage={
             typeFilter === ''
               ? 'Registre uma compra para começar a acompanhar quanto você já investiu.'
@@ -158,18 +156,15 @@ export function InvestmentsClient() {
  */
 function CostBasisNotice() {
   return (
-    <aside
-      aria-labelledby="aviso-cotacoes"
-      className="rounded-xl border border-warning/60 bg-layer01 p-4 sm:p-5"
-    >
+    <aside aria-labelledby="aviso-cotacoes" className="rounded-xl border border-warning/60 bg-layer01 p-4 sm:p-5">
       <h2 id="aviso-cotacoes" className="text-sm font-semibold text-warning-text">
         Esta carteira não tem cotações
       </h2>
       <p className="mt-1 max-w-prose text-sm text-muted-foreground">
-        Todos os valores desta página são o <strong className="text-foreground">custo de aquisição que você
-        informou</strong> — quanto você pagou, na data em que pagou. O app não consulta preços de mercado nesta
-        versão, então ele não sabe e não mostra valor atual, rentabilidade nem lucro. Para saber quanto sua
-        carteira vale hoje, consulte sua corretora.
+        Todos os valores desta página são o{' '}
+        <strong className="text-foreground">custo de aquisição que você informou</strong> — quanto você pagou, na data
+        em que pagou. O app não consulta preços de mercado nesta versão, então ele não sabe e não mostra valor atual,
+        rentabilidade nem lucro. Para saber quanto sua carteira vale hoje, consulte sua corretora.
       </p>
     </aside>
   );
@@ -199,11 +194,7 @@ function RowActions({ investment, onEdit, onDelete }: RowActionsProps & { invest
 }
 
 /** Wide layout. Scrolls horizontally rather than squeezing eight columns. */
-function InvestmentTable({
-  investments,
-  onEdit,
-  onDelete,
-}: RowActionsProps & { investments: InvestmentWithAsset[] }) {
+function InvestmentTable({ investments, onEdit, onDelete }: RowActionsProps & { investments: InvestmentWithAsset[] }) {
   return (
     <div className="hidden overflow-x-auto rounded-xl border border-border bg-layer01 md:block">
       <table className="w-full min-w-[52rem] border-collapse text-sm">
@@ -277,11 +268,7 @@ function InvestmentTable({
 }
 
 /** Narrow layout (down to 320px): one card per position, no horizontal scroll. */
-function InvestmentCards({
-  investments,
-  onEdit,
-  onDelete,
-}: RowActionsProps & { investments: InvestmentWithAsset[] }) {
+function InvestmentCards({ investments, onEdit, onDelete }: RowActionsProps & { investments: InvestmentWithAsset[] }) {
   return (
     <ul className="flex flex-col gap-3 md:hidden">
       {investments.map((investment) => {
@@ -310,9 +297,7 @@ function InvestmentCards({
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Valor investido</dt>
-                <dd className="tabular-nums font-medium text-foreground">
-                  {formatMoney(investment.investedAmount)}
-                </dd>
+                <dd className="tabular-nums font-medium text-foreground">{formatMoney(investment.investedAmount)}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Data da compra</dt>

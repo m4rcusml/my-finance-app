@@ -57,47 +57,40 @@ export function AnnualBalanceChart({ entries }: { entries: MonthlyNet[] }) {
             {entries.map((entry) => (
               <div key={entry.month} className="flex min-w-0 flex-1 flex-col items-center gap-2">
                 <div className="flex h-40 w-full items-end justify-center gap-1 rounded-md bg-layer02/60 p-1">
-                  <div
-                    className="w-1/3 rounded-t-sm bg-success"
-                    style={{ height: heightOf(entry.income) }}
-                  />
-                  <div
-                    className="w-1/3 rounded-t-sm bg-danger"
-                    style={{ height: heightOf(entry.expense) }}
-                  />
+                  <div className="w-1/3 rounded-t-sm bg-success" style={{ height: heightOf(entry.income) }} />
+                  <div className="w-1/3 rounded-t-sm bg-danger" style={{ height: heightOf(entry.expense) }} />
                 </div>
-                <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  {formatMonthShort(entry.month)}
-                </span>
+                <span className="whitespace-nowrap text-xs text-muted-foreground">{formatMonthShort(entry.month)}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* The text alternative. Same array, same order, same numbers. */}
-        <table className="sr-only">
-          <caption className="sr-only">
-            Receitas, despesas e saldo mês a mês nos últimos 12 meses
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Mês</th>
-              <th scope="col">Receitas</th>
-              <th scope="col">Despesas</th>
-              <th scope="col">Saldo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.month}>
-                <th scope="row">{formatMonthLabel(entry.month)}</th>
-                <td>{formatMoney(entry.income)}</td>
-                <td>{formatMoney(entry.expense)}</td>
-                <td>{formatMoney(entry.net)}</td>
+        {/* Keep the intrinsic table inside the clipped box. Applying `sr-only`
+            directly to a table lets its column algorithm widen the document. */}
+        <div className="sr-only">
+          <table>
+            <caption>Receitas, despesas e saldo mês a mês nos últimos 12 meses</caption>
+            <thead>
+              <tr>
+                <th scope="col">Mês</th>
+                <th scope="col">Receitas</th>
+                <th scope="col">Despesas</th>
+                <th scope="col">Saldo</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr key={entry.month}>
+                  <th scope="row">{formatMonthLabel(entry.month)}</th>
+                  <td>{formatMoney(entry.income)}</td>
+                  <td>{formatMoney(entry.expense)}</td>
+                  <td>{formatMoney(entry.net)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </figure>
     </DashboardSection>
   );

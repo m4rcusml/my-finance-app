@@ -29,6 +29,10 @@ import {
 import { roundMoney, sumMoney, toMoney } from '../common/money';
 import { assertOwned } from '../common/ownership';
 import { resolvePagination } from '../common/pagination.dto';
+import {
+  assertExactlyOneTransactionSource,
+  assertTransactionRelationsWritable,
+} from '../common/writable-transaction-relations';
 import type { EnvConfig } from '../config/env';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -176,10 +180,10 @@ export class TransactionsService {
     const creditCardId = dto.creditCardId ?? null;
     const categoryId = dto.categoryId ?? null;
 
-    this.assertExactlyOneSource(accountId, creditCardId);
+    assertExactlyOneTransactionSource(accountId, creditCardId);
 
     const write = async (tx: Prisma.TransactionClient): Promise<TransactionRow> => {
-      await this.assertRelationsWritable(tx, userId, { accountId, creditCardId, categoryId });
+      await assertTransactionRelationsWritable(tx, userId, { accountId, creditCardId, categoryId, type: dto.type });
       return tx.transaction.create({
         data: {
           userId,
@@ -217,15 +221,17 @@ export class TransactionsService {
       const finalAccountId = dto.accountId !== undefined ? dto.accountId : current.accountId;
       const finalCreditCardId = dto.creditCardId !== undefined ? dto.creditCardId : current.creditCardId;
       const finalCategoryId = dto.categoryId !== undefined ? dto.categoryId : current.categoryId;
+      const finalType = dto.type !== undefined ? dto.type : current.type;
 
-      this.assertExactlyOneSource(finalAccountId, finalCreditCardId);
+      assertExactlyOneTransactionSource(finalAccountId, finalCreditCardId);
 
       // Only ids that actually change are re-validated: a row already pointing
       // at an archived account keeps working, it just cannot move to one.
-      await this.assertRelationsWritable(tx, userId, {
+      await assertTransactionRelationsWritable(tx, userId, {
         accountId: finalAccountId !== current.accountId ? finalAccountId : null,
         creditCardId: finalCreditCardId !== current.creditCardId ? finalCreditCardId : null,
-        categoryId: finalCategoryId !== current.categoryId ? finalCategoryId : null,
+        categoryId: finalCategoryId !== current.categoryId || finalType !== current.type ? finalCategoryId : null,
+        type: finalType,
       });
 
       const data: Prisma.TransactionUncheckedUpdateInput = {};
@@ -485,55 +491,5 @@ export class TransactionsService {
       throw new BadRequestException('A data inicial não pode ser posterior à data final.');
     }
     return { start, end };
-  }
-
-  /** Exactly one of account / credit card, never both and never neither. */
-  private assertExactlyOneSource(accountId: string | null, creditCardId: string | null): void {
-    if (accountId && creditCardId) {
-      throw new BadRequestException('Informe apenas uma origem: conta ou cartão de crédito.');
-    }
-    if (!accountId && !creditCardId) {
-      throw new BadRequestException('Informe a origem do lançamento: conta ou cartão de crédito.');
-    }
-  }
-
-  /**
-   * Every id being written must belong to the caller and still be active.
-   * A `null` here means "not being set", so nothing is checked for it.
-   */
-  private async assertRelationsWritable(
-    tx: Prisma.TransactionClient,
-    userId: string,
-    ids: { accountId: string | null; creditCardId: string | null; categoryId: string | null },
-  ): Promise<void> {
-    if (ids.accountId) {
-      const account = await tx.account.findUnique({
-        where: { id: ids.accountId },
-        select: { id: true, userId: true, isActive: true },
-      });
-      if (!assertOwned(account, userId, 'Conta').isActive) {
-        throw new BadRequestException('Esta conta está arquivada e não aceita novos lançamentos.');
-      }
-    }
-
-    if (ids.creditCardId) {
-      const creditCard = await tx.creditCard.findUnique({
-        where: { id: ids.creditCardId },
-        select: { id: true, userId: true, isActive: true },
-      });
-      if (!assertOwned(creditCard, userId, 'Cartão de crédito').isActive) {
-        throw new BadRequestException('Este cartão está arquivado e não aceita novos lançamentos.');
-      }
-    }
-
-    if (ids.categoryId) {
-      const category = await tx.category.findUnique({
-        where: { id: ids.categoryId },
-        select: { id: true, userId: true, isActive: true },
-      });
-      if (!assertOwned(category, userId, 'Categoria').isActive) {
-        throw new BadRequestException('Esta categoria está arquivada. Escolha outra.');
-      }
-    }
   }
 }

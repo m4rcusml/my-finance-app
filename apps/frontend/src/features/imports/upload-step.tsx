@@ -99,7 +99,10 @@ export function UploadStep({ onAnalyzed }: { onAnalyzed: (preview: ImportPreview
               aria-describedby={describedBy}
               aria-invalid={invalid || undefined}
               onChange={handleFileChange}
-              className={controlClassName(invalid, 'file:mr-3 file:rounded-md file:border-0 file:bg-layer03 file:px-3 file:py-1 file:text-sm file:font-medium file:text-foreground')}
+              className={controlClassName(
+                invalid,
+                'file:mr-3 file:rounded-md file:border-0 file:bg-layer03 file:px-3 file:py-1 file:text-sm file:font-medium file:text-foreground',
+              )}
             />
           )}
         </Field>

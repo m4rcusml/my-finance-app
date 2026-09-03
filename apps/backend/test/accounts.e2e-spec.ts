@@ -4,13 +4,14 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
 describe('AccountsController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let authToken: string;
 
   const mockUser = {
@@ -18,6 +19,7 @@ describe('AccountsController (e2e)', () => {
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -35,32 +37,13 @@ describe('AccountsController (e2e)', () => {
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        account: {
-          create: jest.fn(),
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          update: jest.fn(),
-          delete: jest.fn(),
-          count: jest.fn(),
-        },
-        transaction: {
-          findMany: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
       .compile();
-
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -74,7 +57,7 @@ describe('AccountsController (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'test@example.com', password: 'password123' });
 
-    authToken = loginResponse.body.access_token;
+    authToken = loginResponse.body.accessToken;
   });
 
   afterEach(async () => {
@@ -121,6 +104,10 @@ describe('AccountsController (e2e)', () => {
         },
       ] as any);
       prisma.account.count.mockResolvedValue(1);
+      prisma.transaction.groupBy.mockResolvedValue([
+        { accountId: 'account-1', type: 'income', _sum: { value: 500 } },
+        { accountId: 'account-1', type: 'expense', _sum: { value: 200 } },
+      ] as any);
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/accounts')
@@ -157,7 +144,7 @@ describe('AccountsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for account owned by another user', async () => {
+    it('should hide an account owned by another user with 404', async () => {
       prisma.account.findUnique.mockResolvedValue({
         ...baseAccount,
         userId: 'other-user',
@@ -166,7 +153,7 @@ describe('AccountsController (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/v1/accounts/account-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -197,7 +184,7 @@ describe('AccountsController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/api/v1/accounts/account-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(204);
+        .expect(200);
     });
 
     it('should return 404 for non-existent account', async () => {

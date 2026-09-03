@@ -219,7 +219,14 @@ async function main() {
   const asset = await prisma.marketAsset.upsert({
     where: { userId_symbol_exchange: { userId: user.id, symbol: 'PETR4', exchange: 'B3' } },
     update: { name: 'Petrobras PN', type: 'stock' },
-    create: { id: 'seed-asset-petr4', userId: user.id, symbol: 'PETR4', exchange: 'B3', type: 'stock', name: 'Petrobras PN' },
+    create: {
+      id: 'seed-asset-petr4',
+      userId: user.id,
+      symbol: 'PETR4',
+      exchange: 'B3',
+      type: 'stock',
+      name: 'Petrobras PN',
+    },
   });
 
   await prisma.investment.upsert({

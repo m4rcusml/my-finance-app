@@ -1,13 +1,7 @@
 import type { ImportFileType } from '@finance/contracts';
 import { parse } from 'csv-parse/sync';
 import type { FileParser, RawImportRow } from './parser.interface';
-import {
-  decodeText,
-  findHeaderRowIndex,
-  isBlankRecord,
-  normaliseHeader,
-  sniffDelimiter,
-} from './parser.utils';
+import { decodeText, findHeaderRowIndex, isBlankRecord, normaliseHeader, sniffDelimiter } from './parser.utils';
 
 /**
  * CSV statements, comma- or semicolon-separated, with or without a preamble.

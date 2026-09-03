@@ -1,5 +1,5 @@
-import type { CivilDate, ImportOrigin, Money } from '@finance/contracts';
 import { createHash } from 'node:crypto';
+import type { CivilDate, ImportOrigin, Money } from '@finance/contracts';
 
 /**
  * Deduplication keys.

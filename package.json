@@ -6,6 +6,7 @@
     "dev": "pnpm --parallel --filter backend --filter frontend dev",
     "dev:backend": "pnpm --filter backend start:dev",
     "dev:frontend": "pnpm --filter frontend dev",
+    "build:contracts": "pnpm --filter @finance/contracts build",
     "build": "pnpm --filter backend build && pnpm --filter frontend build",
     "build:backend": "pnpm --filter backend build",
     "build:frontend": "pnpm --filter frontend build",
@@ -14,12 +15,14 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "typecheck": "pnpm --filter @finance/contracts typecheck && pnpm --filter backend typecheck && pnpm --filter frontend typecheck",
+    "typecheck": "pnpm build:contracts && pnpm --filter @finance/contracts typecheck && pnpm --filter backend typecheck && pnpm --filter frontend typecheck",
     "test": "pnpm --filter backend test && pnpm --filter frontend test",
     "test:backend": "pnpm --filter backend test",
     "test:frontend": "pnpm --filter frontend test",
     "test:e2e": "pnpm --filter backend test:e2e",
     "test:integration": "pnpm --filter backend test:integration",
+    "test:migration:upgrade": "node scripts/migration-upgrade.mjs",
+    "test:smoke": "node scripts/smoke-stack.mjs",
     "test:browser": "playwright test",
     "db:generate": "pnpm --filter backend prisma:generate",
     "db:migrate": "pnpm --filter backend prisma:migrate",
@@ -27,16 +30,23 @@
     "db:seed": "pnpm --filter backend seed",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm verify:all",
+    "verify:all": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm test:integration && pnpm test:migration:upgrade && pnpm build && pnpm test:smoke && pnpm test:browser && pnpm audit --audit-level high"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.25.0",
   "devDependencies": {
-    "@biomejs/biome": "2.3.7",
+    "@biomejs/biome": "2.5.12",
     "@playwright/test": "^1.56.0",
     "baseline-browser-mapping": "^2.10.21"
+  },
+  "pnpm": {
+    "overrides": {
+      "deepmerge-ts": "8.0.2",
+      "mysql2": "3.24.3"
+    }
   },
   "private": true
 }

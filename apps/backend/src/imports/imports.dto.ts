@@ -4,12 +4,12 @@ import {
   IMPORT_FILE_TYPES,
   IMPORT_ORIGINS,
   IMPORT_STATUSES,
+  type ImportedFile,
   type ImportFileType,
   type ImportOrigin,
   type ImportPreviewResponse,
   type ImportPreviewRow,
   type ImportStatus,
-  type ImportedFile,
   TRANSACTION_TYPES,
   type TransactionType,
 } from '@finance/contracts';

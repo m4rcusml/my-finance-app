@@ -30,11 +30,7 @@ export function useCreateGoalMutation(): UseMutationResult<Goal, unknown, Create
   });
 }
 
-export function useUpdateGoalMutation(): UseMutationResult<
-  Goal,
-  unknown,
-  { id: string; body: UpdateGoalRequest }
-> {
+export function useUpdateGoalMutation(): UseMutationResult<Goal, unknown, { id: string; body: UpdateGoalRequest }> {
   const s = useSessionKey();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -52,11 +48,7 @@ export function useUpdateGoalMutation(): UseMutationResult<
  * The "atualizar valor atual" shortcut. It is a distinct hook from the general
  * update only so it can carry its own, more specific success message.
  */
-export function useUpdateGoalAmountMutation(): UseMutationResult<
-  Goal,
-  unknown,
-  { id: string; currentAmount: number }
-> {
+export function useUpdateGoalAmountMutation(): UseMutationResult<Goal, unknown, { id: string; currentAmount: number }> {
   const s = useSessionKey();
   const queryClient = useQueryClient();
   const toast = useToast();

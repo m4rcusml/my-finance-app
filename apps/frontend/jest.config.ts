@@ -16,6 +16,7 @@ const config: Config = {
     '^@lineiconshq/react-lineicons$': '<rootDir>/__mocks__/lineicons.ts',
     '^@lineiconshq/free-icons$': '<rootDir>/__mocks__/free-icons.ts',
   },
+  modulePathIgnorePatterns: ['<rootDir>/.next/'],
   testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
 };
 

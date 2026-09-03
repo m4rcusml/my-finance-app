@@ -1,14 +1,15 @@
 import {
-  type Category,
   CATEGORY_TYPES,
+  type Category,
   type CategoryType,
   CIVIL_DATE_PATTERN,
   type CivilDate,
+  FIXED_TRANSACTION_TYPES,
   type FixedTransaction,
   type FixedTransactionOccurrence,
-  FIXED_TRANSACTION_TYPES,
   type FixedTransactionType,
   type IsoTimestamp,
+  type ListFixedTransactionsQuery,
   type Money,
   OCCURRENCE_STATUSES,
   type OccurrenceStatus,
@@ -196,7 +197,7 @@ export class UpdateFixedTransactionDto {
   isActive?: boolean;
 }
 
-export class ListFixedTransactionsQueryDto extends PaginationQueryDto {
+export class ListFixedTransactionsQueryDto extends PaginationQueryDto implements ListFixedTransactionsQuery {
   @ApiPropertyOptional({ description: 'Filtra por templates ativos (true) ou arquivados (false).' })
   @IsOptional()
   @Type(() => Boolean)

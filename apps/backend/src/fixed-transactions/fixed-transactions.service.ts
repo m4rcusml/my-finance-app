@@ -5,6 +5,7 @@ import { fromCivilDate } from '../common/civil-date';
 import { toMoney } from '../common/money';
 import { assertOwned } from '../common/ownership';
 import { buildPaginatedResponse, resolvePagination } from '../common/pagination.dto';
+import { assertTransactionRelationsWritable } from '../common/writable-transaction-relations';
 import type { EnvConfig } from '../config/env';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -83,22 +84,27 @@ export class FixedTransactionsService {
     const creditCardId = dto.creditCardId ?? null;
     this.assertExactlyOneSource(accountId, creditCardId);
 
-    await this.assertCategoryOwned(userId, dto.categoryId);
-    if (accountId) await this.assertAccountOwned(userId, accountId);
-    if (creditCardId) await this.assertCreditCardOwned(userId, creditCardId);
-
-    const created = await this.prisma.fixedTransaction.create({
-      data: {
-        userId,
-        type: dto.type,
-        value: dto.value,
-        referenceDay: dto.referenceDay,
-        marginDays: dto.marginDays ?? 0,
+    const created = await this.prisma.$transaction(async (tx) => {
+      await assertTransactionRelationsWritable(tx, userId, {
         accountId,
         creditCardId,
         categoryId: dto.categoryId,
-        description: dto.description ?? null,
-      },
+        type: dto.type,
+      });
+
+      return tx.fixedTransaction.create({
+        data: {
+          userId,
+          type: dto.type,
+          value: dto.value,
+          referenceDay: dto.referenceDay,
+          marginDays: dto.marginDays ?? 0,
+          accountId,
+          creditCardId,
+          categoryId: dto.categoryId,
+          description: dto.description ?? null,
+        },
+      });
     });
 
     return toFixedTransaction(created);
@@ -125,21 +131,25 @@ export class FixedTransactionsService {
 
     this.assertExactlyOneSource(final.accountId, final.creditCardId);
 
-    if (final.categoryId !== current.categoryId) {
-      await this.assertCategoryOwned(userId, final.categoryId);
-    }
-    if (final.accountId && final.accountId !== current.accountId) {
-      await this.assertAccountOwned(userId, final.accountId);
-    }
-    if (final.creditCardId && final.creditCardId !== current.creditCardId) {
-      await this.assertCreditCardOwned(userId, final.creditCardId);
-    }
-
     const deactivating = current.isActive && !final.isActive;
     const reactivating = !current.isActive && final.isActive;
+    const relationsChanged =
+      final.type !== current.type ||
+      final.categoryId !== current.categoryId ||
+      final.accountId !== current.accountId ||
+      final.creditCardId !== current.creditCardId;
     const period = this.currentPeriod();
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      if (reactivating || relationsChanged) {
+        await assertTransactionRelationsWritable(tx, userId, {
+          accountId: final.accountId,
+          creditCardId: final.creditCardId,
+          categoryId: final.categoryId,
+          type: final.type,
+        });
+      }
+
       const row = await tx.fixedTransaction.update({
         where: { id },
         data: {
@@ -195,9 +205,17 @@ export class FixedTransactionsService {
     const current = await this.loadOwned(userId, id);
     if (current.isActive) return toFixedTransaction(current);
 
-    const updated = await this.prisma.fixedTransaction.update({
-      where: { id },
-      data: { isActive: true, archivedAt: null },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await assertTransactionRelationsWritable(tx, userId, {
+        accountId: current.accountId,
+        creditCardId: current.creditCardId,
+        categoryId: current.categoryId,
+        type: current.type,
+      });
+      return tx.fixedTransaction.update({
+        where: { id },
+        data: { isActive: true, archivedAt: null },
+      });
     });
 
     return toFixedTransaction(updated);
@@ -226,30 +244,6 @@ export class FixedTransactionsService {
     if (Boolean(accountId) === Boolean(creditCardId)) {
       throw new BadRequestException('Informe exatamente uma origem: accountId ou creditCardId.');
     }
-  }
-
-  private async assertCategoryOwned(userId: string, categoryId: string): Promise<void> {
-    const row = await this.prisma.category.findFirst({
-      where: { id: categoryId, userId },
-      select: { id: true, userId: true },
-    });
-    assertOwned(row, userId, 'Cadastro de categoria');
-  }
-
-  private async assertAccountOwned(userId: string, accountId: string): Promise<void> {
-    const row = await this.prisma.account.findFirst({
-      where: { id: accountId, userId },
-      select: { id: true, userId: true },
-    });
-    assertOwned(row, userId, 'Cadastro de conta');
-  }
-
-  private async assertCreditCardOwned(userId: string, creditCardId: string): Promise<void> {
-    const row = await this.prisma.creditCard.findFirst({
-      where: { id: creditCardId, userId },
-      select: { id: true, userId: true },
-    });
-    assertOwned(row, userId, 'Cartão de crédito');
   }
 
   /**

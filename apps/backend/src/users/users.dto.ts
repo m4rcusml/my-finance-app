@@ -37,10 +37,10 @@ export class UserProfileDto implements UserProfile {
  * `PATCH /users/me`.
  *
  * PATCH semantics: a key that is absent is left untouched; `name: null` clears
- * the name. `currentPassword` is not part of `UpdateProfileRequest` in the
- * contract — it is an extra field this endpoint requires **only** when the
- * e-mail actually changes, because an e-mail change is an account-takeover
- * primitive (it moves where password resets land).
+ * the name. The shared contract makes `currentPassword` optional because this
+ * endpoint requires it **only** when the e-mail actually changes. An e-mail
+ * change is an account-takeover primitive (it moves where password resets
+ * land), so the service validates that conditional invariant.
  */
 export class UpdateProfileDto implements UpdateProfileRequest {
   @ApiPropertyOptional({

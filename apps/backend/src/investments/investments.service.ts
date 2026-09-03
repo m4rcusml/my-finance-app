@@ -214,7 +214,9 @@ export class InvestmentsService {
       _count: { _all: true },
     });
 
-    const byType = (grouped as unknown as { type: string; _sum: { investedAmount: unknown }; _count: { _all: number } }[])
+    const byType = (
+      grouped as unknown as { type: string; _sum: { investedAmount: unknown }; _count: { _all: number } }[]
+    )
       .map((group) => ({
         type: group.type as InvestmentType,
         totalInvested: toMoney(group._sum?.investedAmount),

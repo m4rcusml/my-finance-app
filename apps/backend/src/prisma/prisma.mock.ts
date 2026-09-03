@@ -34,6 +34,7 @@ const MODELS = [
   'importedFile',
   'importBatch',
   'importBatchRow',
+  'refreshToken',
   'user',
 ] as const;
 
@@ -50,18 +51,18 @@ export type MockedPrismaService = {
 function mockDelegate(): MockDelegate {
   return {
     create: jest.fn(),
-    createMany: jest.fn(),
-    findMany: jest.fn(),
+    createMany: jest.fn().mockResolvedValue({ count: 0 }),
+    findMany: jest.fn().mockResolvedValue([]),
     findUnique: jest.fn(),
     findFirst: jest.fn(),
     update: jest.fn(),
-    updateMany: jest.fn(),
+    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
     delete: jest.fn(),
-    deleteMany: jest.fn(),
-    count: jest.fn(),
+    deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+    count: jest.fn().mockResolvedValue(0),
     upsert: jest.fn(),
-    aggregate: jest.fn(),
-    groupBy: jest.fn(),
+    aggregate: jest.fn().mockResolvedValue({}),
+    groupBy: jest.fn().mockResolvedValue([]),
   };
 }
 
@@ -81,16 +82,15 @@ export function createMockPrismaService(): MockedPrismaService {
     ...base,
     $connect: jest.fn(),
     $disconnect: jest.fn(),
-    $queryRaw: jest.fn(),
-    $executeRaw: jest.fn(),
+    $queryRaw: jest.fn().mockResolvedValue([]),
+    $executeRaw: jest.fn().mockResolvedValue(0),
     $transaction: jest.fn(),
   } as unknown as MockedPrismaService;
 
-  (client.$transaction as jest.Mock).mockImplementation(
-    async (arg: unknown) =>
-      typeof arg === 'function'
-        ? await (arg as (tx: MockedPrismaService) => unknown)(client)
-        : await Promise.all(arg as Promise<unknown>[]),
+  (client.$transaction as jest.Mock).mockImplementation(async (arg: unknown) =>
+    typeof arg === 'function'
+      ? await (arg as (tx: MockedPrismaService) => unknown)(client)
+      : await Promise.all(arg as Promise<unknown>[]),
   );
 
   return client;

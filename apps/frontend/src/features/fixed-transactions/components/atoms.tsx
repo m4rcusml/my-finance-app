@@ -20,7 +20,9 @@ export function ActiveBadge({ isActive }: { isActive: boolean }) {
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ${
-        isActive ? 'border-success/60 bg-layer02 text-success-text' : 'border-border-strong bg-layer02 text-muted-foreground'
+        isActive
+          ? 'border-success/60 bg-layer02 text-success-text'
+          : 'border-border-strong bg-layer02 text-muted-foreground'
       }`}
     >
       {isActive ? 'Ativo' : 'Arquivado'}
@@ -68,15 +70,13 @@ export function RowAction({
 export function TableScroller({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be focusable to be keyboard-operable.
-    <div tabIndex={0} role="region" aria-label={label} className="overflow-x-auto rounded-lg border border-border">
+    <section tabIndex={0} aria-label={label} className="overflow-x-auto rounded-lg border border-border">
       {children}
-    </div>
+    </section>
   );
 }
 
 /** A note the user must not miss, rendered as real text rather than a tooltip. */
 export function Callout({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="rounded-lg border border-border bg-layer01 p-3 text-xs text-muted-foreground">{children}</p>
-  );
+  return <p className="rounded-lg border border-border bg-layer01 p-3 text-xs text-muted-foreground">{children}</p>;
 }

@@ -301,7 +301,7 @@ describe('CreditCardsService', () => {
   });
 
   describe('getCycleTotals', () => {
-    it('sums limits and current-cycle usage with one bounded read and one aggregate', async () => {
+    it('sums limits and current-cycle usage with one complete read and one aggregate', async () => {
       prisma.creditCard.findMany.mockResolvedValue([
         { id: 'card-1', limitTotal: 5000, closingDay: 10 },
         { id: 'card-2', limitTotal: 2000, closingDay: null },
@@ -316,8 +316,9 @@ describe('CreditCardsService', () => {
       expect(result).toEqual({ totalLimit: 7000, totalUsed: 1500.5, totalAvailable: 5499.5 });
       expect(prisma.transaction.groupBy).toHaveBeenCalledTimes(1);
       expect(prisma.creditCard.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { userId, isActive: true }, take: 200 }),
+        expect.objectContaining({ where: { userId, isActive: true } }),
       );
+      expect(prisma.creditCard.findMany.mock.calls[0][0]).not.toHaveProperty('take');
       // Each card gets its own window: the 10th-closing card and the calendar-month one.
       const call = prisma.transaction.groupBy.mock.calls[0][0];
       expect(call.where.OR).toEqual([
@@ -341,6 +342,23 @@ describe('CreditCardsService', () => {
         totalAvailable: 0,
       });
       expect(prisma.transaction.groupBy).not.toHaveBeenCalled();
+    });
+
+    it('does not truncate totals when the user has more than 200 active cards', async () => {
+      prisma.creditCard.findMany.mockResolvedValue(
+        Array.from({ length: 201 }, (_, index) => ({
+          id: `card-${index}`,
+          limitTotal: 100,
+          closingDay: null,
+        })),
+      );
+
+      await expect(service.getCycleTotals(userId)).resolves.toEqual({
+        totalLimit: 20100,
+        totalUsed: 0,
+        totalAvailable: 20100,
+      });
+      expect(prisma.creditCard.findMany.mock.calls[0][0]).not.toHaveProperty('take');
     });
   });
 });

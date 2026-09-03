@@ -13,6 +13,10 @@ import {
 import { toMoney } from '../common/money';
 import { assertOwned } from '../common/ownership';
 import { buildPaginatedResponse, MAX_PAGE_SIZE, resolvePagination } from '../common/pagination.dto';
+import {
+  assertExactlyOneTransactionSource,
+  assertTransactionRelationsWritable,
+} from '../common/writable-transaction-relations';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ConfirmOccurrenceDto, ListOccurrencesQueryDto } from './fixed-transactions.dto';
 import { type OccurrenceRowWithTemplate, toOccurrenceWithTemplate } from './fixed-transactions.mapper';
@@ -136,6 +140,14 @@ export class FixedTransactionsOccurrencesService {
     const bookedAt = fromCivilDate(bookedDate);
 
     const confirmed = await this.prisma.$transaction(async (tx) => {
+      assertExactlyOneTransactionSource(occurrence.accountId, occurrence.creditCardId);
+      await assertTransactionRelationsWritable(tx, userId, {
+        accountId: occurrence.accountId,
+        creditCardId: occurrence.creditCardId,
+        categoryId: occurrence.categoryId,
+        type: occurrence.type,
+      });
+
       // (1) Provisional: this row is only real if the claim below wins. A loser
       //     throws, the surrounding transaction rolls back, and the insert goes
       //     with it — which is why no orphan can ever be committed.
@@ -234,9 +246,7 @@ export class FixedTransactionsOccurrencesService {
     const monthStart = civilDateOf(periodYear, periodMonth, 1);
     const monthEnd = endOfMonth(monthStart);
     if (bookedDate < monthStart || bookedDate > monthEnd) {
-      throw new BadRequestException(
-        `realDate deve ficar dentro do mês de competência (${monthStart} a ${monthEnd}).`,
-      );
+      throw new BadRequestException(`realDate deve ficar dentro do mês de competência (${monthStart} a ${monthEnd}).`);
     }
   }
 }

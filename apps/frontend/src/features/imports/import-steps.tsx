@@ -29,9 +29,7 @@ export function ImportStepper({ current }: { current: ImportStep }) {
             key={step.id}
             aria-current={state === 'current' ? 'step' : undefined}
             className={`flex flex-1 items-start gap-3 rounded-xl border p-3 ${
-              state === 'current'
-                ? 'border-border-strong bg-layer02'
-                : 'border-border bg-layer01'
+              state === 'current' ? 'border-border-strong bg-layer02' : 'border-border bg-layer01'
             }`}
           >
             <span

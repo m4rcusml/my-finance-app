@@ -2,9 +2,9 @@
  * Resource representations exactly as the API serialises them.
  *
  * These types are the contract. The backend proves it conforms with contract
- * tests that run real HTTP requests against a real PostgreSQL database
- * (`apps/backend/test/integration/contract.int-spec.ts`); the frontend consumes
- * them directly, so a drift on either side is a compile error or a red test.
+ * tests that run HTTP requests with mocked dependencies plus PostgreSQL-backed
+ * integration suites in `apps/backend/test/integration`; the frontend consumes
+ * them directly, so drift on either side is a compile error or a red test.
  */
 
 import type {
@@ -21,7 +21,7 @@ import type {
   TransactionSource,
   TransactionType,
 } from './enums';
-import type { CivilDate, IsoTimestamp, Money, Quantity } from './primitives';
+import type { CivilDate, IsoTimestamp, Money, PaginationQuery, Quantity, YearMonth } from './primitives';
 
 // ---------------------------------------------------------------------------
 // Auth & user
@@ -58,9 +58,21 @@ export interface AuthSessionResponse {
   user: UserProfile;
 }
 
+/**
+ * Short-lived double-submit value used only to authorize a refresh request.
+ * The matching cookie is set by the same response. Unlike the refresh token,
+ * this value is deliberately returned to the SPA so it can echo it in the
+ * `X-CSRF-Token` header without reading API-domain cookies.
+ */
+export interface CsrfTokenResponse {
+  csrfToken: string;
+}
+
 export interface UpdateProfileRequest {
   name?: string | null;
   email?: string;
+  /** Required when `email` changes; omitted for name-only updates. */
+  currentPassword?: string;
 }
 
 export interface ChangePasswordRequest {
@@ -269,6 +281,12 @@ export interface CreateFixedTransactionRequest {
 export type UpdateFixedTransactionRequest = Partial<CreateFixedTransactionRequest> & {
   isActive?: boolean;
 };
+
+export interface ListFixedTransactionsQuery extends PaginationQuery {
+  /** Omit to list active and archived templates; set to select one state. */
+  isActive?: boolean;
+  type?: FixedTransactionType;
+}
 
 export interface FixedTransactionOccurrence {
   id: string;
@@ -553,7 +571,7 @@ export interface TrendedValue {
 
 export interface MonthlyNet {
   /** `YYYY-MM`. */
-  month: CivilDate;
+  month: YearMonth;
   income: Money;
   expense: Money;
   net: Money;

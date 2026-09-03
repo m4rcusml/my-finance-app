@@ -1,15 +1,5 @@
-import {
-  type ApiErrorCode,
-  type ApiErrorResponse,
-} from '@finance/contracts';
-import {
-  type ArgumentsHost,
-  Catch,
-  type ExceptionFilter,
-  HttpException,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import { type ApiErrorCode, type ApiErrorResponse } from '@finance/contracts';
+import { type ArgumentsHost, Catch, type ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import type { RequestWithId } from './request-id.middleware';
 
@@ -126,9 +116,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
  * Maps the database errors we deliberately surface. Anything else falls through
  * to a generic 500 — we never echo driver text to the client.
  */
-function mapKnownDatabaseError(
-  exception: unknown,
-): { status: number; code: ApiErrorCode; message: string } | null {
+function mapKnownDatabaseError(exception: unknown): { status: number; code: ApiErrorCode; message: string } | null {
   const code = (exception as { code?: string } | null)?.code;
 
   // Prisma known-request-error codes.

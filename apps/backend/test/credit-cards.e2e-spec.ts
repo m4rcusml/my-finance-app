@@ -4,13 +4,14 @@ import * as argon2 from 'argon2';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { createMockPrismaService, type MockedPrismaService } from '../src/prisma/prisma.mock';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 jest.mock('argon2');
 
 describe('CreditCardsController (e2e)', () => {
   let app: INestApplication<App>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: MockedPrismaService;
   let authToken: string;
 
   const mockUser = {
@@ -18,6 +19,7 @@ describe('CreditCardsController (e2e)', () => {
     email: 'test@example.com',
     passwordHash: 'hashed-password',
     name: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -30,37 +32,19 @@ describe('CreditCardsController (e2e)', () => {
     limitTotal: 5000,
     closingDay: 10,
     isActive: true,
+    archivedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   beforeEach(async () => {
+    prisma = createMockPrismaService();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-          findMany: jest.fn(),
-        },
-        creditCard: {
-          create: jest.fn(),
-          findMany: jest.fn(),
-          findUnique: jest.fn(),
-          update: jest.fn(),
-          delete: jest.fn(),
-          count: jest.fn(),
-        },
-        transaction: {
-          findMany: jest.fn(),
-        },
-        $connect: jest.fn(),
-      })
+      .useValue(prisma)
       .compile();
-
-    prisma = moduleFixture.get(PrismaService);
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api/v1');
@@ -73,7 +57,7 @@ describe('CreditCardsController (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'test@example.com', password: 'password123' });
 
-    authToken = loginResponse.body.access_token;
+    authToken = loginResponse.body.accessToken;
   });
 
   afterEach(async () => {
@@ -112,6 +96,7 @@ describe('CreditCardsController (e2e)', () => {
     it('should return list of credit cards with usage', async () => {
       prisma.creditCard.findMany.mockResolvedValue([{ ...baseCreditCard, transactions: [{ value: 500 }] }] as any);
       prisma.creditCard.count.mockResolvedValue(1);
+      prisma.transaction.groupBy.mockResolvedValue([{ creditCardId: 'card-1', _sum: { value: 500 } }] as any);
 
       const response = await request(app.getHttpServer())
         .get('/api/v1/credit-cards')
@@ -119,7 +104,7 @@ describe('CreditCardsController (e2e)', () => {
         .expect(200);
 
       expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data[0]).toHaveProperty('usedAmount');
+      expect(response.body.data[0]).toHaveProperty('cycleUsedAmount', 500);
       expect(response.body.data[0]).toHaveProperty('availableAmount');
       expect(response.body.meta.totalItems).toBe(1);
     });
@@ -149,7 +134,7 @@ describe('CreditCardsController (e2e)', () => {
         .expect(404);
     });
 
-    it('should return 403 for credit card owned by another user', async () => {
+    it('should hide a credit card owned by another user with 404', async () => {
       prisma.creditCard.findUnique.mockResolvedValue({
         ...baseCreditCard,
         userId: 'other-user',
@@ -158,7 +143,7 @@ describe('CreditCardsController (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/v1/credit-cards/card-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
     });
   });
 
@@ -188,7 +173,7 @@ describe('CreditCardsController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/api/v1/credit-cards/card-1')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(204);
+        .expect(200);
     });
 
     it('should return 404 for non-existent credit card', async () => {

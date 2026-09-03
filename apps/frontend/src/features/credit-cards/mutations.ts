@@ -24,9 +24,7 @@ function useCreditCardMutationDeps() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.creditCards.all(s) }),
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all(s) }),
-      ...(alsoTransactions
-        ? [queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all(s) })]
-        : []),
+      ...(alsoTransactions ? [queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all(s) })] : []),
     ]);
   };
 

@@ -1,311 +1,228 @@
-# 🌐 Convenções da API
+# Convenções da API V1
 
-Esta seção define os padrões gerais adotados pela API, incluindo:
+## Endereços
 
-* Estrutura de URLs
-* Versionamento
-* Identificadores (IDs)
-* Formato de datas
-* Paginação
-* Convenções de nomeação
-* Modelo padrão de erros
+- base de negócio: `/api/v1`;
+- Swagger, quando habilitado: `/api/v1/docs`;
+- liveness pública: `/health/live`;
+- readiness pública: `/health/ready`.
 
-O objetivo é garantir consistência, previsibilidade e facilitar a evolução futura da API (novas versões, novos clientes, etc.).
+Clientes devem configurar a base já com `/api/v1`. Não concatene o prefixo duas vezes.
 
-## 1. Base da API e Versionamento
+## Autenticação
 
-Toda a API pública será exposta sob o prefixo:
+Rotas privadas recebem:
 
-```text
-/api/v1
+```http
+Authorization: Bearer <access-token>
 ```
 
-Exemplos de endpoints:
+O access token é retornado no JSON e não deve ser persistido no navegador. O refresh token nunca aparece no corpo: ele é um cookie `HttpOnly`.
 
-* `GET /api/v1/accounts`
-* `POST /api/v1/transactions`
-* `GET /api/v1/dashboard`
-* `POST /api/v1/auth/login`
+Fluxo de renovação:
 
-Futuramente, novas versões poderão ser adicionadas (`/api/v2`, etc.) sem breaking changes na v1.
+```text
+GET  /api/v1/auth/csrf
+  -> Set-Cookie: csrf_token=...
+  -> { "csrfToken": "..." }
 
-## 2. Identificadores (IDs)
+POST /api/v1/auth/refresh
+Cookie: refresh_token=...; csrf_token=...
+X-CSRF-Token: <valor recebido acima>
+  -> novo access token e cookies rotacionados
+```
 
-Todos os recursos principais da API utilizarão **UUIDs** como identificadores, tanto no banco quanto nas respostas da API.
+Possíveis respostas do refresh:
 
-* Tipo: UUID v4 (string)
-* Exemplo: `"c0f3a229-7c39-4f25-9e2f-f1e6b0b118b2"`
+- 200: sessão renovada;
+- 403: par CSRF ausente ou divergente;
+- 409: outra chamada legítima já reivindicou o token na janela de concorrência;
+- 401: sessão inválida, expirada ou reuso conhecido fora da janela;
+- 429: limite de tentativas.
 
-Exemplos:
+Cadastro, login e refresh têm limite específico de 10 tentativas por minuto por IP, além do limite global.
+
+## JSON, multipart e codificação
+
+- JSON usa UTF-8 e `Content-Type: application/json`;
+- upload de importação usa `multipart/form-data`; o cliente não define o boundary manualmente;
+- nomes e mensagens de interface estão em pt-BR;
+- IDs são UUIDs e não devem ser apresentados como rótulo humano.
+
+## Enums
+
+Valores fechados são minúsculos, conforme `packages/contracts/src/enums.ts`. Exemplos:
 
 ```json
 {
-  "id": "c0f3a229-7c39-4f25-9e2f-f1e6b0b118b2",
-  "name": "Conta Inter"
+  "accountType": "checking",
+  "categoryType": "expense",
+  "transactionSource": "imported",
+  "occurrenceStatus": "pending",
+  "investmentType": "fixed_income"
 }
 ```
 
-## 3. Formato de datas e horários
+A API não normaliza variantes maiúsculas.
 
-Datas e horários serão sempre representados em **ISO 8601**, em formato de string.
+## Datas
 
-* Exemplo de data e hora completa (UTC ou com offset):
-  `2025-11-25T14:30:00Z`
-  `2025-11-25T14:30:00-03:00`
+Uma data financeira é uma string civil, sem horário ou timezone:
 
-* Exemplo de data (somente dia/mês/ano), quando fizer sentido:
-  `2025-11-25`
-
-A responsabilidade de conversão de fuso horário e formatação local é do frontend.
-
-## 4. Formato de dados e JSON
-
-Todas as requisições e respostas (quando houver corpo) utilizarão:
-
-* **Content-Type**: `application/json`
-* Convenção de campos: **camelCase**
-
-  * Exemplo: `createdAt`, `accountId`, `totalSpent`
-
-## 5. Convenção de URLs e Recursos
-
-### 5.1. Recursos no plural
-
-Endpoints de recursos seguirão o padrão em **plural**, em inglês:
-
-* `/accounts`
-* `/credit-cards`
-* `/transactions`
-* `/fixed-transactions`
-* `/investments`
-* `/goals`
-* `/imports`
-* `/market-data`
-
-Sempre prefixados com `/api/v1`.
-
-### 5.2. Operações padrão REST
-
-Operações CRUD seguem a convenção:
-
-* `GET /api/v1/resource` → listar
-* `GET /api/v1/resource/:id` → buscar por ID
-* `POST /api/v1/resource` → criar
-* `PATCH /api/v1/resource/:id` → atualizar parcialmente
-* `DELETE /api/v1/resource/:id` → remover
-
-## 6. Autenticação
-
-Inicialmente haverá apenas **um tipo de usuário**, mas a API já será preparada para evolução futura.
-
-* Autenticação via **JWT** (Bearer Token).
-* O token será enviado no header:
-
-```http
-Authorization: Bearer <token>
+```json
+{ "date": "2026-09-03" }
 ```
 
-* Endpoints públicos:
+Formato aceito: `YYYY-MM-DD`, com validação de calendário, inclusive ano bissexto. O intervalo `fromDate`/`toDate` é inclusivo.
 
-  * `/api/v1/auth/login`
-* Todos os demais endpoints serão protegidos por autenticação (salvo definição explícita em contrário no futuro).
+Instantes de auditoria usam ISO-8601:
 
-## 7. Paginação
-
-Para listagens potencialmente grandes (ex.: transações, investimentos), a API utilizará paginação baseada em **page** + **limit**, que é o padrão mais comum no ecossistema Node/Nest/REST.
-
-### 7.1. Parâmetros de consulta
-
-* `page`: número da página (inteiro ≥ 1).
-
-  * Default: `1`
-* `limit`: quantidade de itens por página.
-
-  * Default: `20` (ou valor a ser definido)
-  * Máximo sugerido: `100`
-
-Exemplo de request:
-
-```http
-GET /api/v1/transactions?page=2&limit=50
+```json
+{ "createdAt": "2026-09-03T18:42:00.000Z" }
 ```
 
-### 7.2. Formato da resposta paginada
+Nunca converta uma data civil para meia-noite local antes de enviá-la.
 
-Respostas paginadas seguem o padrão:
+## Dinheiro e quantidades
+
+Dinheiro é número JSON com até duas casas:
+
+```json
+{ "value": 1234.56 }
+```
+
+O banco usa `numeric(15,2)`. Quantidades de investimento aceitam até oito casas e usam `numeric(15,8)`.
+
+Não envie valores monetários como strings formatadas, símbolos de moeda ou separador de milhar.
+
+## Paginação
+
+Toda rota de coleção retorna:
 
 ```json
 {
-  "data": [
-    {
-      "id": "c0f3a229-7c39-4f25-9e2f-f1e6b0b118b2",
-      "type": "expense",
-      "value": 120.5,
-      "date": "2025-11-25T14:30:00Z",
-      "categoryId": "e67159cc-8dc9-4bb2-9f2a-32a5bb6c7d5d"
-    }
-    // ...
-  ],
+  "data": [],
   "meta": {
-    "page": 2,
-    "limit": 50,
-    "totalItems": 345,
-    "totalPages": 7
+    "page": 1,
+    "limit": 20,
+    "totalItems": 0,
+    "totalPages": 0,
+    "hasPreviousPage": false,
+    "hasNextPage": false
   }
 }
 ```
 
-* `data`: lista de itens da página atual.
-* `meta`: informações de paginação.
+Regras:
 
-Mesmo que algumas listas não sejam inicialmente paginadas, a ideia é padronizar esse formato para facilitar a evolução futura.
+- `page` começa em 1;
+- `limit` padrão é 20;
+- `limit` máximo é 100;
+- filtros não alteram o formato;
+- resposta vazia não é um array solto.
 
-## 8. Convenção de Sucesso (Respostas HTTP)
+Listas pequenas embutidas no dashboard não são endpoints de coleção e, portanto, são arrays.
 
-### 8.1. Códigos de status
+## PATCH e `null`
 
-* `200 OK` – requisição bem sucedida (GET, PATCH).
-* `201 Created` – recurso criado com sucesso (POST).
-* `204 No Content` – ação realizada sem corpo de resposta (DELETE, algumas operações de confirmação).
-* `400 Bad Request` – erro de validação em entrada de dados.
-* `401 Unauthorized` – token ausente ou inválido.
-* `403 Forbidden` – acesso negado (caso existam regras de permissão no futuro).
-* `404 Not Found` – recurso não encontrado.
-* `409 Conflict` – conflitos de domínio (duplicatas, regras de negócio).
-* `500 Internal Server Error` – erro inesperado do servidor.
+Em atualizações:
 
-# ❌ Modelo de Erros da API
+- campo omitido: preserva o valor atual;
+- campo com `null`: limpa uma relação/campo opcional, quando o contrato permite;
+- valor presente: substitui.
 
-Todas as respostas de erro seguirão um **formato padrão**, independentemente do módulo que gerou o erro.
+Exemplo de troca de conta para cartão:
 
-## 1. Estrutura base de erro
+```json
+{
+  "accountId": null,
+  "creditCardId": "9ce4c771-e228-43c9-947f-e6493ca75e64"
+}
+```
 
-Formato geral:
+O estado final continua sujeito ao XOR de origem.
+
+## Origem única
+
+Transação, modelo recorrente e snapshot de ocorrência exigem exatamente uma origem:
+
+```text
+accountId preenchido  + creditCardId nulo
+ou
+accountId nulo        + creditCardId preenchido
+```
+
+Zero ou duas origens retornam 400. PostgreSQL também possui constraints `CHECK`.
+
+## Arquivamento
+
+`DELETE` de conta, cartão ou categoria:
+
+- remove se o recurso não possui dependências;
+- arquiva se há histórico.
+
+As rotas explícitas `POST /:id/archive` e `POST /:id/restore` controlam o estado. Recursos arquivados podem aparecer com `includeArchived=true`, mas não aceitam novos lançamentos.
+
+Categorias `income`/`expense` só podem ser ligadas ao mesmo tipo de lançamento; `both` aceita ambos. A alteração de tipo de uma categoria retorna 409 quando vínculos históricos se tornariam incompatíveis.
+
+Para recorrências, `DELETE` equivale sempre a arquivar.
+
+## Erros
+
+Qualquer erro HTTP usa:
 
 ```json
 {
   "statusCode": 400,
-  "error": "VALIDATION_ERROR",
-  "message": "Um ou mais campos são inválidos.",
-  "details": null,
-  "timestamp": "2025-11-25T14:30:00Z",
-  "path": "/api/v1/transactions"
+  "error": "validation_failed",
+  "message": "Alguns campos estão inválidos.",
+  "details": ["date deve ser uma data válida no formato YYYY-MM-DD."],
+  "timestamp": "2026-09-03T18:42:00.000Z",
+  "path": "/api/v1/transactions",
+  "requestId": "3dd5032d-52b8-40a7-a24a-853984248b2d"
 }
 ```
 
-### Campos
+Códigos possíveis:
 
-* `statusCode` (number)
-  Código HTTP correspondente ao erro (ex.: 400, 401, 404, 500).
+- `bad_request`;
+- `validation_failed`;
+- `unauthorized`;
+- `forbidden`;
+- `not_found`;
+- `conflict`;
+- `payload_too_large`;
+- `unsupported_media_type`;
+- `unprocessable_entity`;
+- `too_many_requests`;
+- `internal_error`.
 
-* `error` (string)
-  Um código curto e estável representando o tipo do erro. Exemplos:
+`message` é segura para exibição. Detalhes internos ficam nos logs e são correlacionados por `requestId`. O cliente pode enviar `X-Request-Id`; se não enviar, a API cria um.
 
-  * `VALIDATION_ERROR`
-  * `AUTHENTICATION_ERROR`
-  * `AUTHORIZATION_ERROR`
-  * `NOT_FOUND`
-  * `CONFLICT`
-  * `INTERNAL_SERVER_ERROR`
-  * `IMPORT_PARSE_ERROR`
-  * `DUPLICATE_TRANSACTION`
-  * etc.
+## Tenancy
 
-* `message` (string)
-  Mensagem descritiva, legível para humanos.
+Todo acesso usa o usuário do access token. Um recurso de outro usuário retorna o mesmo 404 de um ID inexistente. Consultas globais de ativos legados não são expostas como recursos de outro usuário.
 
-* `details` (object | array | null)
-  Detalhes adicionais opcionais, úteis para validação ou debug.
-  Exemplo para erros de validação:
+## Concorrência e idempotência
 
-  ```json
-  "details": [
-    {
-      "field": "value",
-      "message": "O campo 'value' é obrigatório."
-    },
-    {
-      "field": "date",
-      "message": "A data informada é inválida."
-    }
-  ]
-  ```
+- refresh: lock de linha e um único sucessor;
+- confirmação de ocorrência: claim condicional sobre `status: pending`;
+- importação: batch persistido, `externalId` determinístico e índice único parcial;
+- backup: uma transação cobre purge, inserção e auditoria de referências;
+- geração de ocorrência: chave única por modelo/ano/mês e `upsert`.
 
-* `timestamp` (string)
-  Data/hora do erro em formato ISO 8601.
+409 sinaliza conflito de estado ou corrida legítima; não deve ser convertido automaticamente em logout.
 
-* `path` (string)
-  Caminho da requisição que gerou o erro (ex.: `/api/v1/transactions`).
+## Health
 
-## 2. Exemplos por tipo de erro
-
-### 2.1. Erro de validação (`400 Bad Request`)
+`GET /health/live` prova apenas que o processo responde. `GET /health/ready` executa `SELECT 1`:
 
 ```json
-{
-  "statusCode": 400,
-  "error": "VALIDATION_ERROR",
-  "message": "Um ou mais campos são inválidos.",
-  "details": [
-    {
-      "field": "value",
-      "message": "O campo 'value' deve ser maior que zero."
-    }
-  ],
-  "timestamp": "2025-11-25T14:30:00Z",
-  "path": "/api/v1/transactions"
-}
+{ "status": "ok", "checks": { "database": "ok" } }
 ```
 
-### 2.2. Erro de autenticação (`401 Unauthorized`)
+Sem banco, readiness retorna HTTP 503 e corpo com status de erro, sem detalhes de conexão.
 
-```json
-{
-  "statusCode": 401,
-  "error": "AUTHENTICATION_ERROR",
-  "message": "Token de autenticação ausente ou inválido.",
-  "details": null,
-  "timestamp": "2025-11-25T14:30:00Z",
-  "path": "/api/v1/accounts"
-}
-```
+## Fonte canônica
 
-### 2.3. Recurso não encontrado (`404 Not Found`)
-
-```json
-{
-  "statusCode": 404,
-  "error": "NOT_FOUND",
-  "message": "Transação não encontrada.",
-  "details": null,
-  "timestamp": "2025-11-25T14:30:00Z",
-  "path": "/api/v1/transactions/c0f3a229-7c39-4f25-9e2f-f1e6b0b118b2"
-}
-```
-
-### 2.4. Erro interno (`500 Internal Server Error`)
-
-```json
-{
-  "statusCode": 500,
-  "error": "INTERNAL_SERVER_ERROR",
-  "message": "Ocorreu um erro inesperado. Tente novamente mais tarde.",
-  "details": null,
-  "timestamp": "2025-11-25T14:30:00Z",
-  "path": "/api/v1/dashboard"
-}
-```
-
-## 3. Comportamento esperado
-
-* **Todos os erros** retornados pela API devem seguir essa estrutura.
-* O frontend pode confiar que sempre receberá:
-
-  * `statusCode`
-  * `error`
-  * `message`
-  * `timestamp`
-  * `path`
-  * e opcionalmente `details`
-
-Isso facilita o tratamento de erros de forma centralizada na aplicação cliente.
+Tipos e formatos: `packages/contracts`. Validação concreta e exemplos Swagger: DTOs em `apps/backend/src`. A lista de endpoints está em [`api-v1-endpoints.md`](api-v1-endpoints.md).

@@ -11,6 +11,7 @@ const fixedTransactionId = '550e8400-e29b-41d4-a716-446655440003';
 const accountId = '550e8400-e29b-41d4-a716-446655440001';
 const categoryId = '550e8400-e29b-41d4-a716-446655440002';
 const transactionId = '550e8400-e29b-41d4-a716-446655440005';
+const creditCardId = '550e8400-e29b-41d4-a716-446655440006';
 
 /** Due 2026-04-10 with a 3-day margin, so the window is 2026-04-07 .. 2026-04-13. */
 const pendingOccurrence = {
@@ -47,6 +48,9 @@ describe('FixedTransactionsOccurrencesService', () => {
     }).compile();
 
     service = module.get(FixedTransactionsOccurrencesService);
+    prisma.account.findUnique.mockResolvedValue({ id: accountId, userId, isActive: true });
+    prisma.creditCard.findUnique.mockResolvedValue({ id: creditCardId, userId, isActive: true });
+    prisma.category.findUnique.mockResolvedValue({ id: categoryId, userId, isActive: true, type: 'expense' });
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -121,14 +125,12 @@ describe('FixedTransactionsOccurrencesService', () => {
   describe('confirm', () => {
     /** The pre-flight read sees `pending`; the read-back sees the confirmed row. */
     function arrangeHappyPath() {
-      prisma.fixedTransactionOccurrence.findFirst
-        .mockResolvedValueOnce(pendingOccurrence)
-        .mockResolvedValue({
-          ...pendingOccurrence,
-          status: 'confirmed',
-          realDate: new Date('2026-04-10T00:00:00.000Z'),
-          transactionId,
-        });
+      prisma.fixedTransactionOccurrence.findFirst.mockResolvedValueOnce(pendingOccurrence).mockResolvedValue({
+        ...pendingOccurrence,
+        status: 'confirmed',
+        realDate: new Date('2026-04-10T00:00:00.000Z'),
+        transactionId,
+      });
       prisma.fixedTransactionOccurrence.updateMany.mockResolvedValue({ count: 1 });
       prisma.transaction.create.mockResolvedValue({ id: transactionId });
     }
@@ -184,6 +186,58 @@ describe('FixedTransactionsOccurrencesService', () => {
       expect(prisma.transaction.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ value: 1310.55 }) }),
       );
+    });
+
+    it('revalidates archived snapshot relations inside the confirmation transaction', async () => {
+      arrangeHappyPath();
+      prisma.account.findUnique.mockResolvedValue({ id: accountId, userId, isActive: false });
+      prisma.category.findUnique.mockResolvedValue({ id: categoryId, userId, isActive: true, type: 'expense' });
+
+      await expect(service.confirm(userId, occurrenceId, {})).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(prisma.account.findUnique).toHaveBeenCalled();
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(prisma.transaction.create).not.toHaveBeenCalled();
+      expect(prisma.fixedTransactionOccurrence.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses an archived card snapshot before booking the occurrence', async () => {
+      prisma.fixedTransactionOccurrence.findFirst.mockResolvedValue({
+        ...pendingOccurrence,
+        accountId: null,
+        creditCardId,
+      });
+      prisma.creditCard.findUnique.mockResolvedValue({ id: creditCardId, userId, isActive: false });
+
+      await expect(service.confirm(userId, occurrenceId, {})).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(prisma.transaction.create).not.toHaveBeenCalled();
+      expect(prisma.fixedTransactionOccurrence.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses an archived category snapshot before booking the occurrence', async () => {
+      prisma.fixedTransactionOccurrence.findFirst.mockResolvedValue(pendingOccurrence);
+      prisma.category.findUnique.mockResolvedValue({ id: categoryId, userId, isActive: false, type: 'expense' });
+
+      await expect(service.confirm(userId, occurrenceId, {})).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+      expect(prisma.transaction.create).not.toHaveBeenCalled();
+      expect(prisma.fixedTransactionOccurrence.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('keeps a corrupt cross-tenant snapshot indistinguishable from a missing relation', async () => {
+      prisma.fixedTransactionOccurrence.findFirst.mockResolvedValue(pendingOccurrence);
+      prisma.category.findUnique.mockResolvedValue({
+        id: categoryId,
+        userId: 'other-user',
+        isActive: true,
+        type: 'expense',
+      });
+
+      await expect(service.confirm(userId, occurrenceId, {})).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.transaction.create).not.toHaveBeenCalled();
     });
 
     it('rejects a realDate outside the margin window, before touching anything', async () => {
@@ -251,7 +305,7 @@ describe('FixedTransactionsOccurrencesService', () => {
   // -------------------------------------------------------------------------
 
   describe('confirm under concurrency', () => {
-    it('two simultaneous confirms create exactly one transaction', async () => {
+    it('two simultaneous confirms commit exactly one provisional transaction', async () => {
       // Both requests read the row while it is still pending — the flip is what
       // arbitrates, not the read.
       prisma.fixedTransactionOccurrence.findFirst.mockResolvedValue(pendingOccurrence);
@@ -273,7 +327,11 @@ describe('FixedTransactionsOccurrencesService', () => {
       expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
       const rejected = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
       expect(rejected.reason).toBeInstanceOf(ConflictException);
-      expect(prisma.transaction.create).toHaveBeenCalledTimes(1);
+      // Both database transactions provisionally insert before the conditional
+      // claim. The loser throws and PostgreSQL rolls that insert back; a Jest
+      // mock records attempted calls, not committed rows.
+      expect(prisma.transaction.create).toHaveBeenCalledTimes(2);
+      expect(prisma.fixedTransactionOccurrence.updateMany).toHaveBeenCalledTimes(2);
     });
 
     it('a failure mid-confirm rolls back: no orphan transaction and the row stays pending', async () => {
@@ -303,15 +361,19 @@ describe('FixedTransactionsOccurrencesService', () => {
         ...pendingOccurrence,
         ...row,
       }));
-      prisma.fixedTransactionOccurrence.updateMany.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => {
-        if (row.status !== 'pending') return { count: 0 };
-        row = { ...row, ...(data as Partial<typeof row>) };
-        return { count: 1 };
-      });
-      prisma.fixedTransactionOccurrence.update.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => {
-        row = { ...row, ...(data as Partial<typeof row>) };
-        return { ...pendingOccurrence, ...row };
-      });
+      prisma.fixedTransactionOccurrence.updateMany.mockImplementation(
+        async ({ data }: { data: Record<string, unknown> }) => {
+          if (row.status !== 'pending') return { count: 0 };
+          row = { ...row, ...(data as Partial<typeof row>) };
+          return { count: 1 };
+        },
+      );
+      prisma.fixedTransactionOccurrence.update.mockImplementation(
+        async ({ data }: { data: Record<string, unknown> }) => {
+          row = { ...row, ...(data as Partial<typeof row>) };
+          return { ...pendingOccurrence, ...row };
+        },
+      );
 
       let attempt = 0;
       prisma.transaction.create.mockImplementation(async () => {

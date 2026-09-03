@@ -44,11 +44,7 @@ function useOccurrenceInvalidation(): () => Promise<void> {
   }, [queryClient, sessionKey]);
 }
 
-export function useConfirmOccurrence(): UseMutationResult<
-  OccurrenceWithTemplate,
-  unknown,
-  ConfirmOccurrenceVariables
-> {
+export function useConfirmOccurrence(): UseMutationResult<OccurrenceWithTemplate, unknown, ConfirmOccurrenceVariables> {
   const invalidate = useOccurrenceInvalidation();
   const toast = useToast();
 

@@ -18,6 +18,7 @@ import {
   type TransactionType,
   type TransactionWithRelations,
   type UpdateTransactionRequest,
+  type YearMonth,
 } from '@finance/contracts';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -321,7 +322,7 @@ export class TransactionSummaryDto implements TransactionSummary {
 }
 
 export class MonthlyNetDto implements MonthlyNet {
-  @ApiProperty({ example: '2026-03', description: 'YYYY-MM.' }) month!: string;
+  @ApiProperty({ example: '2026-03', description: 'YYYY-MM.' }) month!: YearMonth;
   @ApiProperty({ example: 5000 }) income!: number;
   @ApiProperty({ example: 3500 }) expense!: number;
   @ApiProperty({ example: 1500 }) net!: number;

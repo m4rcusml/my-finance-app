@@ -36,11 +36,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
   user: null,
   sessionKey: ANONYMOUS_SESSION_KEY,
 
-  setSession: (accessToken, user) =>
-    set({ status: 'authenticated', accessToken, user, sessionKey: user.id }),
+  setSession: (accessToken, user) => set({ status: 'authenticated', accessToken, user, sessionKey: user.id }),
 
-  setAnonymous: () =>
-    set({ status: 'anonymous', accessToken: null, user: null, sessionKey: ANONYMOUS_SESSION_KEY }),
+  setAnonymous: () => set({ status: 'anonymous', accessToken: null, user: null, sessionKey: ANONYMOUS_SESSION_KEY }),
 
   updateUser: (user) => set((state) => (state.user ? { ...state, user } : state)),
 }));

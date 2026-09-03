@@ -13,8 +13,9 @@ concurrency:
 env:
   # Development-only values. Real secrets never live in CI config.
   CI_JWT_SECRET: ci-access-token-secret-value-32-characters
-  CI_JWT_REFRESH_SECRET: ci-refresh-token-secret-value-32-characters
   CI_DATABASE_URL: postgresql://finance:finance@localhost:5432/finance_ci?schema=public
+  # Prisma 7 loads this variable even for schema-only validate/generate commands.
+  DATABASE_URL: postgresql://finance:finance@localhost:5432/finance_ci?schema=public
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -109,15 +110,15 @@ jobs:
           DATABASE_URL: ${{ env.CI_DATABASE_URL }}
         run: |
           pnpm --filter backend exec prisma migrate diff \
-            --from-schema-datasource prisma/schema.prisma \
-            --to-schema-datamodel prisma/schema.prisma \
+            --from-config-datasource \
+            --to-schema prisma/schema.prisma \
             --exit-code && echo "schema and database agree"
 
       - name: Upgrade path from the pre-V1 schema, with data
         run: |
-          PGPASSWORD=finance psql -h localhost -U finance -d postgres -c "DROP DATABASE IF EXISTS finance_upgrade"
-          PGPASSWORD=finance psql -h localhost -U finance -d postgres -c "CREATE DATABASE finance_upgrade"
-          DATABASE_URL=postgresql://finance:finance@localhost:5432/finance_upgrade?schema=public \
+          PGPASSWORD=finance psql -h localhost -U finance -d postgres -c "DROP DATABASE IF EXISTS finance_upgrade_ci"
+          PGPASSWORD=finance psql -h localhost -U finance -d postgres -c "CREATE DATABASE finance_upgrade_ci"
+          DATABASE_URL=postgresql://finance:finance@localhost:5432/finance_upgrade_ci?schema=public \
             node apps/backend/test/migrations/upgrade-check.mjs
 
       - name: Seed is idempotent (runs twice, same result)
@@ -135,7 +136,6 @@ jobs:
         env:
           TEST_DATABASE_URL: postgresql://finance:finance@localhost:5432/finance_ci?schema=public
           JWT_SECRET: ${{ env.CI_JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ env.CI_JWT_REFRESH_SECRET }}
         run: pnpm test:integration
 
   # ---------------------------------------------------------------------------
@@ -148,7 +148,7 @@ jobs:
         env:
           POSTGRES_USER: finance
           POSTGRES_PASSWORD: finance
-          POSTGRES_DB: finance_smoke
+          POSTGRES_DB: finance_smoke_ci
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U finance"
@@ -166,43 +166,21 @@ jobs:
       - name: Build backend
         run: pnpm build:backend
 
+      - name: Verify backend entrypoint exists
+        run: test -f apps/backend/dist/main.js
+
       - name: Build frontend
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
         run: pnpm build:frontend
 
-      - name: Migrate the smoke database
+      # Runs EXACTLY dist/main.js against an explicitly disposable database.
+      # The same command uses embedded PostgreSQL 16 on developer machines.
+      - name: Smoke the production artifact
         env:
-          DATABASE_URL: postgresql://finance:finance@localhost:5432/finance_smoke?schema=public
-        run: pnpm db:migrate
-
-      # Runs EXACTLY the artifact `start:prod` points at — this is the check that
-      # would have caught `node dist/main` against a `dist/src/main.js` build.
-      - name: Start the production artifact
-        env:
-          NODE_ENV: production
-          PORT: 3001
-          DATABASE_URL: postgresql://finance:finance@localhost:5432/finance_smoke?schema=public
+          SMOKE_DATABASE_URL: postgresql://finance:finance@localhost:5432/finance_smoke_ci?schema=public
           JWT_SECRET: ${{ env.CI_JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ env.CI_JWT_REFRESH_SECRET }}
-          CORS_ORIGINS: http://localhost:3000
-          COOKIE_SECURE: 'true'
-          COOKIE_SAMESITE: lax
-          ENABLE_CRON: 'false'
-        run: |
-          pnpm --filter backend start:prod > /tmp/backend.log 2>&1 &
-          echo $! > /tmp/backend.pid
-
-      - name: HTTP smoke test
-        run: node scripts/smoke.mjs --base http://localhost:3001
-
-      - name: Backend log
-        if: always()
-        run: tail -n 100 /tmp/backend.log || true
-
-      - name: Stop the backend
-        if: always()
-        run: kill "$(cat /tmp/backend.pid)" || true
+        run: pnpm test:smoke
 
   # ---------------------------------------------------------------------------
   browser:
@@ -239,7 +217,6 @@ jobs:
         env:
           DATABASE_URL: postgresql://finance:finance@localhost:5432/finance_e2e?schema=public
           JWT_SECRET: ${{ env.CI_JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ env.CI_JWT_REFRESH_SECRET }}
           CORS_ORIGINS: http://localhost:3000
           NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
           ENABLE_CRON: 'false'

@@ -16,6 +16,10 @@ export const EXPORT_PAGE_SIZE = 500;
  */
 export const MAX_EXPORT_ROWS_PER_TABLE = 200_000;
 
+/** Keep a large, paginated export inside one consistent database snapshot. */
+export const EXPORT_TRANSACTION_TIMEOUT_MS = 180_000;
+export const EXPORT_TRANSACTION_MAX_WAIT_MS = 15_000;
+
 /** Cap on rows accepted per collection in a restore payload. */
 export const MAX_RESTORE_ROWS_PER_COLLECTION = 100_000;
 

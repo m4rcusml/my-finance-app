@@ -45,11 +45,9 @@ export function TrendBadge({
         ? `queda de ${magnitude} ${comparisonLabel}`
         : `estável ${comparisonLabel}`;
 
-  const isGood =
-    direction === 'flat' ? null : goodWhen === 'up' ? direction === 'up' : direction === 'down';
+  const isGood = direction === 'flat' ? null : goodWhen === 'up' ? direction === 'up' : direction === 'down';
 
-  const tone =
-    isGood === null ? 'text-muted-foreground' : isGood ? 'text-success-text' : 'text-danger-text';
+  const tone = isGood === null ? 'text-muted-foreground' : isGood ? 'text-success-text' : 'text-danger-text';
 
   return (
     <p className={`mt-1 text-xs font-medium ${tone}`}>

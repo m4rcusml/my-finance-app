@@ -1,6 +1,7 @@
 import type { HealthResponse, ReadinessResponse } from '@finance/contracts';
-import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Res } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { Public } from '../decorators/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -28,12 +29,13 @@ export class HealthController {
   @ApiOperation({ summary: 'Pronto para receber tráfego (verifica o banco).' })
   @ApiOkResponse({ schema: { example: { status: 'ok', checks: { database: 'ok' } } } })
   @ApiServiceUnavailableResponse({ description: 'Banco indisponível.' })
-  async ready(): Promise<ReadinessResponse> {
+  async ready(@Res({ passthrough: true }) response: Response): Promise<ReadinessResponse> {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       return { status: 'ok', checks: { database: 'ok' } };
     } catch {
-      // No driver text in the body — the reason is in the server log.
+      response.status(HttpStatus.SERVICE_UNAVAILABLE);
+      // Never expose the driver error or connection details in the response.
       return { status: 'error', checks: { database: 'error' } };
     }
   }

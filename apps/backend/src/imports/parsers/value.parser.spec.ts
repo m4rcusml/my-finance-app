@@ -1,9 +1,4 @@
-import {
-  excelSerialToCivilDate,
-  parseCivilDateValue,
-  parseMoneyValue,
-  parseTypeHint,
-} from './value.parser';
+import { excelSerialToCivilDate, parseCivilDateValue, parseMoneyValue, parseTypeHint } from './value.parser';
 
 describe('parseMoneyValue', () => {
   describe('separator notations', () => {
@@ -47,12 +42,15 @@ describe('parseMoneyValue', () => {
   });
 
   describe('non-values', () => {
-    it.each([['', null], ['   ', null], ['abc', null], ['-', null], ['R$', null]])(
-      'returns null for %p',
-      (input, expected) => {
-        expect(parseMoneyValue(input)).toBe(expected);
-      },
-    );
+    it.each([
+      ['', null],
+      ['   ', null],
+      ['abc', null],
+      ['-', null],
+      ['R$', null],
+    ])('returns null for %p', (input, expected) => {
+      expect(parseMoneyValue(input)).toBe(expected);
+    });
 
     it('returns null (not 0) so the row can be reported instead of imported', () => {
       expect(parseMoneyValue('sem valor')).toBeNull();

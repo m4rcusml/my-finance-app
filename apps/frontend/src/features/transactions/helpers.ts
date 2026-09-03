@@ -18,9 +18,7 @@ export function parseMoneyInput(raw: string): Money | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
-  const normalized = trimmed.includes(',')
-    ? trimmed.replace(/\./g, '').replace(',', '.')
-    : trimmed.replace(/\s/g, '');
+  const normalized = trimmed.includes(',') ? trimmed.replace(/\./g, '').replace(',', '.') : trimmed.replace(/\s/g, '');
 
   if (!/^\d+(\.\d+)?$/.test(normalized)) return null;
 
@@ -63,12 +61,6 @@ export function categoryLabel(transaction: TransactionWithRelations): string {
  * `keepId` is always included even when it no longer matches, so editing an old
  * row cannot silently drop the category it already has.
  */
-export function categoryOptions(
-  categories: Category[],
-  type: TransactionType,
-  keepId?: string | null,
-): Category[] {
-  return categories.filter(
-    (category) => category.type === type || category.type === 'both' || category.id === keepId,
-  );
+export function categoryOptions(categories: Category[], type: TransactionType, keepId?: string | null): Category[] {
+  return categories.filter((category) => category.type === type || category.type === 'both' || category.id === keepId);
 }

@@ -64,11 +64,7 @@ export class MarketAssetsController {
   @ApiOkResponse({ type: MarketAssetResponseDto })
   @ApiNotFoundResponse({ description: 'Ativo não encontrado.' })
   @ApiConflictResponse({ description: 'Já existe um ativo com esse símbolo nesta bolsa.' })
-  update(
-    @CurrentUser() user: UserPayload,
-    @Param('id') id: string,
-    @Body() body: UpdateMarketAssetDto,
-  ) {
+  update(@CurrentUser() user: UserPayload, @Param('id') id: string, @Body() body: UpdateMarketAssetDto) {
     return this.marketAssetsService.update(user.sub, id, body);
   }
 

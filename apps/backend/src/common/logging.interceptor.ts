@@ -1,16 +1,18 @@
-import {
-  type CallHandler,
-  type ExecutionContext,
-  Injectable,
-  Logger,
-  type NestInterceptor,
-} from '@nestjs/common';
+import { type CallHandler, type ExecutionContext, Injectable, Logger, type NestInterceptor } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { type Observable, tap } from 'rxjs';
 import type { RequestWithId } from './request-id.middleware';
 
 /** Fields that must never reach a log line. */
-const REDACTED = new Set(['password', 'currentPassword', 'newPassword', 'passwordHash', 'accessToken', 'refreshToken', 'token']);
+const REDACTED = new Set([
+  'password',
+  'currentPassword',
+  'newPassword',
+  'passwordHash',
+  'accessToken',
+  'refreshToken',
+  'token',
+]);
 
 /**
  * One structured line per request: method, route, status, duration, requestId

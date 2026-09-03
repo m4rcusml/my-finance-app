@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import {
   type CivilDate,
   civilDateOf,
@@ -7,10 +6,13 @@ import {
   fromCivilDate,
   isCivilDate,
   toCivilDate,
+  toYearMonth,
+  type YearMonth,
 } from '@finance/contracts';
+import { BadRequestException } from '@nestjs/common';
 
-export { civilDateOf, clampDayToMonth, daysInMonth, fromCivilDate, isCivilDate, toCivilDate };
-export type { CivilDate };
+export type { CivilDate, YearMonth };
+export { civilDateOf, clampDayToMonth, daysInMonth, fromCivilDate, isCivilDate, toCivilDate, toYearMonth };
 
 /**
  * Civil-date arithmetic for the whole backend.
@@ -103,8 +105,8 @@ export function maxCivilDate(a: CivilDate, b: CivilDate): CivilDate {
 }
 
 /** `YYYY-MM` label for a civil date, used by the annual balance series. */
-export function monthKey(date: CivilDate): string {
-  return date.slice(0, 7);
+export function monthKey(date: CivilDate): YearMonth {
+  return toYearMonth(date.slice(0, 7));
 }
 
 /**
@@ -142,13 +144,21 @@ export function billingCycleFor(reference: CivilDate, closingDay: number | null)
     // Cycle ends this month; it opened the day after the previous close.
     const prev = addMonths(civilDateOf(year, month, 1), -1);
     const prevParts = partsOf(prev);
-    const prevClose = civilDateOf(prevParts.year, prevParts.month, clampDayToMonth(prevParts.year, prevParts.month, closingDay));
+    const prevClose = civilDateOf(
+      prevParts.year,
+      prevParts.month,
+      clampDayToMonth(prevParts.year, prevParts.month, closingDay),
+    );
     return { start: addDays(prevClose, 1), end: civilDateOf(year, month, closeThisMonth) };
   }
 
   // Past this month's close: the open cycle ends next month.
   const next = addMonths(civilDateOf(year, month, 1), 1);
   const nextParts = partsOf(next);
-  const nextClose = civilDateOf(nextParts.year, nextParts.month, clampDayToMonth(nextParts.year, nextParts.month, closingDay));
+  const nextClose = civilDateOf(
+    nextParts.year,
+    nextParts.month,
+    clampDayToMonth(nextParts.year, nextParts.month, closingDay),
+  );
   return { start: addDays(civilDateOf(year, month, closeThisMonth), 1), end: nextClose };
 }

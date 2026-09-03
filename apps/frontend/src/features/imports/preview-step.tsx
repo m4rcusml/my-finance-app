@@ -10,12 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useActiveAccountsQuery } from '@/features/accounts/queries';
 import { useActiveCreditCardsQuery } from '@/features/credit-cards/queries';
 import { errorMessage } from '@/shared/lib/api';
-import {
-  IMPORT_ORIGIN_LABELS,
-  TRANSACTION_TYPE_LABELS,
-  formatCivilDate,
-  formatMoney,
-} from '@/shared/lib/format';
+import { IMPORT_ORIGIN_LABELS, TRANSACTION_TYPE_LABELS, formatCivilDate, formatMoney } from '@/shared/lib/format';
 import { ActionButton, Field, Select } from '@/shared/ui/form';
 import { Pagination } from '@/shared/ui/pagination';
 import { ErrorState, LoadingState } from '@/shared/ui/query-state';
@@ -80,8 +75,7 @@ export function PreviewStep({
   const meta = buildPaginationMeta(preview.rows.length, safePage, limit);
   const visibleRows = preview.rows.slice((safePage - 1) * limit, safePage * limit);
 
-  const allImportableSelected =
-    importableRowNumbers.length > 0 && importableRowNumbers.every((n) => selected.has(n));
+  const allImportableSelected = importableRowNumbers.length > 0 && importableRowNumbers.every((n) => selected.has(n));
   const someSelected = selected.size > 0 && !allImportableSelected;
 
   const selectAllRef = useRef<HTMLInputElement>(null);
@@ -138,10 +132,7 @@ export function PreviewStep({
       { batchId: preview.batchId, body },
       {
         onSuccess: (result) => {
-          toast.success(
-            'Importação concluída',
-            `${result.imported} lançamento(s) importado(s).`,
-          );
+          toast.success('Importação concluída', `${result.imported} lançamento(s) importado(s).`);
           onConfirmed(result);
         },
         onError: (error) => {
@@ -163,7 +154,10 @@ export function PreviewStep({
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <section aria-labelledby="import-preview-heading" className="rounded-2xl border border-border bg-layer01 p-4 sm:p-6">
+      <section
+        aria-labelledby="import-preview-heading"
+        className="rounded-2xl border border-border bg-layer01 p-4 sm:p-6"
+      >
         <h2 id="import-preview-heading" className="text-md font-semibold text-foreground">
           2. Pré-visualização
         </h2>
@@ -190,8 +184,9 @@ export function PreviewStep({
             <>Esta pré-visualização expirou em {formatTimestamp(preview.expiresAt)}. Envie o arquivo novamente.</>
           ) : (
             <>
-              Esta pré-visualização vale até <strong className="text-foreground">{formatTimestamp(preview.expiresAt)}</strong>.
-              Depois disso será preciso enviar o arquivo de novo.
+              Esta pré-visualização vale até{' '}
+              <strong className="text-foreground">{formatTimestamp(preview.expiresAt)}</strong>. Depois disso será
+              preciso enviar o arquivo de novo.
             </>
           )}
         </p>
@@ -314,12 +309,24 @@ export function PreviewStep({
                     <th scope="col" className="w-10 px-2 py-2 font-medium">
                       <span className="sr-only">Importar</span>
                     </th>
-                    <th scope="col" className="px-2 py-2 font-medium">Linha</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Data</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Descrição</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Tipo</th>
-                    <th scope="col" className="px-2 py-2 text-right font-medium">Valor</th>
-                    <th scope="col" className="px-2 py-2 font-medium">Situação</th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Linha
+                    </th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Data
+                    </th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Descrição
+                    </th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Tipo
+                    </th>
+                    <th scope="col" className="px-2 py-2 text-right font-medium">
+                      Valor
+                    </th>
+                    <th scope="col" className="px-2 py-2 font-medium">
+                      Situação
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -357,11 +364,7 @@ export function PreviewStep({
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <ActionButton
-          type="submit"
-          loading={confirmImport.isPending}
-          disabled={confirmImport.isPending || expired}
-        >
+        <ActionButton type="submit" loading={confirmImport.isPending} disabled={confirmImport.isPending || expired}>
           {confirmImport.isPending ? 'Importando…' : `Importar ${selected.size} linha(s)`}
         </ActionButton>
         <ActionButton type="button" variant="secondary" onClick={onBack} disabled={confirmImport.isPending}>
@@ -383,15 +386,7 @@ const TONES = {
   danger: 'text-danger-text',
 } as const;
 
-function SummaryCell({
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  label: string;
-  value: number;
-  tone?: keyof typeof TONES;
-}) {
+function SummaryCell({ label, value, tone = 'neutral' }: { label: string; value: number; tone?: keyof typeof TONES }) {
   return (
     <div className="rounded-xl border border-border bg-layer02 p-3">
       <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -411,15 +406,7 @@ function rowSituation(row: ImportPreviewRow): { text: string; tone: keyof typeof
   return { text: 'Pronta para importar', tone: 'success' };
 }
 
-function PreviewRow({
-  row,
-  checked,
-  onToggle,
-}: {
-  row: ImportPreviewRow;
-  checked: boolean;
-  onToggle: () => void;
-}) {
+function PreviewRow({ row, checked, onToggle }: { row: ImportPreviewRow; checked: boolean; onToggle: () => void }) {
   const disabled = !isImportable(row);
   const situation = rowSituation(row);
   const description = row.description?.trim() || 'Sem descrição';
@@ -444,7 +431,7 @@ function PreviewRow({
       <td className="whitespace-nowrap px-2 py-2 align-top text-foreground">{formatCivilDate(row.date)}</td>
       <td className="max-w-[18rem] px-2 py-2 align-top text-foreground">{description}</td>
       <td className="px-2 py-2 align-top text-muted-foreground">
-        {row.type ? TRANSACTION_TYPE_LABELS[row.type] ?? row.type : '—'}
+        {row.type ? (TRANSACTION_TYPE_LABELS[row.type] ?? row.type) : '—'}
       </td>
       <td
         className={`whitespace-nowrap px-2 py-2 text-right align-top ${
@@ -480,7 +467,8 @@ function DestinationSelect({
   emptyMessage: string;
 }) {
   if (isPending) return <LoadingState label={`Carregando ${label.toLowerCase()}…`} />;
-  if (isError) return <ErrorState error={error} onRetry={onRetry} title={`Não foi possível carregar ${label.toLowerCase()}`} />;
+  if (isError)
+    return <ErrorState error={error} onRetry={onRetry} title={`Não foi possível carregar ${label.toLowerCase()}`} />;
 
   return (
     <Field label={label} required hint={options.length === 0 ? emptyMessage : undefined}>

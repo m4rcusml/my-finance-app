@@ -54,7 +54,12 @@ describe('TransactionsService', () => {
 
     prisma.account.findUnique.mockResolvedValue({ id: ACCOUNT, userId: USER, isActive: true });
     prisma.creditCard.findUnique.mockResolvedValue({ id: CARD, userId: USER, isActive: true });
-    prisma.category.findUnique.mockResolvedValue({ id: CATEGORY, userId: USER, isActive: true });
+    prisma.category.findUnique.mockResolvedValue({
+      id: CATEGORY,
+      userId: USER,
+      isActive: true,
+      type: 'expense',
+    });
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -118,15 +123,55 @@ describe('TransactionsService', () => {
       prisma.creditCard.findUnique.mockResolvedValue({ id: CARD, userId: USER, isActive: false });
 
       await expect(service.create(USER, { ...base, creditCardId: CARD })).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
       expect(prisma.transaction.create).not.toHaveBeenCalled();
     });
 
     it('400s on an archived category', async () => {
-      prisma.category.findUnique.mockResolvedValue({ id: CATEGORY, userId: USER, isActive: false });
+      prisma.category.findUnique.mockResolvedValue({
+        id: CATEGORY,
+        userId: USER,
+        isActive: false,
+        type: 'expense',
+      });
 
       await expect(service.create(USER, { ...base, accountId: ACCOUNT, categoryId: CATEGORY })).rejects.toBeInstanceOf(
         BadRequestException,
       );
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+      expect(prisma.transaction.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a category whose type is incompatible with the transaction', async () => {
+      await expect(
+        service.create(USER, { ...base, type: 'income', accountId: ACCOUNT, categoryId: CATEGORY }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(prisma.transaction.create).not.toHaveBeenCalled();
+    });
+
+    it('revalidates the destination after entering the write transaction', async () => {
+      let inTransaction = false;
+      prisma.$transaction.mockImplementation(async (callback: (tx: MockedPrismaService) => Promise<unknown>) => {
+        inTransaction = true;
+        try {
+          return await callback(prisma);
+        } finally {
+          inTransaction = false;
+        }
+      });
+      prisma.account.findUnique.mockImplementation(async () => ({
+        id: ACCOUNT,
+        userId: USER,
+        isActive: !inTransaction,
+      }));
+      prisma.transaction.create.mockResolvedValue(row());
+
+      await expect(service.create(USER, { ...base, accountId: ACCOUNT })).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(prisma.transaction.create).not.toHaveBeenCalled();
     });
 
     it('lets the import flow stamp source and externalId', async () => {
@@ -201,12 +246,47 @@ describe('TransactionsService', () => {
       expect(prisma.transaction.update).toHaveBeenCalledWith({ where: { id: TX }, data: { categoryId: null } });
     });
 
+    it('revalidates an unchanged category when the transaction type changes', async () => {
+      prisma.transaction.findUnique.mockResolvedValue(row({ categoryId: CATEGORY }));
+
+      await expect(service.update(USER, TX, { type: 'income' })).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(prisma.category.findUnique).toHaveBeenCalled();
+      expect(prisma.transaction.update).not.toHaveBeenCalled();
+    });
+
     it('400s when the patch points at an archived account', async () => {
       const otherAccount = '550e8400-e29b-41d4-a716-446655440004';
       prisma.transaction.findUnique.mockResolvedValue(row({ accountId: ACCOUNT }));
       prisma.account.findUnique.mockResolvedValue({ id: otherAccount, userId: USER, isActive: false });
 
       await expect(service.update(USER, TX, { accountId: otherAccount })).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.transaction.update).not.toHaveBeenCalled();
+    });
+
+    it('revalidates a changed relation inside the same transaction as the update', async () => {
+      const otherAccount = '550e8400-e29b-41d4-a716-446655440004';
+      let inTransaction = false;
+      prisma.$transaction.mockImplementation(async (callback: (tx: MockedPrismaService) => Promise<unknown>) => {
+        inTransaction = true;
+        try {
+          return await callback(prisma);
+        } finally {
+          inTransaction = false;
+        }
+      });
+      prisma.transaction.findUnique.mockResolvedValue(row({ accountId: ACCOUNT }));
+      prisma.account.findUnique.mockImplementation(async () => ({
+        id: otherAccount,
+        userId: USER,
+        isActive: !inTransaction,
+      }));
+      prisma.transaction.update.mockResolvedValue(row({ accountId: otherAccount }));
+
+      await expect(service.update(USER, TX, { accountId: otherAccount })).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
       expect(prisma.transaction.update).not.toHaveBeenCalled();
     });
 

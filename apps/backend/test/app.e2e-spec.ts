@@ -27,7 +27,14 @@ describe('AppController (e2e)', () => {
     await app.close();
   });
 
-  it('/api/v1 (GET) should return 401 for unauthenticated root', () => {
-    return request(app.getHttpServer()).get('/api/v1').expect(401);
+  it('/api/v1 (GET) should return 404 because the API has no root route', () => {
+    return request(app.getHttpServer()).get('/api/v1').expect(404);
+  });
+
+  it('applies request ids through the Nest 11 named wildcard', () => {
+    return request(app.getHttpServer())
+      .get('/api/v1/health/live')
+      .expect('X-Request-Id', /^[\w-]{1,64}$/)
+      .expect(200);
   });
 });

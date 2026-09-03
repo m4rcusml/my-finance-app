@@ -1,30 +1,21 @@
 import {
   type ConfirmImportResponse,
+  type ImportedFile as ImportedFileResource,
   type ImportFileType,
   type ImportOrigin,
   type ImportPreviewResponse,
   type ImportPreviewRow,
   type ImportStatus,
-  type ImportedFile as ImportedFileResource,
   type PaginatedResponse,
   type TransactionType,
 } from '@finance/contracts';
-import {
-  BadRequestException,
-  ConflictException,
-  HttpException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { fromCivilDate, toCivilDate } from '../common/civil-date';
 import { toMoney } from '../common/money';
 import { assertOwned } from '../common/ownership';
-import {
-  buildPaginatedResponse,
-  type PaginationQueryDto,
-  resolvePagination,
-} from '../common/pagination.dto';
+import { buildPaginatedResponse, type PaginationQueryDto, resolvePagination } from '../common/pagination.dto';
+import { assertTransactionRelationsWritable } from '../common/writable-transaction-relations';
 import type { EnvConfig } from '../config/env';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildExternalId, hashFileContents } from './external-id';
@@ -99,11 +90,7 @@ export class ImportsService {
   // Step 1 — preview
   // -------------------------------------------------------------------------
 
-  async preview(
-    userId: string,
-    file: UploadedImportFile,
-    dto: PreviewImportDto,
-  ): Promise<ImportPreviewResponse> {
+  async preview(userId: string, file: UploadedImportFile, dto: PreviewImportDto): Promise<ImportPreviewResponse> {
     const fileType = resolveImportFileType(file.originalname, file.buffer);
     const fileName = sanitiseFileName(file.originalname);
     const fileHash = hashFileContents(file.buffer);
@@ -253,8 +240,6 @@ export class ImportsService {
     if ((accountId === null) === (creditCardId === null)) {
       throw new BadRequestException('Informe exatamente um destino: accountId ou creditCardId.');
     }
-    await this.assertDestinationUsable(userId, accountId, creditCardId);
-
     const rows = batch.rows;
     const selection = selectRows(rows, dto.rowNumbers);
     if (selection.candidates.length === 0) {
@@ -289,6 +274,13 @@ export class ImportsService {
         if (claimed.count === 0) {
           throw new ConflictException('Esta importação já foi confirmada.');
         }
+
+        await assertTransactionRelationsWritable(tx, userId, {
+          accountId,
+          creditCardId,
+          categoryId: null,
+          type: payload[0].type,
+        });
 
         // `skipDuplicates` turns the partial unique index into the deduplicator:
         // re-importing the same file inserts nothing instead of exploding.
@@ -352,29 +344,6 @@ export class ImportsService {
     }
   }
 
-  private async assertDestinationUsable(
-    userId: string,
-    accountId: string | null,
-    creditCardId: string | null,
-  ): Promise<void> {
-    if (accountId !== null) {
-      const account = await this.prisma.account.findUnique({
-        where: { id: accountId },
-        select: { id: true, userId: true, isActive: true },
-      });
-      const owned = assertOwned(account, userId, 'Conta');
-      if (!owned.isActive) throw new BadRequestException('A conta selecionada está arquivada.');
-      return;
-    }
-
-    const card = await this.prisma.creditCard.findUnique({
-      where: { id: creditCardId as string },
-      select: { id: true, userId: true, isActive: true },
-    });
-    const owned = assertOwned(card, userId, 'Cartão de crédito');
-    if (!owned.isActive) throw new BadRequestException('O cartão de crédito selecionado está arquivado.');
-  }
-
   private async markExpired(batchId: string): Promise<void> {
     try {
       await this.prisma.importBatch.updateMany({
@@ -401,8 +370,7 @@ export class ImportsService {
   /** Re-reads a stored preview, so a page reload does not need a re-upload. */
   async findBatch(userId: string, batchId: string): Promise<ImportPreviewResponse> {
     const batch = await this.loadBatch(userId, batchId);
-    const status: ImportStatus =
-      batch.status === 'pending' && isExpired(batch.expiresAt) ? 'expired' : batch.status;
+    const status: ImportStatus = batch.status === 'pending' && isExpired(batch.expiresAt) ? 'expired' : batch.status;
 
     return this.buildPreviewResponse(
       {
@@ -417,10 +385,7 @@ export class ImportsService {
     );
   }
 
-  async listImportedFiles(
-    userId: string,
-    query: PaginationQueryDto,
-  ): Promise<PaginatedResponse<ImportedFileResource>> {
+  async listImportedFiles(userId: string, query: PaginationQueryDto): Promise<PaginatedResponse<ImportedFileResource>> {
     const { page, limit, skip } = resolvePagination(query);
 
     const [files, totalItems] = await Promise.all([

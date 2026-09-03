@@ -155,6 +155,18 @@ describe('CategoriesService', () => {
       });
     });
 
+    it('rejects changing the type when historical rows would become incompatible', async () => {
+      prisma.category.findUnique.mockResolvedValue(baseCategory);
+      prisma.transaction.count.mockResolvedValue(1);
+
+      await expect(service.update(userId, categoryId, { type: 'income' })).rejects.toThrow(ConflictException);
+
+      expect(prisma.transaction.count).toHaveBeenCalledWith({
+        where: { userId, categoryId, type: { not: 'income' } },
+      });
+      expect(prisma.category.update).not.toHaveBeenCalled();
+    });
+
     it('does not re-check uniqueness when neither name nor type changes', async () => {
       prisma.category.findUnique.mockResolvedValue(baseCategory);
       prisma.category.update.mockResolvedValue(baseCategory);
