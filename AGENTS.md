@@ -59,6 +59,7 @@ pnpm dev:backend
 pnpm dev:frontend
 pnpm build:backend
 pnpm build:frontend
+pnpm db:local
 pnpm db:up
 pnpm db:migrate
 pnpm db:seed
@@ -73,6 +74,7 @@ Não registre um gate como aprovado sem executar o comando e observar código de
 - enums e seus valores minúsculos;
 - rotas compartilhadas;
 - recursos e payloads;
+- política de criação de senha;
 - `PaginatedResponse<T>` e metadados;
 - datas civis, dinheiro, quantidades e envelope de erro.
 

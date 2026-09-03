@@ -2,7 +2,7 @@ import type { AuthSessionResponse } from '@finance/contracts';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useEffect } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { ApiError, authApi, setRefreshHandler, setTokenGetter, setUnauthorizedCallback } from '@/shared/lib/api';
 import { ANONYMOUS_SESSION_KEY, useAuthStore } from '@/shared/stores/auth-store';
 import { SessionProvider, useSession } from './session-provider';
@@ -126,6 +126,55 @@ describe('SessionProvider', () => {
     const tokenGetter = latestArgument<() => string | null | undefined>(mockedSetTokenGetter);
     expect(tokenGetter()).toBe('access-token-a');
     expect(localStorage.getItem('finance-auth')).toBeNull();
+  });
+
+  it('faz somente um refresh anônimo no Strict Mode', async () => {
+    mockedAuthApi.refresh.mockRejectedValueOnce(
+      new ApiError({ statusCode: 401, code: 'unauthorized', message: 'Sessão inválida ou expirada.' }),
+    );
+    const onClient = jest.fn();
+    render(
+      <StrictMode>
+        <SessionProvider>
+          <SessionProbe onClient={onClient} />
+        </SessionProvider>
+      </StrictMode>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('session-status')).toHaveTextContent('anonymous'));
+    expect(screen.getByText('sem usuário')).toBeInTheDocument();
+    expect(mockedAuthApi.csrf).toHaveBeenCalledTimes(1);
+    expect(mockedAuthApi.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('não compartilha um bootstrap pendente entre instâncias do provider', async () => {
+    let resolveFirst!: (session: AuthSessionResponse) => void;
+    mockedAuthApi.refresh
+      .mockImplementationOnce(
+        () =>
+          new Promise<AuthSessionResponse>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(secondSession);
+    const onClient = jest.fn();
+    const firstRender = render(
+      <SessionProvider>
+        <SessionProbe onClient={onClient} />
+      </SessionProvider>,
+    );
+    await waitFor(() => expect(mockedAuthApi.refresh).toHaveBeenCalledTimes(1));
+    firstRender.unmount();
+
+    render(
+      <SessionProvider>
+        <SessionProbe onClient={onClient} />
+      </SessionProvider>,
+    );
+    resolveFirst(firstSession);
+
+    expect(await screen.findByText('bia@example.com')).toBeInTheDocument();
+    expect(mockedAuthApi.refresh).toHaveBeenCalledTimes(2);
   });
 
   it('troca o QueryClient e apaga o cache privado ao entrar como outra pessoa', async () => {

@@ -34,7 +34,7 @@ Não fazem parte da V1: cotações ao vivo, integração direta com bancos ou co
 | Banco | PostgreSQL 16 |
 | Qualidade | Biome, Jest, Testing Library, Playwright |
 
-Docker é opcional para desenvolvimento. As suítes que precisam de banco podem iniciar um PostgreSQL 16 descartável com `embedded-postgres`.
+Docker é opcional para desenvolvimento: `pnpm db:local` inicia um PostgreSQL 16 persistente. As suítes que precisam de banco iniciam outra instância descartável quando necessário.
 
 ## Instalação local
 
@@ -57,7 +57,7 @@ Gere um segredo forte para assinar os access tokens:
 node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
 ```
 
-Preencha `JWT_SECRET`, suba o banco e prepare o schema:
+Preencha `JWT_SECRET`, suba o banco e prepare o schema. Com Docker:
 
 ```bash
 pnpm db:up
@@ -66,6 +66,16 @@ pnpm db:migrate
 pnpm db:seed
 pnpm dev
 ```
+
+Sem Docker, mantenha um primeiro terminal aberto com o PostgreSQL 16 local:
+
+```bash
+pnpm db:local
+```
+
+Em outro terminal, execute `pnpm db:generate`, `pnpm db:migrate` e `pnpm dev`.
+O banco local persiste os dados em `.local/postgres-16` (ignorado pelo Git); `Ctrl+C`
+encerra o processo sem apagar os dados.
 
 - frontend: <http://localhost:3000>
 - API: <http://localhost:3001/api/v1>
@@ -107,6 +117,7 @@ No frontend, `NEXT_PUBLIC_API_URL` deve conter a base completa, incluindo `/api/
 pnpm dev                 # API e frontend em paralelo
 pnpm dev:backend         # API com watch
 pnpm dev:frontend        # Next.js em desenvolvimento
+pnpm db:local            # PostgreSQL 16 local e persistente, sem Docker
 pnpm db:generate         # gera o cliente Prisma não versionado
 pnpm db:migrate          # prisma migrate deploy
 pnpm db:migrate:dev      # fluxo de criação de migration local

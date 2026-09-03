@@ -1,13 +1,17 @@
 'use client';
 
+import {
+  isValidEmailAddress,
+  MAX_PASSWORD_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  passwordPolicyViolation,
+} from '@finance/contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { errorDetails, errorMessage } from '@/shared/lib/api';
+import { ApiError, errorDetails, errorMessage } from '@/shared/lib/api';
 import { useSession } from '@/shared/session/session-provider';
 import { ActionButton, Field, TextInput } from '@/shared/ui/form';
-
-const MIN_PASSWORD_LENGTH = 10;
 
 export default function RegisterClient() {
   const router = useRouter();
@@ -19,11 +23,21 @@ export default function RegisterClient() {
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [details, setDetails] = useState<string[]>([]);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const passwordTooShort = password.length > 0 && password.length < MIN_PASSWORD_LENGTH;
+  const normalizedEmail = email.trim();
+  const emailError =
+    normalizedEmail.length > 0 && !isValidEmailAddress(normalizedEmail) ? 'Informe um e-mail válido.' : null;
+  const passwordError = password.length > 0 ? passwordPolicyViolation(password) : null;
   const mismatch = confirmation.length > 0 && confirmation !== password;
-  const canSubmit = email.length > 0 && password.length >= MIN_PASSWORD_LENGTH && !mismatch;
+  const canSubmit =
+    normalizedEmail.length > 0 &&
+    emailError === null &&
+    passwordError === null &&
+    confirmation.length > 0 &&
+    !mismatch &&
+    name.length <= 120;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,13 +45,15 @@ export default function RegisterClient() {
 
     setError(null);
     setDetails([]);
+    setRequestId(null);
     setSubmitting(true);
     try {
-      await register(email.trim(), password, name.trim() || undefined);
+      await register(normalizedEmail, password, name.trim() || undefined);
       router.replace('/dashboard');
     } catch (cause) {
       setError(errorMessage(cause));
       setDetails(errorDetails(cause));
+      setRequestId(cause instanceof ApiError ? (cause.requestId ?? null) : null);
     } finally {
       setSubmitting(false);
     }
@@ -63,6 +79,7 @@ export default function RegisterClient() {
                 ))}
               </ul>
             ) : null}
+            {requestId ? <p className="mt-1 text-xs">Identificador da solicitação: {requestId}</p> : null}
           </div>
         ) : null}
 
@@ -73,13 +90,14 @@ export default function RegisterClient() {
               aria-describedby={describedBy}
               name="name"
               autoComplete="name"
+              maxLength={120}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           )}
         </Field>
 
-        <Field label="E-mail" required>
+        <Field label="E-mail" required error={emailError ?? undefined}>
           {({ id, describedBy, invalid }) => (
             <TextInput
               id={id}
@@ -98,8 +116,8 @@ export default function RegisterClient() {
         <Field
           label="Senha"
           required
-          hint={`Mínimo de ${MIN_PASSWORD_LENGTH} caracteres.`}
-          error={passwordTooShort ? `A senha precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` : undefined}
+          hint={`Entre ${MIN_PASSWORD_LENGTH} e ${MAX_PASSWORD_LENGTH} caracteres; evite senhas comuns.`}
+          error={passwordError ?? undefined}
         >
           {({ id, describedBy, invalid }) => (
             <TextInput

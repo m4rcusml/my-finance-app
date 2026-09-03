@@ -28,6 +28,7 @@
     "db:migrate": "pnpm --filter backend prisma:migrate",
     "db:migrate:dev": "pnpm --filter backend prisma:migrate:dev",
     "db:seed": "pnpm --filter backend seed",
+    "db:local": "node scripts/local-database.mjs",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "verify": "pnpm verify:all",

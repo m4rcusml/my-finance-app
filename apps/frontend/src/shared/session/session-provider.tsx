@@ -1,6 +1,6 @@
 'use client';
 
-import type { UserProfile } from '@finance/contracts';
+import type { AuthSessionResponse, UserProfile } from '@finance/contracts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -74,6 +74,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [queryClient, setQueryClient] = useState<QueryClient>(() => makeQueryClient());
   const router = useRouter();
   const bootstrapGeneration = useRef(0);
+  const bootstrapInFlight = useRef<Promise<AuthSessionResponse> | null>(null);
   const refreshInFlight = useRef<Promise<string | null> | null>(null);
 
   const status = useAuthStore((s) => s.status);
@@ -138,15 +139,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // --- one silent refresh on first load ------------------------------------
   useEffect(() => {
     // React Strict Mode intentionally mounts effects twice in development.
-    // A one-way boolean guard leaves the second mount stuck at `unknown` after
-    // the first mount's cleanup invalidates its request. Generations let every
-    // mount start its own (Web-Locks-serialized) refresh while only the latest
-    // one is allowed to publish the result.
+    // Both setups reuse the same network promise, while generations ensure
+    // that only the latest setup may publish the result.
     const generation = bootstrapGeneration.current + 1;
     bootstrapGeneration.current = generation;
+    if (!bootstrapInFlight.current) {
+      const request = coordinatedRefresh();
+      bootstrapInFlight.current = request;
+      const release = () => {
+        if (bootstrapInFlight.current === request) bootstrapInFlight.current = null;
+      };
+      void request.then(release, release);
+    }
+    const request = bootstrapInFlight.current;
     (async () => {
       try {
-        const session = await coordinatedRefresh();
+        const session = await request;
         if (bootstrapGeneration.current === generation) {
           await applySession(session.accessToken, session.user);
         }

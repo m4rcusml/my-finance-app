@@ -1,6 +1,12 @@
 'use client';
 
-import type { UpdateProfileRequest } from '@finance/contracts';
+import {
+  isValidEmailAddress,
+  MAX_PASSWORD_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  passwordPolicyViolation,
+  type UpdateProfileRequest,
+} from '@finance/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { errorDetails, errorMessage, usersApi } from '@/shared/lib/api';
@@ -12,7 +18,6 @@ import { ConfirmDialog } from '@/shared/ui/dialog';
 import { ActionButton, Field, TextInput } from '@/shared/ui/form';
 import { useToast } from '@/shared/ui/toast';
 
-const MIN_PASSWORD_LENGTH = 10;
 const DELETE_CONFIRMATION = 'EXCLUIR MINHA CONTA';
 
 export function SettingsClient() {
@@ -60,7 +65,7 @@ function ProfileSection() {
     event.preventDefault();
     setLocalError(null);
 
-    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+    if (!isValidEmailAddress(normalizedEmail)) {
       setLocalError('Informe um e-mail válido.');
       return;
     }
@@ -170,8 +175,9 @@ function PasswordSection() {
       setLocalError('Informe sua senha atual.');
       return;
     }
-    if (newPassword.length < MIN_PASSWORD_LENGTH) {
-      setLocalError(`A nova senha precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`);
+    const policyViolation = passwordPolicyViolation(newPassword);
+    if (policyViolation) {
+      setLocalError(policyViolation);
       return;
     }
     if (newPassword !== confirmation) {
@@ -214,7 +220,11 @@ function PasswordSection() {
           )}
         </Field>
 
-        <Field label="Nova senha" required hint={`Use pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`}>
+        <Field
+          label="Nova senha"
+          required
+          hint={`Entre ${MIN_PASSWORD_LENGTH} e ${MAX_PASSWORD_LENGTH} caracteres; evite senhas comuns.`}
+        >
           {({ id, describedBy }) => (
             <TextInput
               id={id}
