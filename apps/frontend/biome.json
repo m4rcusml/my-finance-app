@@ -9,7 +9,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!node_modules", "!.next", "!dist", "!build"]
+    "includes": ["**", "!node_modules", "!.next", "!.next-e2e", "!dist", "!build"]
   },
   "formatter": {
     "enabled": true,
@@ -34,7 +34,7 @@
   },
   "overrides": [
     {
-      "includes": ["public/*.svg"],
+      "includes": ["public/*.svg", "public/assets/figma/**/*.svg"],
       "linter": {
         "rules": {
           "a11y": {

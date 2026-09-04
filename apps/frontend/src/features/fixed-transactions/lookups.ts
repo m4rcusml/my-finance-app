@@ -64,6 +64,7 @@ export interface SourceLookups {
   categoryNames: Map<string, string>;
   isPending: boolean;
   isError: boolean;
+  refetch: () => void;
 }
 
 /** The three selectors as one bundle, with id -> name maps for the tables. */
@@ -94,5 +95,10 @@ export function useSourceLookups(): SourceLookups {
     categoryNames,
     isPending: accountsQuery.isPending || creditCardsQuery.isPending || categoriesQuery.isPending,
     isError: accountsQuery.isError || creditCardsQuery.isError || categoriesQuery.isError,
+    refetch: () => {
+      void accountsQuery.refetch();
+      void creditCardsQuery.refetch();
+      void categoriesQuery.refetch();
+    },
   };
 }

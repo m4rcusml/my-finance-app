@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const requested = (await searchParams).view;
-  const view: SettingsView = requested === 'security' || requested === 'data' ? requested : 'profile';
+  const view: SettingsView =
+    requested === 'security' || requested === 'data' || requested === 'profile' ? requested : 'overview';
   return <SettingsClient view={view} />;
 }

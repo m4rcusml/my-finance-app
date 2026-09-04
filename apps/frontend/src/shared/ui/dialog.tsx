@@ -60,6 +60,10 @@ export function Dialog({
   const restoreFocusTo = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -67,7 +71,7 @@ export function Dialog({
 
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -97,7 +101,7 @@ export function Dialog({
         first.focus();
       }
     },
-    [open, onClose],
+    [open],
   );
 
   useEffect(() => {

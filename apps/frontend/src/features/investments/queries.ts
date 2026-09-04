@@ -53,6 +53,28 @@ export function usePortfolioSummaryQuery(): UseQueryResult<PortfolioSummary> {
   });
 }
 
+/** Load the complete portfolio for the contribution chart, independently of the visible page. */
+export async function loadContributionInvestments(): Promise<InvestmentWithAsset[]> {
+  const investments: InvestmentWithAsset[] = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const result = await investmentsApi.list({ page, limit: 100 });
+    investments.push(...result.data);
+    totalPages = result.meta.totalPages;
+    page += 1;
+  } while (page <= totalPages);
+  return investments;
+}
+
+export function useContributionInvestmentsQuery() {
+  const s = useSessionKey();
+  return useQuery({
+    queryKey: [...queryKeys.investments.all(s), 'contributions'],
+    queryFn: loadContributionInvestments,
+  });
+}
+
 export interface MarketAssetFilters {
   page: number;
   limit: number;

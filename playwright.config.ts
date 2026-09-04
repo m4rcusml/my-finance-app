@@ -1,7 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const frontendUrl = 'http://127.0.0.1:3000';
-const backendUrl = 'http://127.0.0.1:3001';
+const frontendPort = Number(process.env.E2E_FRONTEND_PORT ?? 3100);
+const backendPort = Number(process.env.E2E_BACKEND_PORT ?? 3101);
+const frontendUrl = `http://127.0.0.1:${frontendPort}`;
+const backendUrl = `http://127.0.0.1:${backendPort}`;
 const databaseUrl =
   process.env.TEST_DATABASE_URL ??
   process.env.DATABASE_URL ??
@@ -43,15 +45,15 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'pnpm --filter backend exec nest start',
-      port: 3001,
+      command: 'pnpm --filter backend exec nest start --path tsconfig.browser.json',
+      port: backendPort,
       timeout: 120_000,
       reuseExistingServer: false,
       stdout: 'pipe',
       stderr: 'pipe',
       env: {
         NODE_ENV: 'development',
-        PORT: '3001',
+        PORT: String(backendPort),
         DATABASE_URL: databaseUrl,
         JWT_SECRET: process.env.JWT_SECRET ?? 'browser-e2e-access-secret-at-least-32-chars',
         CORS_ORIGINS: frontendUrl,
@@ -63,7 +65,7 @@ export default defineConfig({
       },
     },
     {
-      command: 'pnpm --filter frontend exec next dev',
+      command: `pnpm --filter frontend exec next dev --port ${frontendPort}`,
       url: frontendUrl,
       timeout: 120_000,
       reuseExistingServer: false,
@@ -71,6 +73,7 @@ export default defineConfig({
       stderr: 'pipe',
       env: {
         NEXT_PUBLIC_API_URL: `${backendUrl}/api/v1`,
+        NEXT_DIST_DIR: '.next-e2e',
       },
     },
   ],

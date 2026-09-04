@@ -6,7 +6,6 @@ import { useMemo, useState } from 'react';
 import { AnnualBalanceChart } from '@/components/dashboard/annual-balance-chart';
 import { LatestTransactions } from '@/components/dashboard/latest-transactions';
 import { PendingOccurrences } from '@/components/dashboard/pending-occurrences';
-import { PeriodComparison } from '@/components/dashboard/period-comparison';
 import { PeriodSelector } from '@/components/dashboard/period-selector';
 import { ResourceOverview } from '@/components/dashboard/resource-overview';
 import { TotalsCards } from '@/components/dashboard/totals-cards';
@@ -36,7 +35,9 @@ export function DashboardClient() {
               <span className="sr-only"> — Dashboard, visão geral</span>
             </>
           }
-          description="Acompanhe o que mudou e decida seu próximo passo com números claros."
+          description={new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full', timeZone: 'America/Sao_Paulo' }).format(
+            new Date(),
+          )}
           actions={<ActionButton onClick={() => setNewTransactionType('expense')}>Nova transação</ActionButton>}
         />
       </div>
@@ -66,18 +67,21 @@ export function DashboardClient() {
               errorTitle="Não foi possível carregar o painel"
             >
               {(dashboard) => (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-5">
                   <TotalsCards totals={dashboard.totals} />
-                  <PeriodComparison totals={dashboard.totals} />
-                  <UncategorizedCallout count={dashboard.uncategorizedCount} />
-                  <ResourceOverview accounts={dashboard.accounts} creditCards={dashboard.creditCards} />
-                  <AnnualBalanceChart entries={dashboard.annualBalance} />
-                  <div className="grid items-start gap-4 2xl:grid-cols-2">
-                    <PendingOccurrences
-                      occurrences={dashboard.pendingOccurrences}
-                      accounts={dashboard.accounts}
-                      creditCards={dashboard.creditCards}
-                    />
+                  <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                    <ResourceOverview accounts={dashboard.accounts} totals={dashboard.totals} />
+                    <AnnualBalanceChart entries={dashboard.annualBalance} />
+                  </div>
+                  <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
+                    <div className="min-w-0 space-y-4">
+                      <UncategorizedCallout count={dashboard.uncategorizedCount} />
+                      <PendingOccurrences
+                        occurrences={dashboard.pendingOccurrences}
+                        accounts={dashboard.accounts}
+                        creditCards={dashboard.creditCards}
+                      />
+                    </div>
                     <LatestTransactions transactions={dashboard.latestTransactions} />
                   </div>
                 </div>
@@ -102,14 +106,15 @@ function UncategorizedCallout({ count }: { count: number }) {
   if (count === 0) {
     return (
       <div className="rounded-xl border border-success/50 bg-layer01 p-4 text-sm text-success-text">
-        Todos os lançamentos estão categorizados.
+        Tudo em dia: todos os lançamentos estão categorizados.
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-warning/60 bg-layer01 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-layer01 p-5">
       <div>
+        <h2 className="mb-3 text-md font-semibold">Precisa de atenção</h2>
         <p className="text-sm font-semibold text-warning-text">
           {count} {count === 1 ? 'lançamento precisa' : 'lançamentos precisam'} de categoria
         </p>

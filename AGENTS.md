@@ -89,6 +89,9 @@ Regras transversais:
 - dinheiro é `numeric(15,2)` no banco e número no JSON; quantidade usa `numeric(15,8)`;
 - atualização usa campo omitido para “manter” e `null` explícito para “limpar” quando permitido;
 - erros seguem `{ statusCode, error, message, details?, timestamp, path, requestId }`.
+- `Category.color` é opcional/anulável e aceita apenas `#RRGGBB`; omitir em PATCH mantém, `null` limpa. Backups legados sem cor continuam válidos;
+- `ListCategoriesQuery` aceita `status=active|archived|all`, `search` e tipo exato; `status` prevalece sobre `includeArchived`;
+- buscas por nome de categoria e por descrição de transação (`search`) são aplicadas antes da paginação e da contagem. Inclua os filtros nas query keys.
 
 ## Invariantes de domínio
 
@@ -97,6 +100,7 @@ Regras transversais:
 - Contas, cartões e categorias com histórico são arquivados. Apenas registros sem dependências podem ser removidos fisicamente.
 - Recorrências nunca são apagadas de forma definitiva; `DELETE` arquiva o modelo.
 - Ocorrências aceitam somente `pending -> confirmed` ou `pending -> skipped`.
+- Criar ou reativar uma recorrência gera imediatamente a ocorrência pendente do mês vigente na mesma transação. A unicidade modelo/competência preserva snapshots existentes e evita duplicação; isso não confirma nem cria lançamento financeiro.
 - Confirmação de ocorrência cria exatamente uma transação `source: fixed` dentro da mesma transação de banco.
 - Cartão soma despesas apenas no ciclo aberto calculado por `closingDay`, com clamp para meses curtos.
 - Contas do tipo `investment` não entram no saldo em caixa; a carteira manual também aparece separada.
@@ -127,7 +131,7 @@ Ao criar nova rota, ela é privada por padrão. Use `@Public()` somente quando h
 - Não some uma página de registros para produzir agregados; agregue no banco.
 - A API usa prefixo `/api/v1`; `/health/live` e `/health/ready` ficam fora dele.
 - Readiness precisa retornar 503 quando o banco não responde.
-- O job de recorrências roda às 03:00 em `APP_TIMEZONE`, é idempotente e faz backfill limitado.
+- O job de recorrências roda às 03:00 em `APP_TIMEZONE`, é idempotente e faz backfill limitado. Ele continua responsável pelos períodos seguintes; a geração imediata cobre criação/reativação, não leitura da tela nem inicialização do servidor.
 - Arquivos de importação têm prévia persistida; confirmação aceita `batchId` e números de linha, nunca transações fornecidas pelo cliente.
 - Backup não inclui credenciais nem estado transitório de preview.
 
@@ -141,6 +145,8 @@ pnpm db:migrate
 ```
 
 Não altere as duas migrations históricas. Enquanto a V1 não tiver sido publicada, correções de upgrade pertencem a `20260903120000_v1_invariants`. Teste tanto uma base vazia quanto o fixture pré-V1 inconsistente. Nunca resete um banco desconhecido.
+
+O histórico atual tem quatro migrations: as duas históricas, a V1 e `20260904183000_category_color`. A quarta adiciona a cor anulável de categoria com CHECK hexadecimal; não mova essa alteração para migrations anteriores. A validação de backup e os contratos devem continuar aceitando categorias legadas sem o campo.
 
 Testes destrutivos só podem usar banco com nome terminado em `_test`, `_ci` ou `_e2e`, salvo `ALLOW_DESTRUCTIVE_TEST_DB=true` explicitamente autorizado.
 
@@ -157,6 +163,8 @@ Testes destrutivos só podem usar banco com nome terminado em `_test`, `_ci` ou 
 - Navegação precisa funcionar desde 320 px.
 - Diálogos precisam de nome acessível, foco inicial, Escape, focus trap e restauração de foco.
 
+As áreas consolidadas são `/accounts` (visão geral, `?view=accounts`, `?view=cards`), `/transactions` (lista, `?view=uncategorized`, `?view=categories`) e `/settings` (visão geral, `?view=profile`, `?view=security`, `?view=data`). Preserve os redirecionamentos antigos de cartões, categorias, fila e backup. O botão global “Nova recorrência” deve continuar acessível sem entrar na aba Modelos. Metas e investimentos devem mostrar valores manuais/de custo sem sugerir integração automática.
+
 ## Testes
 
 - Unitários backend: services, auth, health, job, parsers e regras puras.
@@ -164,6 +172,8 @@ Testes destrutivos só podem usar banco com nome terminado em `_test`, `_ci` ou 
 - Integração: PostgreSQL real, migrations, concorrência, isolamento e atomicidade.
 - Frontend: Jest + Testing Library para sessão/cache, paginação, formulários, erros e acessibilidade.
 - Browser: Playwright em `e2e/`, com banco e web servers isolados.
+
+Os testes da interface incluem resumos completos após 100 registros, cor de categoria, fila sequencial, retomada de importação por sessão, aportes, diálogos de recorrência/meta e tutorial. As integrações `category-presentation.int-spec.ts` e `recurrence-creation.int-spec.ts` cobrem os novos filtros/cor e a geração imediata com concorrência; os fluxos browser estão em `core-flow.spec.ts` e `rebranch-ui.spec.ts`, além das suítes existentes. Não trate a existência dessas suítes como gate executado.
 
 Ao corrigir um bug, acrescente o teste na camada mais baixa que reproduza a causa e mantenha um teste de integração quando o comportamento depender de PostgreSQL, cookie, concorrência ou migração.
 

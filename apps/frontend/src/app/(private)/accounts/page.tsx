@@ -7,6 +7,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
-  const view: AssetsView = (await searchParams).view === 'cards' ? 'cards' : 'accounts';
+  const requestedView = (await searchParams).view;
+  const view: AssetsView = requestedView === 'cards' || requestedView === 'accounts' ? requestedView : 'overview';
   return <AssetsClient view={view} />;
 }

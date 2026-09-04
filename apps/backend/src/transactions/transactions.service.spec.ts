@@ -64,6 +64,15 @@ describe('TransactionsService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  it('searches descriptions before pagination and uses the same tenant-scoped count', async () => {
+    prisma.transaction.findMany.mockResolvedValue([]);
+    prisma.transaction.count.mockResolvedValue(0);
+    await service.findAll(USER, { search: '  Mercado  ', page: 2, limit: 20 });
+    const where = { userId: USER, description: { contains: 'Mercado', mode: 'insensitive' } };
+    expect(prisma.transaction.findMany).toHaveBeenCalledWith(expect.objectContaining({ where, skip: 20, take: 20 }));
+    expect(prisma.transaction.count).toHaveBeenCalledWith({ where });
+  });
+
   // -------------------------------------------------------------------------
   // create
   // -------------------------------------------------------------------------

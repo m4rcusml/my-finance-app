@@ -153,127 +153,147 @@ export function PreviewStep({
     creditCards.creditCards.length === 0;
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <section
-        aria-labelledby="import-preview-heading"
-        className="rounded-2xl border border-border bg-layer01 p-4 sm:p-6"
-      >
-        <h2 id="import-preview-heading" className="text-md font-semibold text-foreground">
-          2. Pré-visualização
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          <span className="text-foreground">{preview.fileName}</span> ·{' '}
-          {IMPORT_FILE_TYPE_LABELS[preview.fileType] ?? preview.fileType} ·{' '}
-          {IMPORT_ORIGIN_LABELS[preview.origin] ?? preview.origin}
-        </p>
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      className="grid items-start gap-5 xl:grid-cols-[minmax(18rem,0.85fr)_minmax(0,1.55fr)]"
+    >
+      <div className="rounded-2xl border border-border bg-layer01 p-4 sm:p-6">
+        <section aria-labelledby="import-preview-heading" className="min-w-0">
+          <h2 id="import-preview-heading" className="text-md font-semibold text-foreground">
+            Arquivo e destino
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            <span className="text-foreground">{preview.fileName}</span> ·{' '}
+            {IMPORT_FILE_TYPE_LABELS[preview.fileType] ?? preview.fileType} ·{' '}
+            {IMPORT_ORIGIN_LABELS[preview.origin] ?? preview.origin}
+          </p>
 
-        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <SummaryCell label="Linhas no arquivo" value={preview.totalRows} />
-          <SummaryCell label="Válidas" value={preview.validRows} tone="success" />
-          <SummaryCell label="Duplicadas" value={preview.duplicateRows} tone="warning" />
-          <SummaryCell label="Inválidas" value={preview.invalidRows} tone="danger" />
-        </dl>
+          <dl className="mt-5 grid grid-cols-2 gap-2">
+            <SummaryCell label="Linhas no arquivo" value={preview.totalRows} />
+            <SummaryCell label="Válidas" value={preview.validRows} tone="success" />
+            <SummaryCell label="Duplicadas" value={preview.duplicateRows} tone="warning" />
+            <SummaryCell label="Inválidas" value={preview.invalidRows} tone="danger" />
+          </dl>
 
-        <p
-          className={`mt-4 rounded-lg border p-3 text-sm ${
-            expired ? 'border-danger/60 text-danger-text' : 'border-border text-muted-foreground'
-          }`}
-          role={expired ? 'alert' : undefined}
-        >
-          {expired ? (
-            <>Esta pré-visualização expirou em {formatTimestamp(preview.expiresAt)}. Envie o arquivo novamente.</>
-          ) : (
-            <>
-              Esta pré-visualização vale até{' '}
-              <strong className="text-foreground">{formatTimestamp(preview.expiresAt)}</strong>. Depois disso será
-              preciso enviar o arquivo de novo.
-            </>
-          )}
-        </p>
-      </section>
+          <p
+            className={`mt-4 rounded-lg border p-3 text-sm ${
+              expired ? 'border-danger/60 text-danger-text' : 'border-border text-muted-foreground'
+            }`}
+            role={expired ? 'alert' : undefined}
+          >
+            {expired ? (
+              <>Esta pré-visualização expirou em {formatTimestamp(preview.expiresAt)}. Envie o arquivo novamente.</>
+            ) : (
+              <>
+                Esta pré-visualização vale até{' '}
+                <strong className="text-foreground">{formatTimestamp(preview.expiresAt)}</strong>. Depois disso será
+                preciso enviar o arquivo de novo.
+              </>
+            )}
+          </p>
+        </section>
 
-      <fieldset className="rounded-2xl border border-border bg-layer01 p-4 sm:p-6">
-        <legend className="px-1 text-md font-semibold text-foreground">Destino dos lançamentos</legend>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Todos os lançamentos selecionados vão para uma única conta ou um único cartão.
-        </p>
+        <fieldset className="mt-6 min-w-0 border-t border-border pt-4">
+          <legend className="px-1 text-md font-semibold text-foreground">Destino dos lançamentos</legend>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Todos os lançamentos selecionados vão para uma única conta ou um único cartão.
+          </p>
 
-        <div className="mt-4 flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input
-              type="radio"
-              name="destination-kind"
-              value="account"
-              checked={kind === 'account'}
-              onChange={() => {
-                setKind('account');
-                setFormError(null);
-              }}
-              className="size-4 accent-[color:var(--color-primary)]"
-            />
-            Conta
-          </label>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input
-              type="radio"
-              name="destination-kind"
-              value="creditCard"
-              checked={kind === 'creditCard'}
-              onChange={() => {
-                setKind('creditCard');
-                setFormError(null);
-              }}
-              className="size-4 accent-[color:var(--color-primary)]"
-            />
-            Cartão de crédito
-          </label>
-        </div>
+          <div className="mt-4 flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="radio"
+                name="destination-kind"
+                value="account"
+                checked={kind === 'account'}
+                onChange={() => {
+                  setKind('account');
+                  setFormError(null);
+                }}
+                className="size-4 accent-[color:var(--color-primary)]"
+              />
+              Conta
+            </label>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="radio"
+                name="destination-kind"
+                value="creditCard"
+                checked={kind === 'creditCard'}
+                onChange={() => {
+                  setKind('creditCard');
+                  setFormError(null);
+                }}
+                className="size-4 accent-[color:var(--color-primary)]"
+              />
+              Cartão de crédito
+            </label>
+          </div>
 
-        <div className="mt-4 max-w-md">
-          {kind === 'account' ? (
-            <DestinationSelect
-              label="Conta de destino"
-              isPending={accounts.isPending}
-              isError={accounts.isError}
-              error={accounts.error}
-              onRetry={() => accounts.query.refetch()}
-              emptyMessage="Você ainda não tem contas ativas. Cadastre uma em Contas."
-              options={accounts.accounts.map((a) => ({ id: a.id, label: `${a.name} — ${a.institution}` }))}
-              value={accountId}
-              onChange={(value) => {
-                setAccountId(value);
-                setFormError(null);
-              }}
-            />
-          ) : (
-            <DestinationSelect
-              label="Cartão de destino"
-              isPending={creditCards.isPending}
-              isError={creditCards.isError}
-              error={creditCards.error}
-              onRetry={() => creditCards.query.refetch()}
-              emptyMessage="Você ainda não tem cartões ativos. Cadastre um em Cartões."
-              options={creditCards.creditCards.map((c) => ({ id: c.id, label: `${c.name} — ${c.institution}` }))}
-              value={creditCardId}
-              onChange={(value) => {
-                setCreditCardId(value);
-                setFormError(null);
-              }}
-            />
-          )}
-        </div>
+          <div className="mt-4 max-w-md">
+            {kind === 'account' ? (
+              <DestinationSelect
+                label="Conta de destino"
+                isPending={accounts.isPending}
+                isError={accounts.isError}
+                error={accounts.error}
+                onRetry={() => accounts.query.refetch()}
+                emptyMessage="Você ainda não tem contas ativas. Cadastre uma em Contas."
+                options={accounts.accounts.map((a) => ({ id: a.id, label: `${a.name} — ${a.institution}` }))}
+                value={accountId}
+                onChange={(value) => {
+                  setAccountId(value);
+                  setFormError(null);
+                }}
+              />
+            ) : (
+              <DestinationSelect
+                label="Cartão de destino"
+                isPending={creditCards.isPending}
+                isError={creditCards.isError}
+                error={creditCards.error}
+                onRetry={() => creditCards.query.refetch()}
+                emptyMessage="Você ainda não tem cartões ativos. Cadastre um em Cartões."
+                options={creditCards.creditCards.map((c) => ({ id: c.id, label: `${c.name} — ${c.institution}` }))}
+                value={creditCardId}
+                onChange={(value) => {
+                  setCreditCardId(value);
+                  setFormError(null);
+                }}
+              />
+            )}
+          </div>
 
-        {noDestinations ? (
-          <p role="alert" className="mt-3 text-sm text-warning-text">
-            Cadastre ao menos uma conta ou um cartão antes de importar.
+          {noDestinations ? (
+            <p role="alert" className="mt-3 text-sm text-warning-text">
+              Cadastre ao menos uma conta ou um cartão antes de importar.
+            </p>
+          ) : null}
+        </fieldset>
+        {formError ? (
+          <p role="alert" className="rounded-lg border border-danger/60 bg-layer01 p-3 text-sm text-danger-text">
+            {formError}
           </p>
         ) : null}
-      </fieldset>
 
-      <section aria-labelledby="import-rows-heading" className="rounded-2xl border border-border bg-layer01 p-4 sm:p-6">
+        <div className="mt-5 flex flex-col gap-2">
+          <ActionButton type="submit" loading={confirmImport.isPending} disabled={confirmImport.isPending || expired}>
+            {confirmImport.isPending ? 'Importando…' : `Importar ${selected.size} linha(s)`}
+          </ActionButton>
+          <ActionButton type="button" variant="secondary" onClick={onBack} disabled={confirmImport.isPending}>
+            Voltar e trocar o arquivo
+          </ActionButton>
+        </div>
+      </div>
+
+      <section
+        aria-labelledby="import-rows-heading"
+        className="min-w-0 rounded-2xl border border-border bg-layer01 p-4 sm:p-6"
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 id="import-rows-heading" className="text-sm font-semibold text-foreground">
-            Linhas do arquivo
+            Prévia das movimentações
           </h3>
           <p className="text-sm text-muted-foreground" aria-live="polite">
             <strong className="text-foreground">{selected.size}</strong> de {importableRowNumbers.length} linha(s)
@@ -300,7 +320,7 @@ export function PreviewStep({
         ) : (
           <>
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[46rem] border-collapse text-sm">
+              <table className="w-full min-w-[32rem] border-separate border-spacing-y-2 text-sm">
                 <caption className="sr-only">
                   Linhas lidas do arquivo {preview.fileName}, com a situação de cada uma e a seleção para importar.
                 </caption>
@@ -317,9 +337,6 @@ export function PreviewStep({
                     </th>
                     <th scope="col" className="px-2 py-2 font-medium">
                       Descrição
-                    </th>
-                    <th scope="col" className="px-2 py-2 font-medium">
-                      Tipo
                     </th>
                     <th scope="col" className="px-2 py-2 text-right font-medium">
                       Valor
@@ -356,21 +373,6 @@ export function PreviewStep({
           </>
         )}
       </section>
-
-      {formError ? (
-        <p role="alert" className="rounded-lg border border-danger/60 bg-layer01 p-3 text-sm text-danger-text">
-          {formError}
-        </p>
-      ) : null}
-
-      <div className="flex flex-wrap gap-2">
-        <ActionButton type="submit" loading={confirmImport.isPending} disabled={confirmImport.isPending || expired}>
-          {confirmImport.isPending ? 'Importando…' : `Importar ${selected.size} linha(s)`}
-        </ActionButton>
-        <ActionButton type="button" variant="secondary" onClick={onBack} disabled={confirmImport.isPending}>
-          Voltar e trocar o arquivo
-        </ActionButton>
-      </div>
     </form>
   );
 }
@@ -412,7 +414,7 @@ function PreviewRow({ row, checked, onToggle }: { row: ImportPreviewRow; checked
   const description = row.description?.trim() || 'Sem descrição';
 
   return (
-    <tr className="border-b border-border last:border-0">
+    <tr className="bg-layer02/50 [&>td]:py-4 [&>th]:py-4">
       <td className="px-2 py-2 align-top">
         <input
           type="checkbox"
@@ -429,9 +431,11 @@ function PreviewRow({ row, checked, onToggle }: { row: ImportPreviewRow; checked
         {row.rowNumber}
       </th>
       <td className="whitespace-nowrap px-2 py-2 align-top text-foreground">{formatCivilDate(row.date)}</td>
-      <td className="max-w-[18rem] px-2 py-2 align-top text-foreground">{description}</td>
-      <td className="px-2 py-2 align-top text-muted-foreground">
-        {row.type ? (TRANSACTION_TYPE_LABELS[row.type] ?? row.type) : '—'}
+      <td className="max-w-[14rem] px-2 py-2 align-top text-foreground">
+        {description}
+        <span className="mt-1 block text-xs text-muted-foreground">
+          {row.type ? (TRANSACTION_TYPE_LABELS[row.type] ?? row.type) : '—'}
+        </span>
       </td>
       <td
         className={`whitespace-nowrap px-2 py-2 text-right align-top ${
@@ -440,7 +444,7 @@ function PreviewRow({ row, checked, onToggle }: { row: ImportPreviewRow; checked
       >
         {row.value === null ? '—' : formatMoney(row.value)}
       </td>
-      <td className={`px-2 py-2 align-top text-xs ${TONES[situation.tone]}`}>{situation.text}</td>
+      <td className={`max-w-36 px-2 py-2 align-top text-xs ${TONES[situation.tone]}`}>{situation.text}</td>
     </tr>
   );
 }

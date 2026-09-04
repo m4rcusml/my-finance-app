@@ -44,6 +44,14 @@ describe('CategoriesService', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('create', () => {
+    it('persists the selected color and returns it', async () => {
+      prisma.category.create.mockResolvedValue({ ...baseCategory, color: '#a78bfa' });
+      const result = await service.create(userId, { name: 'Mercado', type: 'expense', color: '#a78bfa' });
+      expect(prisma.category.create).toHaveBeenCalledWith({
+        data: { userId, name: 'Mercado', type: 'expense', color: '#a78bfa' },
+      });
+      expect(result.color).toBe('#a78bfa');
+    });
     it('creates the category and returns the contract shape', async () => {
       prisma.category.create.mockResolvedValue(baseCategory);
 
@@ -56,6 +64,7 @@ describe('CategoriesService', () => {
         id: categoryId,
         name: 'Mercado',
         type: 'expense',
+        color: null,
         isActive: true,
         archivedAt: null,
         createdAt: createdAt.toISOString(),
@@ -81,6 +90,14 @@ describe('CategoriesService', () => {
   });
 
   describe('findAll', () => {
+    it('applies archive state and name search before pagination and count', async () => {
+      prisma.category.findMany.mockResolvedValue([]);
+      prisma.category.count.mockResolvedValue(0);
+      await service.findAll(userId, { status: 'archived', search: '  Moradia  ', page: 2, limit: 20 });
+      const where = { userId, isActive: false, name: { contains: 'Moradia', mode: 'insensitive' } };
+      expect(prisma.category.findMany).toHaveBeenCalledWith(expect.objectContaining({ where, skip: 20, take: 20 }));
+      expect(prisma.category.count).toHaveBeenCalledWith({ where });
+    });
     it('hides archived categories by default and returns the envelope', async () => {
       prisma.category.findMany.mockResolvedValue([baseCategory]);
       prisma.category.count.mockResolvedValue(1);

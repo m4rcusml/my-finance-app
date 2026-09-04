@@ -11,6 +11,7 @@ type CategoryRow = {
   userId: string;
   name: string;
   type: CategoryType;
+  color?: string | null;
   isActive: boolean;
   archivedAt: Date | string | null;
   createdAt: Date | string;
@@ -46,10 +47,15 @@ export class CategoriesService {
 
   async findAll(userId: string, query: ListCategoriesQueryDto = {}): Promise<PaginatedResponse<Category>> {
     const { page, limit, skip } = resolvePagination(query);
-    const where = {
+    const where: Prisma.CategoryWhereInput = {
       userId,
-      ...(query.includeArchived === true ? {} : { isActive: true }),
+      ...(query.status === 'archived'
+        ? { isActive: false }
+        : query.status === 'all' || (!query.status && query.includeArchived === true)
+          ? {}
+          : { isActive: true }),
       ...(query.type ? { type: query.type } : {}),
+      ...(query.search?.trim() ? { name: { contains: query.search.trim(), mode: 'insensitive' } } : {}),
     };
 
     const [rows, totalItems] = await Promise.all([
@@ -84,7 +90,7 @@ export class CategoriesService {
 
     try {
       const row = await this.prisma.category.create({
-        data: { userId, name: dto.name, type: dto.type },
+        data: { userId, name: dto.name, type: dto.type, ...(dto.color !== undefined ? { color: dto.color } : {}) },
       });
       return this.toResource(row as CategoryRow);
     } catch (error) {
@@ -125,6 +131,7 @@ export class CategoriesService {
           data: {
             ...(dto.name !== undefined ? { name: dto.name } : {}),
             ...(dto.type !== undefined ? { type: dto.type } : {}),
+            ...(dto.color !== undefined ? { color: dto.color } : {}),
           },
         });
       });
@@ -248,6 +255,7 @@ export class CategoriesService {
       id: row.id,
       name: row.name,
       type: row.type,
+      color: row.color ?? null,
       isActive: row.isActive,
       archivedAt: toIsoOrNull(row.archivedAt),
       createdAt: toIso(row.createdAt),

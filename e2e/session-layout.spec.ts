@@ -70,8 +70,11 @@ test('shell e diálogos permanecem operáveis nos cinco breakpoints', async ({ p
   await expect(page.getByRole('heading', { name: 'Contas e cartões' })).toBeVisible();
   await expect(page.locator('main')).not.toHaveAttribute('inert', '');
   await expect(page.locator('main')).toBeFocused();
-  const trigger = page.getByRole('button', { name: 'Nova conta' }).first();
+  const trigger = page.getByRole('button', { name: 'Adicionar conta ou cartão' });
   await trigger.click();
+  const chooser = page.getByRole('dialog', { name: 'Adicionar conta ou cartão' });
+  await expect(chooser).toBeVisible();
+  await chooser.getByRole('button', { name: /^Nova conta/ }).click();
   await expect(page.getByRole('dialog', { name: 'Nova conta' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Nova conta' })).toBeHidden();

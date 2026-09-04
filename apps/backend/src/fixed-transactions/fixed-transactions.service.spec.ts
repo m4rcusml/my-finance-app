@@ -118,6 +118,50 @@ describe('FixedTransactionsService', () => {
       expect(result.accountId).toBeNull();
     });
 
+    it('immediately creates a pending occurrence with a civil due date, without booking a transaction', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2028-02-01T01:00:00.000Z'));
+      try {
+        prisma.fixedTransaction.create.mockResolvedValue({ ...baseTemplate, referenceDay: 31 });
+        await service.create(userId, { ...dto, referenceDay: 31 });
+        // UTC February 1 is still January 31 in the configured app timezone.
+        expect(prisma.fixedTransactionOccurrence.createMany).toHaveBeenCalledWith({
+          data: [
+            expect.objectContaining({
+              userId,
+              fixedTransactionId: fixedId,
+              periodYear: 2028,
+              periodMonth: 1,
+              dueDate: fromCivilDate('2028-01-31'),
+              status: 'pending',
+              value: baseTemplate.value,
+              accountId,
+              creditCardId: null,
+              categoryId,
+            }),
+          ],
+          skipDuplicates: true,
+        });
+        expect(prisma.transaction.create).not.toHaveBeenCalled();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('clamps an immediate occurrence to the last day of a leap-year February', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2028-02-10T12:00:00.000Z'));
+      try {
+        prisma.fixedTransaction.create.mockResolvedValue({ ...baseTemplate, referenceDay: 31 });
+        await service.create(userId, { ...dto, referenceDay: 31 });
+        expect(prisma.fixedTransactionOccurrence.createMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: [expect.objectContaining({ dueDate: fromCivilDate('2028-02-29') })],
+          }),
+        );
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it('rejects two sources', async () => {
       await expect(service.create(userId, { ...dto, creditCardId })).rejects.toThrow(BadRequestException);
       expect(prisma.fixedTransaction.create).not.toHaveBeenCalled();
@@ -361,6 +405,21 @@ describe('FixedTransactionsService', () => {
         data: { isActive: true, archivedAt: null },
       });
       expect(result.isActive).toBe(true);
+      expect(prisma.fixedTransactionOccurrence.createMany).toHaveBeenCalledWith({
+        data: [expect.objectContaining({ fixedTransactionId: fixedId, status: 'pending' })],
+        skipDuplicates: true,
+      });
+      expect(prisma.transaction.create).not.toHaveBeenCalled();
+    });
+
+    it('does not rewrite existing occurrences when reactivation finds an existing period', async () => {
+      prisma.fixedTransaction.findFirst.mockResolvedValue({ ...baseTemplate, isActive: false });
+      prisma.fixedTransaction.update.mockResolvedValue(baseTemplate);
+      prisma.fixedTransactionOccurrence.createMany.mockResolvedValue({ count: 0 });
+      await service.restore(userId, fixedId);
+      expect(prisma.fixedTransactionOccurrence.update).not.toHaveBeenCalled();
+      expect(prisma.fixedTransactionOccurrence.deleteMany).not.toHaveBeenCalled();
+      expect(prisma.transaction.create).not.toHaveBeenCalled();
     });
 
     it('does not restore a template whose destination is archived', async () => {

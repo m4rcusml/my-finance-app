@@ -62,7 +62,7 @@ export default function RegisterClient() {
   return (
     <AuthShell
       title="Crie sua conta"
-      description="Comece com uma visão organizada e fiel do seu dinheiro."
+      description="Comece com uma base organizada e segura."
       alternateLabel="Já tem conta?"
       alternateAction="Entrar"
       alternateHref="/login"
@@ -89,6 +89,7 @@ export default function RegisterClient() {
               aria-describedby={describedBy}
               name="name"
               autoComplete="name"
+              placeholder="Como devemos chamar você?"
               maxLength={120}
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -105,6 +106,7 @@ export default function RegisterClient() {
               type="email"
               name="email"
               autoComplete="email"
+              placeholder="voce@exemplo.com"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}

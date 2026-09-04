@@ -6,9 +6,8 @@ import { ApiError, errorDetails, errorMessage } from '@/shared/lib/api';
 import { formatCivilDate, formatMoney } from '@/shared/lib/format';
 import { Dialog } from '@/shared/ui/dialog';
 import { ActionButton, Field, TextInput } from '@/shared/ui/form';
-import { isCivilDateInput, parseMoneyInput, periodLabel, toMoneyInput } from '../helpers';
+import { isCivilDateInput, parseMoneyInput, toMoneyInput } from '../helpers';
 import type { ConfirmOccurrenceVariables } from '../mutations';
-import { Callout } from './atoms';
 
 /**
  * Confirming an occurrence.
@@ -33,11 +32,13 @@ export function ConfirmOccurrenceDialog({
   onClose,
   occurrence,
   mutation,
+  onSkip,
 }: {
   open: boolean;
   onClose: () => void;
   occurrence: OccurrenceWithTemplate | null;
   mutation: ConfirmMutationLike;
+  onSkip?: () => void;
 }) {
   const formId = useId();
   const [realDate, setRealDate] = useState('');
@@ -52,7 +53,7 @@ export function ConfirmOccurrenceDialog({
     // The nominal due day is the honest default; the user overrides it if the
     // money actually moved on another day.
     setRealDate(occurrence.dueDate);
-    setValue('');
+    setValue(toMoneyInput(occurrence.value));
     setDateError(undefined);
     setValueError(undefined);
     reset();
@@ -91,14 +92,14 @@ export function ConfirmOccurrenceDialog({
       open={open}
       onClose={onClose}
       title="Confirmar ocorrência"
-      description="Confirmar cria um lançamento vinculado a esta ocorrência, com a data e o valor informados abaixo."
+      size="lg"
       footer={
         <>
-          <ActionButton variant="secondary" onClick={onClose} disabled={mutation.isPending}>
-            Cancelar
+          <ActionButton variant="secondary" onClick={onSkip ?? onClose} disabled={mutation.isPending}>
+            {onSkip ? 'Ignorar' : 'Cancelar'}
           </ActionButton>
           <ActionButton type="submit" form={formId} loading={mutation.isPending} disabled={!occurrence}>
-            Confirmar
+            Confirmar agora
           </ActionButton>
         </>
       }
@@ -123,74 +124,48 @@ export function ConfirmOccurrenceDialog({
             </div>
           ) : null}
 
-          <dl className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-layer02 p-3 text-sm">
-            <div className="col-span-2">
-              <dt className="text-xs text-muted-foreground">Modelo</dt>
-              <dd className="font-medium text-foreground">
-                {occurrence.fixedTransaction.description?.trim() || occurrence.description?.trim() || 'Sem descrição'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Período</dt>
-              <dd className="text-foreground">{periodLabel(occurrence.periodYear, occurrence.periodMonth)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Vencimento</dt>
-              <dd className="text-foreground">{formatCivilDate(occurrence.dueDate)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Valor do modelo</dt>
-              <dd className="text-foreground">{formatMoney(occurrence.value)}</dd>
-            </div>
-          </dl>
+          <p className="rounded-xl border border-border bg-primary/10 p-4 text-sm text-muted-primary">
+            {occurrence.description?.trim() || occurrence.fixedTransaction.description?.trim() || 'Sem descrição'} ·
+            previsto para {formatCivilDate(occurrence.dueDate)} · {formatMoney(occurrence.value)}
+          </p>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Data real" required error={dateError}>
+              {({ id, describedBy, invalid }) => (
+                <TextInput
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  type="date"
+                  value={realDate}
+                  onChange={(event) => {
+                    setRealDate(event.target.value);
+                    setDateError(undefined);
+                  }}
+                />
+              )}
+            </Field>
 
-          <Field
-            label="Data real"
-            required
-            error={dateError}
-            hint="O dia em que o dinheiro realmente entrou ou saiu. Vem preenchido com o vencimento."
-          >
-            {({ id, describedBy, invalid }) => (
-              <TextInput
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                type="date"
-                value={realDate}
-                onChange={(event) => {
-                  setRealDate(event.target.value);
-                  setDateError(undefined);
-                }}
-              />
-            )}
-          </Field>
-
-          <Field
-            label="Valor real (opcional)"
-            error={valueError}
-            hint={`Deixe em branco para usar ${toMoneyInput(occurrence.value)}, o valor do modelo.`}
-          >
-            {({ id, describedBy, invalid }) => (
-              <TextInput
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                inputMode="decimal"
-                autoComplete="off"
-                value={value}
-                placeholder={toMoneyInput(occurrence.value)}
-                onChange={(event) => {
-                  setValue(event.target.value);
-                  setValueError(undefined);
-                }}
-              />
-            )}
-          </Field>
-
-          <Callout>
-            A confirmação é definitiva: a ocorrência sai da lista de pendentes e o lançamento passa a contar no saldo e
-            no painel.
-          </Callout>
+            <Field label="Valor real" error={valueError}>
+              {({ id, describedBy, invalid }) => (
+                <TextInput
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={value}
+                  placeholder={toMoneyInput(occurrence.value)}
+                  onChange={(event) => {
+                    setValue(event.target.value);
+                    setValueError(undefined);
+                  }}
+                />
+              )}
+            </Field>
+          </div>
+          <p className="rounded-xl border border-warning/30 bg-warning/15 p-4 text-sm text-warning-text">
+            Confirmar cria um lançamento. Se outra sessão confirmar primeiro, nenhum lançamento será duplicado.
+          </p>
         </form>
       ) : null}
     </Dialog>

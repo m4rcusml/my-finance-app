@@ -10,7 +10,15 @@ export function ImportsClient() {
       <PageHeader
         eyebrow="Organização"
         title="Importações"
-        description="Traga seu extrato em CSV, OFX ou XLSX e revise cada linha antes de salvar."
+        description="Revise cada linha antes de levar o extrato para sua conta."
+        actions={
+          <a
+            href="#import-history-heading"
+            className="rounded-xl border border-border bg-layer02 px-5 py-3 text-sm font-semibold hover:bg-layer03"
+          >
+            Ver histórico
+          </a>
+        }
       />
       <ImportWizard />
       <ImportHistory />

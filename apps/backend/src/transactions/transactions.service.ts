@@ -457,6 +457,7 @@ export class TransactionsService {
     if (query.accountId) where.accountId = query.accountId;
     if (query.creditCardId) where.creditCardId = query.creditCardId;
     if (query.categoryId) where.categoryId = query.categoryId;
+    if (query.search?.trim()) where.description = { contains: query.search.trim(), mode: 'insensitive' };
 
     const date = this.buildDateFilter(query.fromDate, query.toDate);
     if (date) where.date = date;

@@ -71,7 +71,7 @@ function validate(form: FormState): FormErrors {
   const errors: FormErrors = {};
 
   if (form.description.trim() === '') {
-    errors.description = 'Informe uma descrição para identificar o modelo.';
+    errors.description = 'Informe uma descrição para identificar a recorrência.';
   }
 
   const value = parseMoneyInput(form.value);
@@ -181,11 +181,11 @@ export function TemplateDialog({
       open={open}
       onClose={onClose}
       size="lg"
-      title={isEditing ? 'Editar modelo recorrente' : 'Novo modelo recorrente'}
+      title={isEditing ? 'Editar recorrência' : 'Nova recorrência'}
       description={
         isEditing
           ? 'As alterações valem apenas para as ocorrências futuras. O histórico já confirmado permanece intacto.'
-          : 'O modelo gera uma ocorrência por mês, que você confirma ou pula.'
+          : 'Defina um compromisso mensal. A ocorrência deste mês aparece imediatamente para você confirmar ou ignorar.'
       }
       footer={
         <>
@@ -193,7 +193,7 @@ export function TemplateDialog({
             Cancelar
           </ActionButton>
           <ActionButton type="submit" form={formId} loading={mutation.isPending}>
-            {isEditing ? 'Salvar alterações' : 'Criar modelo'}
+            {isEditing ? 'Salvar alterações' : 'Criar recorrência'}
           </ActionButton>
         </>
       }
@@ -214,7 +214,10 @@ export function TemplateDialog({
 
         {lookups.isError ? (
           <p role="alert" className="text-sm text-danger-text">
-            Não foi possível carregar contas, cartões e categorias. Feche e tente novamente.
+            Não foi possível carregar contas, cartões e categorias.{' '}
+            <button type="button" className="underline" onClick={lookups.refetch}>
+              Tentar novamente
+            </button>
           </p>
         ) : null}
 
@@ -267,7 +270,7 @@ export function TemplateDialog({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
-            label="Dia de referência"
+            label="Dia do vencimento"
             required
             error={errors.referenceDay}
             hint="Entre 1 e 31. Os dias 29, 30 e 31 são ajustados para o último dia em meses mais curtos."

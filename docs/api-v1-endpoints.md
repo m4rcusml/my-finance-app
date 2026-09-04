@@ -79,7 +79,11 @@ Campos principais: `name`, `institution`, `limitTotal`, `closingDay?`. A respost
 | POST | `/api/v1/categories/:id/archive` | arquiva |
 | POST | `/api/v1/categories/:id/restore` | restaura |
 
-Query: `page`, `limit`, `includeArchived`, `type`. Tipos: `income`, `expense`, `both`. Categorias em lançamentos precisam ser `both` ou corresponder ao tipo; PATCH devolve 409 se uma troca de tipo invalidaria o histórico.
+Query tipada por `ListCategoriesQuery`: `page`, `limit`, `status=active|archived|all`, `search`, `type` e o parâmetro compatível `includeArchived`.
+
+`status` tem prioridade sobre `includeArchived`. Sem `status`, a lista traz ativas por padrão; `includeArchived=true` inclui ambas. `type` filtra o tipo exato (`income`, `expense` ou `both`). `search` procura um trecho do nome sem diferenciar maiúsculas de minúsculas, ignora espaços nas extremidades e aceita até 80 caracteres. Os filtros entram na consulta e na contagem antes da paginação.
+
+Create/PATCH aceitam `name`, `type` e `color?`. A cor é `null` ou um hexadecimal de seis dígitos, como `#a78bfa`; omitir no PATCH mantém a cor, enviar `null` remove-a. DTO e constraint PostgreSQL rejeitam outros formatos. Categorias em lançamentos precisam ser `both` ou corresponder ao tipo; PATCH devolve 409 se uma troca de tipo invalidaria o histórico.
 
 ## Transações
 
@@ -94,7 +98,9 @@ Query: `page`, `limit`, `includeArchived`, `type`. Tipos: `income`, `expense`, `
 | PATCH | `/api/v1/transactions/:id` | altera, inclusive relações com `null` explícito |
 | DELETE | `/api/v1/transactions/:id` | remove lançamento |
 
-Filtros da lista: `type`, `source`, `fromDate`, `toDate`, `accountId`, `creditCardId`, `categoryId`, `page`, `limit`.
+Filtros da lista: `search`, `type`, `source`, `fromDate`, `toDate`, `accountId`, `creditCardId`, `categoryId`, `page`, `limit`.
+
+`search` procura um trecho da descrição sem diferenciar maiúsculas de minúsculas, com espaços externos removidos. A busca é aplicada no banco antes da paginação e da contagem, inclusive na fila sem categoria; não fica limitada aos registros já carregados na interface.
 
 Resumo exige `from` e `to`. Projeção aceita `months`. Create/PATCH usam `date` civil e exatamente uma origem, `accountId` ou `creditCardId`.
 
@@ -118,17 +124,21 @@ A resposta contém janela resolvida, totais atual/anterior, tendências, saldos 
 
 | Método | Caminho | Resultado |
 |---|---|---|
-| POST | `/api/v1/fixed-transactions` | cria modelo mensal |
+| POST | `/api/v1/fixed-transactions` | cria modelo mensal e ocorrência pendente do mês vigente |
 | GET | `/api/v1/fixed-transactions` | lista paginada |
 | GET | `/api/v1/fixed-transactions/:id` | obtém modelo |
 | PATCH | `/api/v1/fixed-transactions/:id` | altera modelo e snapshots futuros elegíveis |
 | POST | `/api/v1/fixed-transactions/:id/archive` | arquiva |
-| POST | `/api/v1/fixed-transactions/:id/restore` | restaura |
+| POST | `/api/v1/fixed-transactions/:id/restore` | reativa e garante a ocorrência do mês vigente |
 | DELETE | `/api/v1/fixed-transactions/:id` | arquiva; não apaga histórico |
 
 Query: `page`, `limit`, `isActive`, `type`.
 
 Payload principal: `type`, `value`, `referenceDay`, `marginDays?`, `categoryId`, uma origem e `description?`. Criar, trocar vínculos ou restaurar exige recursos ativos e categoria compatível.
+
+A criação e a reativação, inclusive `PATCH` com transição `isActive=false → true`, inserem a ocorrência atual na mesma transação de banco. O mês vem de `APP_TIMEZONE`; dias 29–31 são limitados ao último dia do mês. A chave única modelo/ano/mês evita duplicação e uma ocorrência existente não é reaberta ou sobrescrita. Nenhuma dessas ações cria transação financeira: é preciso confirmar a ocorrência.
+
+O job das 03:00 continua gerando os períodos seguintes e recuperando períodos recentes. A leitura da lista e a inicialização do backend não substituem esse job.
 
 ### Ocorrências
 
@@ -212,6 +222,8 @@ Restore recebe:
 ```
 
 A confirmação destrutiva de `replace` pertence à interface. A API valida o arquivo e executa toda a restauração numa transação.
+
+`Category.color` participa do backup e aceita `null` ou `#RRGGBB`. Arquivos legados que omitem o campo continuam válidos, normalizados para `null`, sem aumento de `schemaVersion`. Em `merge`, categorias já existentes são reaproveitadas pela chave natural e mantêm seus campos; a cor do arquivo acompanha as categorias adicionadas. Em `replace`, a cor acompanha o grafo restaurado.
 
 ## Respostas comuns
 

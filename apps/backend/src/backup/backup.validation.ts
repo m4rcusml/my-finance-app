@@ -322,10 +322,15 @@ function readCreditCards(r: BackupReader, rows: Row[]): BackupFile['creditCards'
 function readCategories(r: BackupReader, rows: Row[]): BackupFile['categories'] {
   return rows.map((row, i) => {
     const path = `categories[${i}]`;
+    const color = r.nullableText(row, 'color', path, 7);
+    if (color !== null && !/^#[0-9a-fA-F]{6}$/.test(color)) {
+      r.problem(`${path}.color`, 'deve ser uma cor hexadecimal, como #a78bfa.');
+    }
     return {
       id: r.id(row, 'id', path),
       name: r.text(row, 'name', path),
       type: r.enumValue(CATEGORY_TYPES, row, 'type', path),
+      color,
       isActive: r.bool(row, 'isActive', path, true),
       archivedAt: r.nullableTimestamp(row, 'archivedAt', path),
       createdAt: r.timestamp(row, 'createdAt', path),

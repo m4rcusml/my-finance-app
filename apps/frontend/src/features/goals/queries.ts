@@ -29,6 +29,24 @@ export function useGoalsQuery(filters: GoalFilters): UseQueryResult<PaginatedRes
   });
 }
 
+/** Aggregate every page so summary figures never depend on the visible page. */
+export function useGoalsSummaryQuery(): UseQueryResult<Goal[]> {
+  const session = useSessionKey();
+  return useQuery({
+    queryKey: [...queryKeys.goals.all(session), 'summary'],
+    queryFn: async () => {
+      const goals: Goal[] = [];
+      let page = 1;
+      while (true) {
+        const result = await goalsApi.list({ page, limit: 100 });
+        goals.push(...result.data);
+        if (!result.meta.hasNextPage) return goals;
+        page += 1;
+      }
+    },
+  });
+}
+
 const OPTIONS_PAGE = { page: 1, limit: 100 };
 
 /**

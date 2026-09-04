@@ -67,10 +67,15 @@ export function Select({
   invalid,
   className,
   children,
+  variant = 'field',
   ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean; variant?: 'field' | 'filter' }) {
+  const appearance =
+    variant === 'filter'
+      ? `min-h-10 w-auto max-w-full truncate rounded-full border bg-layer02 px-3 py-2 text-xs text-foreground transition hover:border-muted-primary/70 disabled:cursor-not-allowed disabled:opacity-60 ${invalid ? 'border-danger' : 'border-border'} ${className ?? ''}`
+      : controlClassName(invalid, className);
   return (
-    <select {...props} aria-invalid={invalid || undefined} className={controlClassName(invalid, className)}>
+    <select {...props} aria-invalid={invalid || undefined} className={appearance}>
       {children}
     </select>
   );

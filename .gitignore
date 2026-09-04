@@ -3,8 +3,10 @@ node_modules
 
 # build output
 dist
+dist-e2e
 build
 .next
+.next-e2e
 out
 *.tsbuildinfo
 

@@ -607,6 +607,27 @@ describe('BackupService', () => {
   // -------------------------------------------------------------------------
 
   describe('round-trip', () => {
+    it('preserves category colors and accepts backups without the optional field', async () => {
+      const original = await service.exportBackup(OWNER);
+      original.categories[0].color = '#a78bfa';
+      delete original.categories[1].color;
+      await service.restoreBackup(TARGET, 'replace', original);
+      const restored = await service.exportBackup(TARGET);
+      expect(restored.categories.find((category) => category.name === original.categories[0].name)?.color).toBe(
+        '#a78bfa',
+      );
+      expect(restored.categories.find((category) => category.name === original.categories[1].name)?.color).toBeNull();
+    });
+
+    it('rejects invalid category colors before modifying the destination', async () => {
+      const original = await service.exportBackup(OWNER);
+      original.categories[0].color = 'red';
+      const before = await service.exportBackup(TARGET);
+      await expect(service.restoreBackup(TARGET, 'replace', original)).rejects.toThrow(UnprocessableEntityException);
+      const after = await service.exportBackup(TARGET);
+      expect(canonical(after)).toEqual(canonical(before));
+    });
+
     it('exporta, restaura em uma conta limpa e produz um ledger semanticamente idêntico', async () => {
       const original = await service.exportBackup(OWNER);
 

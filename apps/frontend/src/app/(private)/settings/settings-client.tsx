@@ -7,10 +7,11 @@ import {
   passwordPolicyViolation,
   type UpdateProfileRequest,
 } from '@finance/contracts';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BackupClient } from '@/app/(private)/backup/backup-client';
-import { errorDetails, errorMessage, usersApi } from '@/shared/lib/api';
+import { categoriesApi, errorDetails, errorMessage, usersApi } from '@/shared/lib/api';
 import { queryKeys } from '@/shared/lib/query/keys';
 import { useSession } from '@/shared/session/session-provider';
 import { useAuthStore } from '@/shared/stores/auth-store';
@@ -20,10 +21,11 @@ import { ActionButton, Field, TextInput } from '@/shared/ui/form';
 import { restartTour } from '@/shared/ui/onboarding';
 import { SegmentedTabs } from '@/shared/ui/segmented-tabs';
 import { useToast } from '@/shared/ui/toast';
+import { QueryBoundary } from '@/shared/ui/query-state';
 
 const DELETE_CONFIRMATION = 'EXCLUIR MINHA CONTA';
 
-export type SettingsView = 'profile' | 'security' | 'data';
+export type SettingsView = 'overview' | 'profile' | 'security' | 'data';
 
 export function SettingsClient({ view = 'profile' }: { view?: SettingsView }) {
   return (
@@ -31,17 +33,20 @@ export function SettingsClient({ view = 'profile' }: { view?: SettingsView }) {
       <PageHeader
         eyebrow="Preferências"
         title="Configurações"
-        description="Cuide do seu perfil, da segurança e das cópias dos seus dados."
+        description="Perfil, organização dos dados e segurança em um só lugar."
       />
       <SegmentedTabs
         label="Seções de configurações"
         active={view}
         tabs={[
-          { value: 'profile', label: 'Perfil', href: '/settings' },
-          { value: 'security', label: 'Segurança', href: '/settings?view=security' },
+          { value: 'overview', label: 'Visão geral', href: '/settings' },
+          { value: 'profile', label: 'Perfil', href: '/settings?view=profile' },
+          { value: 'categories', label: 'Categorias', href: '/transactions?view=categories' },
           { value: 'data', label: 'Dados e backup', href: '/settings?view=data' },
+          { value: 'security', label: 'Segurança', href: '/settings?view=security' },
         ]}
       />
+      {view === 'overview' ? <SettingsOverview /> : null}
       {view === 'profile' ? (
         <>
           <ProfileSection />
@@ -56,6 +61,120 @@ export function SettingsClient({ view = 'profile' }: { view?: SettingsView }) {
       ) : null}
       {view === 'data' ? <BackupClient embedded /> : null}
     </div>
+  );
+}
+
+function SettingsOverview() {
+  const { user, sessionKey } = useSession();
+  const categories = useQuery({
+    queryKey: [...queryKeys.categories.all(sessionKey), 'settings-overview'],
+    queryFn: async () => {
+      const [active, all] = await Promise.all([
+        categoriesApi.list({ limit: 4 }),
+        categoriesApi.list({ includeArchived: true, limit: 1 }),
+      ]);
+      return { active, archived: all.meta.totalItems - active.meta.totalItems };
+    },
+  });
+  const name = user?.name?.trim() || 'Minha conta';
+  return (
+    <>
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-2">
+        <section className="min-h-64 min-w-0 rounded-2xl border border-border bg-layer01 p-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-primary">Perfil</p>
+          <h2 className="mt-3 text-md font-semibold">Informações pessoais</h2>
+          <div className="my-6 flex items-center gap-4">
+            <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary text-md font-bold">
+              {name
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((part) => part[0])
+                .join('')
+                .toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{name}</p>
+              <p className="mt-1 truncate text-sm text-muted-foreground">{user?.email}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">pt-BR · America/Sao_Paulo</p>
+            <SettingsLink href="/settings?view=profile">Editar perfil</SettingsLink>
+          </div>
+        </section>
+        <section className="min-h-64 min-w-0 rounded-2xl border border-border bg-layer01 p-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-primary">Categorias</p>
+          <h2 className="mt-3 text-md font-semibold">Organize seus lançamentos</h2>
+          <QueryBoundary query={categories} loadingLabel="Carregando categorias…">
+            {({ active, archived }) => (
+              <>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {active.meta.totalItems} ativas · {archived} arquivadas
+                </p>
+                <div className="my-6 flex min-h-9 flex-wrap gap-2">
+                  {active.data.length ? (
+                    active.data.map((item) => (
+                      <span key={item.id} className="rounded-full border border-border bg-layer02 px-3 py-2 text-xs">
+                        {item.name}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Crie suas categorias para organizar receitas e despesas.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+          </QueryBoundary>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-64 text-xs text-muted-foreground">
+              Categorias com histórico são arquivadas, não removidas.
+            </p>
+            <SettingsLink href="/transactions?view=categories">Gerenciar</SettingsLink>
+          </div>
+        </section>
+        <section className="rounded-2xl border border-border bg-layer01 p-6">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-success-text">Dados e backup</p>
+          <BackupClient embedded compact />
+        </section>
+        <section className="rounded-2xl border border-border bg-layer01 p-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-danger-text">Segurança</p>
+          <h2 className="mt-3 text-md font-semibold">Acesso e conta</h2>
+          <div className="my-5 rounded-xl border border-border bg-layer02/40 p-4">
+            <h3 className="font-semibold">Alterar senha</h3>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Use pelo menos {MIN_PASSWORD_LENGTH} caracteres e evite senhas comuns.
+            </p>
+            <div className="mt-4 flex justify-end">
+              <SettingsLink href="/settings?view=security">Alterar senha</SettingsLink>
+            </div>
+          </div>
+          <div className="rounded-xl border border-danger/40 bg-danger/10 p-4">
+            <h3 className="font-semibold text-danger-text">Excluir minha conta</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Remove permanentemente seus dados financeiros. A próxima etapa exige senha e a confirmação EXCLUIR MINHA
+              CONTA.
+            </p>
+            <div className="mt-4">
+              <SettingsLink href="/settings?view=security#excluir-conta">Revisar exclusão da conta</SettingsLink>
+            </div>
+          </div>
+        </section>
+      </div>
+      <TutorialSection />
+    </>
+  );
+}
+
+function SettingsLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex min-h-10 items-center justify-center rounded-xl border border-border bg-layer02 px-4 py-2 text-sm font-semibold text-muted-primary hover:bg-layer03"
+    >
+      {children}
+    </Link>
   );
 }
 

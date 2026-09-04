@@ -86,7 +86,9 @@ Nome, instituição, limite, dia de fechamento opcional e arquivamento. Uso e di
 
 ### `Category`
 
-Nome, tipo e arquivamento. Chave única por `(userId, name, type)`.
+Nome, tipo, cor opcional e arquivamento. Chave única por `(userId, name, type)`.
+
+`color` é `VARCHAR(7)` anulável. A constraint `categories_color_hex_check` aceita somente `NULL` ou `#` seguido por seis caracteres hexadecimais. O contrato aceita o campo omitido em arquivos legados; a API valida o mesmo formato. A cor é apresentação e não integra a chave natural.
 
 Tipos: `income`, `expense`, `both`. Uma categoria vinculada precisa ser `both` ou ter o mesmo tipo da transação/modelo. A API impede mudar o tipo quando isso invalidaria vínculos históricos.
 
@@ -109,7 +111,7 @@ A constraint PostgreSQL exige exatamente uma origem. O índice único parcial `(
 
 Modelo mensal com tipo, valor, dia de referência, margem, categoria, exatamente uma origem e arquivamento.
 
-O modelo é configuração; o histórico fica em ocorrências. `DELETE` na API arquiva.
+O modelo é configuração; o histórico fica em ocorrências. `DELETE` na API arquiva. Criar ou reativar um modelo gera a ocorrência pendente do mês vigente, na mesma transação, com ano/mês determinados por `APP_TIMEZONE`.
 
 ### `FixedTransactionOccurrence`
 
@@ -122,6 +124,8 @@ Snapshot por `(fixedTransactionId, periodYear, periodMonth)`:
 - relação preservada com o modelo.
 
 Constraints garantem origem XOR, unicidade de competência e coerência da ocorrência confirmada. Uma transição final não volta a pending.
+
+A inserção imediata na criação/reativação usa a chave única de competência com `skipDuplicates`, de forma que tentativas concorrentes e o job preservam o snapshot já existente. Ela nunca cria uma transação financeira. O job idempotente das 03:00 permanece responsável pelos meses seguintes e pelo backfill limitado; abrir uma tela ou iniciar o servidor não gera esses períodos.
 
 ### `MarketAsset`
 
@@ -198,6 +202,8 @@ O arquivo versionado contém:
 
 Não contém `RefreshToken`, `passwordHash`, `tokenVersion`, `ImportBatch` ou `ImportBatchRow`.
 
+Categorias incluem `color`. Backups de `schemaVersion: 1` anteriores à cor continuam aceitos: campo ausente é normalizado para `null`. Cor inválida é rejeitada antes da restauração. Em `merge`, uma categoria reaproveitada pela chave natural mantém seus dados; as categorias novas recebem a cor do arquivo.
+
 `replace` recria o grafo com IDs remapeados deterministicamente para o usuário. `merge` gera IDs novos para entidades adicionadas, reaproveita categorias/ativos com chaves únicas e não recria transação importada cujo `externalId` já exista. Quando uma ocorrência do arquivo aponta para essa transação já existente, a restauração remapeia o vínculo em vez de descartar o histórico. Referências sempre passam pelos mapas; IDs do arquivo nunca são usados como atalho cross-tenant.
 
 ## Migrations
@@ -206,7 +212,8 @@ Histórico:
 
 1. `20251125204546_init`;
 2. `20251210015148_optional_description`;
-3. `20260903120000_v1_invariants`.
+3. `20260903120000_v1_invariants`;
+4. `20260904183000_category_color`.
 
 As duas primeiras migrations são históricas. A terceira introduz a V1 e foi escrita para upgrade sem apagar linhas:
 
@@ -218,6 +225,8 @@ As duas primeiras migrations são históricas. A terceira introduz a V1 e foi es
 - resolve colisões antes de índices únicos sem apagar transações;
 - cria constraints de origem e ocorrência;
 - adiciona sessão opaca e batches de importação.
+
+A quarta migration adiciona a coluna anulável `categories.color` e sua constraint hexadecimal. Categorias já existentes permanecem com `NULL`; não há reescrita das três migrations anteriores para essa mudança.
 
 Validação mínima antes da release:
 

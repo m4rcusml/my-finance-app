@@ -14,7 +14,7 @@ import { useTransactionReferences } from '@/features/transactions/references';
 import { errorDetails, errorMessage } from '@/shared/lib/api';
 import { todayCivil, TRANSACTION_TYPE_LABELS } from '@/shared/lib/format';
 import { Dialog } from '@/shared/ui/dialog';
-import { ActionButton, Field, Select, TextArea, TextInput } from '@/shared/ui/form';
+import { ActionButton, Field, Select, TextInput } from '@/shared/ui/form';
 import { useToast } from '@/shared/ui/toast';
 
 /**
@@ -87,6 +87,7 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
     categories,
     isPending: referencesPending,
     isError: referencesError,
+    refetch: retryReferences,
   } = useTransactionReferences();
   const { create, update } = useTransactionMutations();
   const toast = useToast();
@@ -183,14 +184,12 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
       open
       onClose={onClose}
       title={isEdit ? 'Editar transação' : 'Nova transação'}
-      description={
-        isEdit
-          ? 'Altere os dados do lançamento. A origem pode ser trocada entre conta e cartão.'
-          : 'Registre uma receita ou despesa em uma conta ou em um cartão.'
-      }
       size="lg"
       footer={
         <>
+          <p className="mr-auto max-w-64 text-xs text-muted-foreground">
+            Ao trocar a origem, o vínculo anterior é removido.
+          </p>
           <ActionButton variant="secondary" onClick={onClose} disabled={pending}>
             Cancelar
           </ActionButton>
@@ -200,21 +199,22 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
             loading={pending}
             disabled={pending || referencesPending || referencesError}
           >
-            {isEdit ? 'Salvar alterações' : 'Criar transação'}
+            {isEdit ? 'Salvar alterações' : 'Salvar transação'}
           </ActionButton>
         </>
       }
     >
-      <form ref={formRef} id={formId} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+      <form ref={formRef} id={formId} onSubmit={handleSubmit} noValidate className="space-y-5">
         {referencesError ? (
-          <div role="alert" className="rounded-lg border border-warning/60 bg-layer02 p-3 text-sm text-warning-text">
-            Não foi possível carregar todas as contas, cartões e categorias. Feche e tente novamente antes de enviar o
-            lançamento.
+          <div role="alert" className="rounded-xl border border-warning/60 bg-layer02 p-3 text-sm text-warning-text">
+            Não foi possível carregar contas, cartões e categorias.{' '}
+            <button type="button" className="underline" onClick={retryReferences}>
+              Tentar novamente
+            </button>
           </div>
         ) : null}
-
         {submitError ? (
-          <div role="alert" className="rounded-lg border border-danger/60 bg-layer02 p-3">
+          <div role="alert" className="rounded-xl border border-danger/60 bg-layer02 p-3">
             <p className="text-sm font-semibold text-danger-text">Não foi possível salvar</p>
             <p className="mt-1 text-sm text-muted-foreground">{submitError}</p>
             {submitDetails.length > 0 ? (
@@ -226,14 +226,41 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
             ) : null}
           </div>
         ) : null}
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Tipo" required>
-            {({ id, describedBy }) => (
-              <Select
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Valor" required error={fieldErrors.value}>
+            {({ id, describedBy, invalid }) => (
+              <TextInput
                 id={id}
                 aria-describedby={describedBy}
+                invalid={invalid}
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="0,00"
+                value={form.value}
+                className="bg-layer00"
+                onChange={(event) => patch({ value: event.target.value })}
+              />
+            )}
+          </Field>
+          <Field label="Data" required error={fieldErrors.date}>
+            {({ id, describedBy, invalid }) => (
+              <TextInput
+                id={id}
+                aria-describedby={describedBy}
+                invalid={invalid}
+                type="date"
+                value={form.date}
+                className="bg-layer00"
+                onChange={(event) => patch({ date: event.target.value })}
+              />
+            )}
+          </Field>
+          <Field label="Tipo" required>
+            {({ id }) => (
+              <Select
+                id={id}
                 value={form.type}
+                className="bg-layer00"
                 onChange={(event) => patch({ type: event.target.value as TransactionType })}
               >
                 {TRANSACTION_TYPES.map((type) => (
@@ -244,48 +271,16 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
               </Select>
             )}
           </Field>
-
-          <Field
-            label="Valor"
-            required
-            hint="Em reais. Use vírgula para os centavos: 1.234,56."
-            error={fieldErrors.value}
-          >
-            {({ id, describedBy, invalid }) => (
-              <TextInput
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                inputMode="decimal"
-                autoComplete="off"
-                placeholder="0,00"
-                value={form.value}
-                onChange={(event) => patch({ value: event.target.value })}
-              />
-            )}
-          </Field>
-
-          <Field label="Data" required error={fieldErrors.date}>
-            {({ id, describedBy, invalid }) => (
-              <TextInput
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                type="date"
-                value={form.date}
-                onChange={(event) => patch({ date: event.target.value })}
-              />
-            )}
-          </Field>
-
-          <Field label="Categoria" hint="Opcional. Deixe em “Sem categoria” para classificar depois.">
-            {({ id, describedBy }) => (
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Categoria">
+            {({ id }) => (
               <Select
                 id={id}
-                aria-describedby={describedBy}
                 value={form.categoryId}
-                onChange={(event) => patch({ categoryId: event.target.value })}
+                className="bg-layer00"
                 disabled={referencesPending}
+                onChange={(event) => patch({ categoryId: event.target.value })}
               >
                 <option value="">Sem categoria</option>
                 {availableCategories.map((category) => (
@@ -296,48 +291,35 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
               </Select>
             )}
           </Field>
-        </div>
-
-        <fieldset className="flex flex-col gap-2 rounded-lg border border-border p-3">
-          <legend className="px-1 text-sm font-medium text-foreground">
-            Origem
-            <span className="ml-1 text-danger-text" aria-hidden="true">
-              *
-            </span>
-            <span className="sr-only"> (obrigatório)</span>
-          </legend>
-          <p id={originHintId} className="text-xs text-muted-foreground">
-            Uma transação pertence a uma conta ou a um cartão — nunca aos dois.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                { kind: 'account', label: 'Conta' },
-                { kind: 'card', label: 'Cartão' },
-              ] as const
-            ).map(({ kind, label }) => (
-              <label
-                key={kind}
-                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
-                  form.sourceKind === kind
-                    ? 'border-muted-primary bg-layer03 text-foreground'
-                    : 'border-border-strong bg-layer02 text-muted-foreground hover:bg-layer03'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={`${baseId}-source`}
-                  value={kind}
-                  checked={form.sourceKind === kind}
-                  aria-describedby={originHintId}
-                  onChange={() => patch({ sourceKind: kind })}
-                  className="size-4 accent-primary"
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-
+          <fieldset className="min-w-0">
+            <legend className="mb-1.5 text-sm font-medium">Origem · escolha uma</legend>
+            <p id={originHintId} className="sr-only">
+              Uma transação pertence a uma conta ou a um cartão.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { kind: 'account', label: 'Conta' },
+                  { kind: 'card', label: 'Cartão' },
+                ] as const
+              ).map(({ kind, label }) => (
+                <label key={kind} className="relative cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`${baseId}-source`}
+                    value={kind}
+                    checked={form.sourceKind === kind}
+                    aria-describedby={originHintId}
+                    onChange={() => patch({ sourceKind: kind, accountId: '', creditCardId: '' })}
+                    className="peer sr-only"
+                  />
+                  <span className="flex min-h-11 items-center justify-center rounded-xl border border-border bg-layer00 text-[14px] text-muted-foreground peer-checked:border-muted-primary/50 peer-checked:bg-muted-primary/20 peer-checked:text-muted-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-muted-primary">
+                    {label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           {form.sourceKind === 'account' ? (
             <Field
               label="Conta"
@@ -345,7 +327,7 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
               error={fieldErrors.accountId}
               hint={
                 !referencesPending && accounts.length === 0
-                  ? 'Nenhuma conta ativa. Cadastre uma conta antes de lançar por conta.'
+                  ? 'Cadastre uma conta em Contas e cartões para continuar.'
                   : undefined
               }
             >
@@ -355,8 +337,9 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
                   aria-describedby={describedBy}
                   invalid={invalid}
                   value={form.accountId}
-                  onChange={(event) => patch({ accountId: event.target.value })}
+                  className="bg-layer00"
                   disabled={referencesPending}
+                  onChange={(event) => patch({ accountId: event.target.value })}
                 >
                   <option value="">Selecione uma conta</option>
                   {accounts.map((account) => (
@@ -374,7 +357,7 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
               error={fieldErrors.creditCardId}
               hint={
                 !referencesPending && creditCards.length === 0
-                  ? 'Nenhum cartão ativo. Cadastre um cartão antes de lançar por cartão.'
+                  ? 'Cadastre um cartão em Contas e cartões para continuar.'
                   : undefined
               }
             >
@@ -384,8 +367,9 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
                   aria-describedby={describedBy}
                   invalid={invalid}
                   value={form.creditCardId}
-                  onChange={(event) => patch({ creditCardId: event.target.value })}
+                  className="bg-layer00"
                   disabled={referencesPending}
+                  onChange={(event) => patch({ creditCardId: event.target.value })}
                 >
                   <option value="">Selecione um cartão</option>
                   {creditCards.map((card) => (
@@ -397,20 +381,19 @@ export function TransactionFormDialog({ transaction, initialType = 'expense', on
               )}
             </Field>
           )}
-        </fieldset>
-
-        <Field label="Descrição" hint="Opcional. Ajuda a reconhecer o lançamento depois.">
-          {({ id, describedBy }) => (
-            <TextArea
-              id={id}
-              aria-describedby={describedBy}
-              rows={2}
-              maxLength={255}
-              value={form.description}
-              onChange={(event) => patch({ description: event.target.value })}
-            />
-          )}
-        </Field>
+          <Field label="Descrição">
+            {({ id }) => (
+              <TextInput
+                id={id}
+                maxLength={500}
+                value={form.description}
+                className="bg-layer00"
+                placeholder="Ex.: Mercado"
+                onChange={(event) => patch({ description: event.target.value })}
+              />
+            )}
+          </Field>
+        </div>
       </form>
     </Dialog>
   );

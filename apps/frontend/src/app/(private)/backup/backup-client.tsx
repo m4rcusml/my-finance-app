@@ -13,8 +13,8 @@ import { backupApi, errorDetails, errorMessage } from '@/shared/lib/api';
 import { queryKeys } from '@/shared/lib/query/keys';
 import { useSessionKey } from '@/shared/session/session-provider';
 import { PageHeader } from '@/shared/ui/app-shell';
-import { ConfirmDialog } from '@/shared/ui/dialog';
-import { ActionButton, Field, Select } from '@/shared/ui/form';
+import { Dialog } from '@/shared/ui/dialog';
+import { ActionButton, Field, Select, TextInput } from '@/shared/ui/form';
 import { useToast } from '@/shared/ui/toast';
 
 const COLLECTIONS: Array<{ key: keyof RestoreResultCounts; label: string }> = [
@@ -32,7 +32,7 @@ const COLLECTIONS: Array<{ key: keyof RestoreResultCounts; label: string }> = [
 
 const BACKUP_COLLECTION_KEYS = COLLECTIONS.map(({ key }) => key);
 
-export function BackupClient({ embedded = false }: { embedded?: boolean }) {
+export function BackupClient({ embedded = false, compact = false }: { embedded?: boolean; compact?: boolean }) {
   const toast = useToast();
   const sessionKey = useSessionKey();
   const queryClient = useQueryClient();
@@ -42,6 +42,7 @@ export function BackupClient({ embedded = false }: { embedded?: boolean }) {
   const [backup, setBackup] = useState<BackupFile | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState('');
   const [result, setResult] = useState<RestoreResponse | null>(null);
 
   const exportMutation = useMutation({
@@ -101,21 +102,24 @@ export function BackupClient({ embedded = false }: { embedded?: boolean }) {
       fileInputRef.current?.focus();
       return;
     }
+    setConfirmation('');
     setConfirmOpen(true);
   }
 
   function confirmRestore() {
-    if (!backup) return;
+    if (!backup || (mode === 'replace' && confirmation !== 'SUBSTITUIR')) return;
     restoreMutation.mutate({ restoreMode: mode, data: backup });
   }
 
   const mutationError = restoreMutation.error;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div
+      className={`flex flex-col gap-5 ${compact ? '[&_section]:bg-layer02/30 [&_section]:p-4 [&_section_p]:text-xs' : ''}`}
+    >
       {embedded ? (
         <div>
-          <h2 className="text-lg font-semibold">Backup dos seus dados</h2>
+          <h2 className="text-md font-semibold">Seu histórico, sob seu controle</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Baixe todo o seu grafo financeiro em JSON ou restaure uma cópia local.
           </p>
@@ -157,7 +161,7 @@ export function BackupClient({ embedded = false }: { embedded?: boolean }) {
           inválida, nada é alterado.
         </p>
 
-        <div className="mt-5 grid max-w-2xl gap-4 sm:grid-cols-2">
+        <div className={`mt-5 grid max-w-2xl gap-4 ${compact ? '' : 'sm:grid-cols-2'}`}>
           <Field label="Arquivo JSON" required error={fileError ?? undefined}>
             {({ id, describedBy, invalid }) => (
               <input
@@ -223,20 +227,84 @@ export function BackupClient({ embedded = false }: { embedded?: boolean }) {
 
       {result ? <RestoreReport result={result} /> : null}
 
-      <ConfirmDialog
+      <Dialog
         open={confirmOpen}
         title={mode === 'replace' ? 'Substituir todos os dados financeiros?' : 'Mesclar o backup?'}
-        message={
+        description={
           mode === 'replace'
             ? `O conteúdo financeiro atual desta conta será removido e substituído por “${selectedFileName ?? 'o arquivo selecionado'}”. A operação é atômica, mas não pode ser desfeita sem outro backup.`
             : `Os dados de “${selectedFileName ?? 'o arquivo selecionado'}” serão combinados com os atuais. Chaves naturais existentes não serão duplicadas.`
         }
-        confirmLabel={mode === 'replace' ? 'Sim, substituir tudo' : 'Mesclar backup'}
-        destructive={mode === 'replace'}
-        busy={restoreMutation.isPending}
-        onConfirm={confirmRestore}
-        onCancel={() => setConfirmOpen(false)}
-      />
+        onClose={() => {
+          if (!restoreMutation.isPending) setConfirmOpen(false);
+        }}
+        footer={
+          <>
+            <ActionButton
+              variant="secondary"
+              onClick={() => setConfirmOpen(false)}
+              disabled={restoreMutation.isPending}
+            >
+              Cancelar
+            </ActionButton>
+            <ActionButton
+              variant={mode === 'replace' ? 'danger' : 'primary'}
+              onClick={confirmRestore}
+              loading={restoreMutation.isPending}
+              disabled={mode === 'replace' && confirmation !== 'SUBSTITUIR'}
+            >
+              {mode === 'replace' ? 'Sim, substituir tudo' : 'Mesclar backup'}
+            </ActionButton>
+          </>
+        }
+      >
+        <fieldset className="space-y-3">
+          <legend className="sr-only">Como restaurar o backup</legend>
+          {(['merge', 'replace'] as const).map((value) => (
+            <label
+              key={value}
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 ${mode === value ? 'border-muted-primary bg-primary/15' : 'border-border bg-layer02/40'}`}
+            >
+              <input
+                type="radio"
+                name="restore-mode"
+                checked={mode === value}
+                onChange={() => {
+                  setMode(value);
+                  setConfirmation('');
+                }}
+                disabled={restoreMutation.isPending}
+                className="accent-primary"
+              />
+              <span className="text-sm">
+                <strong>{value === 'merge' ? 'Mesclar' : 'Substituir'}</strong>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {value === 'merge'
+                    ? 'Mantém o atual e evita duplicar chaves naturais.'
+                    : 'Remove os dados atuais e restaura o conteúdo do arquivo.'}
+                </span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+        {mode === 'replace' ? (
+          <div className="mt-5">
+            <Field label="Digite SUBSTITUIR para confirmar" required>
+              {({ id, describedBy }) => (
+                <TextInput
+                  id={id}
+                  aria-describedby={describedBy}
+                  autoComplete="off"
+                  value={confirmation}
+                  onChange={(event) => setConfirmation(event.target.value)}
+                  disabled={restoreMutation.isPending}
+                  placeholder="SUBSTITUIR"
+                />
+              )}
+            </Field>
+          </div>
+        ) : null}
+      </Dialog>
     </div>
   );
 }

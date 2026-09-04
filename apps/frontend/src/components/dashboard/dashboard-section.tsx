@@ -25,7 +25,7 @@ export function DashboardSection({
   return (
     <section
       aria-labelledby={headingId}
-      className="rounded-2xl border border-border bg-layer01 p-4 sm:p-5"
+      className="min-w-0 rounded-2xl border border-border bg-layer01 p-4 sm:p-5"
       data-tour={dataTour}
     >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">

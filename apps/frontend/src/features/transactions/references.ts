@@ -21,6 +21,7 @@ export interface TransactionReferences {
   isPending: boolean;
   /** True when a selector could not be loaded, so the UI can say so honestly. */
   isError: boolean;
+  refetch: () => void;
 }
 
 export function useTransactionReferences(): TransactionReferences {
@@ -34,5 +35,10 @@ export function useTransactionReferences(): TransactionReferences {
     categories: categories.categories,
     isPending: accounts.query.isPending || creditCards.query.isPending || categories.query.isPending,
     isError: accounts.query.isError || creditCards.query.isError || categories.query.isError,
+    refetch: () => {
+      void accounts.query.refetch();
+      void creditCards.query.refetch();
+      void categories.query.refetch();
+    },
   };
 }

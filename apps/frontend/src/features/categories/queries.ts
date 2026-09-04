@@ -1,17 +1,12 @@
 'use client';
 
-import type { Category, CategoryType, PaginatedResponse } from '@finance/contracts';
+import type { Category, ListCategoriesQuery, PaginatedResponse } from '@finance/contracts';
 import { keepPreviousData, type UseQueryResult, useQuery } from '@tanstack/react-query';
 import { categoriesApi } from '@/shared/lib/api';
 import { queryKeys } from '@/shared/lib/query/keys';
 import { useSessionKey } from '@/shared/session/session-provider';
 
-export interface CategoriesFilters {
-  page?: number;
-  limit?: number;
-  includeArchived?: boolean;
-  type?: CategoryType;
-}
+export type CategoriesFilters = ListCategoriesQuery;
 
 export type CategoriesQueryResult = UseQueryResult<PaginatedResponse<Category>>;
 
@@ -31,10 +26,25 @@ export const ACTIVE_CATEGORIES_FILTERS: CategoriesFilters = {
 };
 
 export function useActiveCategoriesQuery() {
-  const query = useCategoriesQuery(ACTIVE_CATEGORIES_FILTERS);
+  const sessionKey = useSessionKey();
+  const query = useQuery({
+    queryKey: [...queryKeys.categories.all(sessionKey), 'active-options'],
+    queryFn: async () => {
+      const categories: Category[] = [];
+      let page = 1;
+      let hasNext = true;
+      while (hasNext) {
+        const response = await categoriesApi.list({ ...ACTIVE_CATEGORIES_FILTERS, page });
+        categories.push(...response.data);
+        hasNext = response.meta.hasNextPage;
+        page += 1;
+      }
+      return categories;
+    },
+  });
 
   return {
-    categories: query.data?.data ?? [],
+    categories: query.data ?? [],
     query,
     isPending: query.isPending,
     isError: query.isError,

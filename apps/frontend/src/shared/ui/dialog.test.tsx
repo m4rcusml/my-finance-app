@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { ConfirmDialog, Dialog } from './dialog';
@@ -43,7 +43,65 @@ function DialogHarness() {
   );
 }
 
+function ConfirmationInputHarness({ onClose }: { onClose: (value: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState('');
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        Restaurar backup
+      </button>
+      <Dialog
+        open={open}
+        title="Confirmar substituição"
+        onClose={() => {
+          onClose(confirmation);
+          setOpen(false);
+        }}
+      >
+        <label htmlFor="backup-confirmation">Digite SUBSTITUIR</label>
+        <input
+          id="backup-confirmation"
+          value={confirmation}
+          onChange={(event) => setConfirmation(event.target.value)}
+        />
+      </Dialog>
+    </>
+  );
+}
+
 describe('Dialog', () => {
+  it('preserva foco durante a digitação com callback inline e fecha usando o valor atualizado', async () => {
+    const user = userEvent.setup();
+    const onClose = jest.fn();
+    render(<ConfirmationInputHarness onClose={onClose} />);
+
+    const trigger = screen.getByRole('button', { name: 'Restaurar backup' });
+    await user.click(trigger);
+    const input = screen.getByRole('textbox', { name: 'Digite SUBSTITUIR' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Fechar' })).toHaveFocus());
+    await user.click(input);
+    expect(input).toHaveFocus();
+
+    for (const letter of 'SUBSTITUIR') {
+      await user.keyboard(letter);
+      // Let the browser paint between keystrokes, as it does during real typing.
+      await act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+      expect(input).toHaveFocus();
+    }
+
+    expect(input).toHaveValue('SUBSTITUIR');
+    expect(document.body).toHaveStyle({ overflow: 'hidden' });
+    await user.keyboard('{Escape}');
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledWith('SUBSTITUIR');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(document.body.style.overflow).toBe('');
+  });
+
   it('anuncia título e descrição, fecha com Escape e devolve o foco ao gatilho', async () => {
     const user = userEvent.setup();
     render(<DialogHarness />);

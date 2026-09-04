@@ -1,17 +1,9 @@
 'use client';
 
 import type { PaginationMeta, TransactionWithRelations } from '@finance/contracts';
-import { Icon } from '@/components/ui/icon/icon';
 import { categoryLabel, transactionOrigin } from '@/features/transactions/helpers';
 import { formatCivilDate, formatMoney, TRANSACTION_SOURCE_LABELS, TRANSACTION_TYPE_LABELS } from '@/shared/lib/format';
-import { IconButton } from '@/shared/ui/form';
-
-/**
- * The list itself, in two shapes: a real table from `sm` up, stacked cards
- * below it. The same rows either way — at 320px a 7-column table is unreadable,
- * and a horizontally scrolling one hides the amount, which is the whole point
- * of the screen.
- */
+import { ActionButton } from '@/shared/ui/form';
 
 export interface TransactionListProps {
   items: TransactionWithRelations[];
@@ -20,154 +12,92 @@ export interface TransactionListProps {
   onDelete: (transaction: TransactionWithRelations) => void;
 }
 
-function describe(transaction: TransactionWithRelations): string {
-  return transaction.description?.trim() || 'Sem descrição';
-}
-
-/**
- * Colour alone never carries the sign: a visually-hidden "Receita"/"Despesa"
- * prefix says it in words, and the Tipo column repeats it as text.
- */
-function Amount({ transaction }: { transaction: TransactionWithRelations }) {
-  const isIncome = transaction.type === 'income';
-  return (
-    <span className={`font-semibold tabular-nums ${isIncome ? 'text-success-text' : 'text-danger-text'}`}>
-      <span className="sr-only">{isIncome ? 'Receita' : 'Despesa'}: </span>
-      <span aria-hidden="true">{isIncome ? '+' : '−'}&nbsp;</span>
-      {formatMoney(transaction.value)}
-    </span>
-  );
-}
-
-function RowActions({
-  transaction,
-  onEdit,
-  onDelete,
-}: {
-  transaction: TransactionWithRelations;
-  onEdit: (transaction: TransactionWithRelations) => void;
-  onDelete: (transaction: TransactionWithRelations) => void;
-}) {
-  const name = describe(transaction);
-  return (
-    <div className="flex justify-end gap-1">
-      <IconButton label={`Editar transação ${name}`} variant="secondary" onClick={() => onEdit(transaction)}>
-        <Icon name="Pencil1Outlined" size={17} />
-      </IconButton>
-      <IconButton label={`Excluir transação ${name}`} variant="secondary" onClick={() => onDelete(transaction)}>
-        <Icon name="Trash3Outlined" size={17} />
-      </IconButton>
-    </div>
-  );
-}
-
-const TH = 'px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground';
-const TD = 'px-3 py-3 align-middle text-sm';
-
 export function TransactionList({ items, meta, onEdit, onDelete }: TransactionListProps) {
   return (
-    <>
-      {/* Table — sm and up */}
-      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-layer01 sm:block">
-        <table className="w-full min-w-[52rem] border-collapse text-left">
-          <caption className="sr-only">
-            Transações filtradas. Página {meta.page} de {Math.max(1, meta.totalPages)}, {meta.totalItems} no total.
-          </caption>
-          <thead>
-            <tr className="border-b border-border">
-              <th scope="col" className={TH}>
-                Data
-              </th>
-              <th scope="col" className={TH}>
-                Descrição
-              </th>
-              <th scope="col" className={TH}>
-                Categoria
-              </th>
-              <th scope="col" className={TH}>
-                Conta ou cartão
-              </th>
-              <th scope="col" className={TH}>
-                Tipo
-              </th>
-              <th scope="col" className={`${TH} text-right`}>
-                Valor
-              </th>
-              <th scope="col" className={`${TH} text-right`}>
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((transaction) => {
-              const origin = transactionOrigin(transaction);
-              return (
-                <tr key={transaction.id} className="border-b border-border last:border-0 hover:bg-layer02/60">
-                  <td className={`${TD} whitespace-nowrap text-muted-foreground`}>
-                    {formatCivilDate(transaction.date)}
-                  </td>
-                  <th scope="row" className={`${TD} max-w-[18rem] truncate font-medium text-foreground`}>
-                    {describe(transaction)}
-                  </th>
-                  <td className={`${TD} text-muted-foreground`}>{categoryLabel(transaction)}</td>
-                  <td className={`${TD} text-muted-foreground`}>
-                    {origin.name}
-                    {origin.kind ? <span className="ml-1 text-xs text-placeholder">({origin.kind})</span> : null}
-                  </td>
-                  <td className={`${TD} whitespace-nowrap text-muted-foreground`}>
-                    {TRANSACTION_TYPE_LABELS[transaction.type]}
-                    <span className="ml-1 text-xs text-placeholder">
-                      ({TRANSACTION_SOURCE_LABELS[transaction.source]})
-                    </span>
-                  </td>
-                  <td className={`${TD} whitespace-nowrap text-right`}>
-                    <Amount transaction={transaction} />
-                  </td>
-                  <td className={`${TD} text-right`}>
-                    <RowActions transaction={transaction} onEdit={onEdit} onDelete={onDelete} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+    <div>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-[18px] font-semibold">Todas as transações</h2>
+        <p className="text-xs text-muted-foreground">
+          Exibindo {(meta.page - 1) * meta.limit + 1}–{Math.min(meta.page * meta.limit, meta.totalItems)} de{' '}
+          {meta.totalItems}
+        </p>
       </div>
-
-      {/* Stacked cards — below sm */}
-      <ul className="flex flex-col gap-3 sm:hidden">
+      <div
+        aria-hidden="true"
+        className="mb-1 hidden grid-cols-[minmax(0,1fr)_180px_180px_28px] gap-4 border-b border-border pb-3 text-xs text-muted-foreground lg:grid"
+      >
+        <span>Movimentação</span>
+        <span className="text-center">Categoria</span>
+        <span className="text-right">Valor</span>
+        <span />
+      </div>
+      <ul aria-label="Transações" className="space-y-2">
         {items.map((transaction) => {
-          const origin = transactionOrigin(transaction);
+          const name = transaction.description?.trim() || 'Sem descrição';
+          const income = transaction.type === 'income';
           return (
-            <li key={transaction.id} className="rounded-2xl border border-border bg-layer01 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{describe(transaction)}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {formatCivilDate(transaction.date)} · {TRANSACTION_TYPE_LABELS[transaction.type]} ·{' '}
-                    {TRANSACTION_SOURCE_LABELS[transaction.source]}
-                  </p>
+            <li
+              key={transaction.id}
+              className="relative flex min-w-0 items-center gap-2 rounded-xl border border-border bg-layer00 p-3 sm:p-4"
+            >
+              <button
+                type="button"
+                onClick={() => onEdit(transaction)}
+                aria-label={`Editar transação ${name}`}
+                className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-left lg:grid-cols-[minmax(0,1fr)_180px_180px] lg:gap-4"
+              >
+                <span className="flex min-w-0 items-center gap-3 sm:gap-4">
+                  <span
+                    aria-hidden="true"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-layer03 text-sm font-medium text-muted-primary"
+                  >
+                    {name.charAt(0).toLocaleUpperCase('pt-BR')}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[14px] font-medium">{name}</span>
+                    <span className="mt-1 block truncate text-xs text-muted-foreground">
+                      {formatCivilDate(transaction.date)} · {transactionOrigin(transaction).name}
+                    </span>
+                  </span>
+                </span>
+                <span className="hidden justify-self-center rounded-full bg-layer02 px-3 py-2 text-xs text-muted-foreground lg:block">
+                  {categoryLabel(transaction)}
+                </span>
+                <span className="min-w-0 text-right">
+                  <span
+                    className={`block whitespace-nowrap text-[13px] font-semibold tabular-nums sm:text-[14px] ${income ? 'text-success-text' : 'text-danger-text'}`}
+                  >
+                    <span className="sr-only">{TRANSACTION_TYPE_LABELS[transaction.type]}: </span>
+                    {income ? '+' : '−'} {formatMoney(transaction.value)}
+                  </span>
+                  <span className="mt-1 hidden text-xs text-muted-foreground sm:block">
+                    {TRANSACTION_TYPE_LABELS[transaction.type]}
+                  </span>
+                </span>
+              </button>
+              <details className="group shrink-0">
+                <summary
+                  aria-label={`Ações de ${name}`}
+                  className="flex size-7 cursor-pointer list-none items-center justify-center rounded-lg text-lg text-muted-foreground hover:bg-layer02"
+                >
+                  ⋮
+                </summary>
+                <div className="absolute right-3 top-14 z-10 flex min-w-48 flex-col gap-2 rounded-xl border border-border bg-layer02 p-3 shadow-xl">
+                  <span className="text-xs text-muted-foreground">
+                    {TRANSACTION_SOURCE_LABELS[transaction.source]} · {categoryLabel(transaction)}
+                  </span>
+                  <ActionButton variant="secondary" onClick={() => onEdit(transaction)}>
+                    Editar
+                  </ActionButton>
+                  <ActionButton variant="danger" onClick={() => onDelete(transaction)}>
+                    Excluir <span className="sr-only">transação {name}</span>
+                  </ActionButton>
                 </div>
-                <Amount transaction={transaction} />
-              </div>
-
-              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                <div className="min-w-0">
-                  <dt className="text-muted-foreground">Categoria</dt>
-                  <dd className="truncate text-foreground">{categoryLabel(transaction)}</dd>
-                </div>
-                <div className="min-w-0">
-                  <dt className="text-muted-foreground">{origin.kind ?? 'Origem'}</dt>
-                  <dd className="truncate text-foreground">{origin.name}</dd>
-                </div>
-              </dl>
-
-              <div className="mt-2">
-                <RowActions transaction={transaction} onEdit={onEdit} onDelete={onDelete} />
-              </div>
+              </details>
             </li>
           );
         })}
       </ul>
-    </>
+    </div>
   );
 }

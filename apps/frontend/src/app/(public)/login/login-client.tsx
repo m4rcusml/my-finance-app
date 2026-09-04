@@ -36,8 +36,8 @@ export default function LoginClient() {
 
   return (
     <AuthShell
-      title="Entre na sua conta"
-      description="Acesse seu painel e continue de onde parou."
+      title="Bem-vindo de volta"
+      description="Entre para continuar cuidando do seu dinheiro."
       alternateLabel="Ainda não tem conta?"
       alternateAction="Criar conta"
       alternateHref="/register"
@@ -58,6 +58,7 @@ export default function LoginClient() {
               type="email"
               name="email"
               autoComplete="email"
+              placeholder="voce@exemplo.com"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}

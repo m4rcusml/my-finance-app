@@ -1,6 +1,6 @@
 /**
- * Proves the V1 migration upgrades a *populated* pre-V1 database without losing
- * data and while repairing every invariant violation.
+ * Proves the V1 migrations upgrade a *populated* pre-V1 database without losing
+ * data and while repairing every invariant violation, including additive color.
  * Run from apps/backend with DATABASE_URL pointing at a scratch database.
  */
 import fs from 'node:fs';
@@ -104,6 +104,8 @@ for (const t of [
 
 console.log('3) upgrade');
 await apply('20260903120000_v1_invariants');
+const categoriesBeforeColor = (await client.query('SELECT to_jsonb(c) AS row FROM categories c ORDER BY id')).rows;
+await apply('20260904183000_category_color');
 
 console.log('4) assertions');
 const failures = [];
@@ -116,6 +118,25 @@ const check = (label, actual, expected) => {
 };
 const one = async (sql) => (await client.query(sql)).rows[0];
 const all = async (sql) => (await client.query(sql)).rows;
+
+check(
+  'color migration preserves every category and its existing fields',
+  await all(`SELECT to_jsonb(c) - 'color' AS row FROM categories c ORDER BY id`),
+  categoriesBeforeColor,
+);
+check(
+  'all legacy categories start with null color',
+  (await one('SELECT count(*)::int c FROM categories WHERE color IS NOT NULL')).c,
+  0,
+);
+await client.query(`UPDATE categories SET color='#Aa10fF' WHERE id='cat1'`);
+check(
+  'color accepts six hexadecimal digits with either case',
+  (await one(`SELECT color FROM categories WHERE id='cat1'`)).color,
+  '#Aa10fF',
+);
+await client.query(`UPDATE categories SET color=NULL WHERE id='cat1'`);
+check('color can be cleared explicitly', (await one(`SELECT color FROM categories WHERE id='cat1'`)).color, null);
 
 // Nothing is lost. Accounts and categories gain one archived placeholder each.
 for (const [t, n] of Object.entries(before)) {
@@ -312,6 +333,9 @@ const expectFail = async (label, sql) => {
     console.log(`  PASS  ${label}`);
   }
 };
+await expectFail('color CHECK rejects shorthand hex', `UPDATE categories SET color='#abc' WHERE id='cat1'`);
+await expectFail('color CHECK rejects named colors', `UPDATE categories SET color='purple' WHERE id='cat1'`);
+await expectFail('color CHECK rejects non-hex digits', `UPDATE categories SET color='#12zz67' WHERE id='cat1'`);
 await expectFail(
   'CHECK rejects two sources',
   `INSERT INTO transactions (id,user_id,type,value,date,account_id,credit_card_id,source,created_at,updated_at) VALUES ('x1','u1','expense',1,'2026-01-01','a1','c1','manual',NOW(),NOW())`,

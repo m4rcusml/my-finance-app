@@ -27,6 +27,7 @@ import {
   type Investment,
   type InvestmentWithAsset,
   type ListOccurrencesQuery,
+  type ListCategoriesQuery,
   type ListFixedTransactionsQuery,
   type ListTransactionsQuery,
   type LoginRequest,
@@ -117,8 +118,7 @@ export const creditCardsApi = {
 };
 
 export const categoriesApi = {
-  list: (query: ListQuery & { includeArchived?: boolean; type?: string } = {}) =>
-    request<PaginatedResponse<Category>>(routes.categories.root, { query }),
+  list: (query: ListCategoriesQuery = {}) => request<PaginatedResponse<Category>>(routes.categories.root, { query }),
   get: (id: string) => request<Category>(routes.categories.byId(id)),
   create: (body: CreateCategoryRequest) => request<Category>(routes.categories.root, { method: 'POST', body }),
   update: (id: string, body: UpdateCategoryRequest) =>

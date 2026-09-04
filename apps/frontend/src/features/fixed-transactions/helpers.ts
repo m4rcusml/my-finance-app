@@ -73,9 +73,9 @@ export function parseIntegerInput(raw: string): number | null {
 }
 
 export const OCCURRENCE_STATUS_STYLES: Record<OccurrenceStatus, string> = {
-  pending: 'border-warning/60 bg-layer02 text-warning-text',
-  confirmed: 'border-success/60 bg-layer02 text-success-text',
-  skipped: 'border-border-strong bg-layer02 text-muted-foreground',
+  pending: 'border-warning/20 bg-warning/20 text-warning-text',
+  confirmed: 'border-success/20 bg-success/20 text-success-text',
+  skipped: 'border-border bg-layer02 text-muted-foreground',
 };
 
 /** `pending` is the only state that still accepts an action. */

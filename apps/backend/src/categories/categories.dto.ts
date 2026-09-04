@@ -1,7 +1,7 @@
 import { CATEGORY_TYPES, type Category, type CategoryType, type PaginatedResponse } from '@finance/contracts';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
+import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
 import { PaginationMetaDto, PaginationQueryDto } from '../common/pagination.dto';
 
 /** Query strings never carry real booleans; implicit conversion is off globally. */
@@ -14,6 +14,11 @@ export function parseOptionalBoolean(value: unknown): unknown {
 }
 
 export class CreateCategoryDto {
+  @ApiPropertyOptional({ nullable: true, example: '#a78bfa' })
+  @IsOptional()
+  @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'color deve ser uma cor hexadecimal, como #a78bfa.' })
+  color?: string | null;
+
   @ApiProperty({ example: 'Mercado', maxLength: 80 })
   @IsString()
   @IsNotEmpty({ message: 'name é obrigatório.' })
@@ -27,6 +32,11 @@ export class CreateCategoryDto {
 
 /** PATCH: chave ausente permanece inalterada; `null` não é aceito em campo obrigatório. */
 export class UpdateCategoryDto {
+  @ApiPropertyOptional({ nullable: true, example: '#a78bfa' })
+  @IsOptional()
+  @Matches(/^#[0-9a-fA-F]{6}$/, { message: 'color deve ser uma cor hexadecimal, como #a78bfa.' })
+  color?: string | null;
+
   @ApiPropertyOptional({ example: 'Supermercado', maxLength: 80 })
   @ValidateIf((o: UpdateCategoryDto) => o.name !== undefined)
   @IsString()
@@ -41,6 +51,17 @@ export class UpdateCategoryDto {
 }
 
 export class ListCategoriesQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ enum: ['active', 'archived', 'all'] })
+  @IsOptional()
+  @IsIn(['active', 'archived', 'all'])
+  status?: 'active' | 'archived' | 'all';
+
+  @ApiPropertyOptional({ maxLength: 80 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  search?: string;
+
   @ApiPropertyOptional({ type: Boolean, default: false, description: 'Inclui categorias arquivadas.' })
   @IsOptional()
   @Transform(({ value }) => parseOptionalBoolean(value))
@@ -55,6 +76,7 @@ export class ListCategoriesQueryDto extends PaginationQueryDto {
 
 /** Swagger model. `implements Category` makes any drift a compile error. */
 export class CategoryResponseDto implements Category {
+  @ApiPropertyOptional({ nullable: true, example: '#a78bfa' }) color?: string | null;
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ example: 'Mercado' }) name!: string;
   @ApiProperty({ enum: [...CATEGORY_TYPES], example: 'expense' }) type!: CategoryType;

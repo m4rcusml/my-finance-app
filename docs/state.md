@@ -1,6 +1,6 @@
 # Estado da V1
 
-Data da fotografia documental: 2026-09-03.
+Data da fotografia documental: 2026-09-04.
 
 Este arquivo descreve o que existe no worktree. Não é um certificado de release: nenhum gate deve ser considerado aprovado sem a saída da execução no commit candidato.
 
@@ -17,19 +17,17 @@ Rotas públicas:
 Rotas privadas sob `RequireAuth` e `AppShell`:
 
 - `/dashboard`;
-- `/accounts`;
-- `/credit-cards`;
-- `/categories`;
-- `/transactions`;
-- `/transactions/uncategorized`;
+- `/accounts`: visão geral de contas e cartões; `?view=accounts` e `?view=cards` abrem as listas específicas;
+- `/transactions`: movimentações; `?view=uncategorized` abre a fila sequencial e `?view=categories` gerencia categorias;
 - `/fixed-transactions`;
 - `/investments`;
 - `/goals`;
 - `/imports`;
-- `/backup`;
-- `/settings`.
+- `/settings`: visão geral; `?view=profile`, `?view=security` e `?view=data` abrem perfil, segurança e backup.
 
-O shell inclui navegação móvel. Componentes compartilhados tratam paginação, estados de query, feedback e diálogos acessíveis.
+Os endereços anteriores continuam como redirecionamentos: `/credit-cards` → `/accounts?view=cards`, `/categories` → `/transactions?view=categories`, `/transactions/uncategorized` → `/transactions?view=uncategorized` e `/backup` → `/settings?view=data`.
+
+O shell inclui navegação móvel e tutorial guiado que pode ser retomado em Configurações. Componentes compartilhados tratam paginação, estados de query, feedback e diálogos acessíveis. As telas consolidadas seguem o protótipo Figma e usam os recursos reais da API.
 
 ### Backend
 
@@ -53,13 +51,16 @@ A superfície HTTP detalhada está em [`api-v1-endpoints.md`](api-v1-endpoints.m
 
 ### Banco
 
-Schema Prisma com três migrations:
+Schema Prisma com quatro migrations:
 
 - `20251125204546_init`;
 - `20251210015148_optional_description`;
 - `20260903120000_v1_invariants`.
+- `20260904183000_category_color`.
 
 A migration V1 inclui conversão de dados legados, constraints, sessões opacas e batches de importação. O script `apps/backend/test/migrations/upgrade-check.mjs` prepara e avalia um upgrade pré-V1 em banco descartável.
+
+A quarta migration adiciona `categories.color`, anulável, e uma constraint de hexadecimal `#RRGGBB`. Não altera as migrations anteriores.
 
 ## Comportamentos relevantes
 
@@ -83,6 +84,8 @@ A migration V1 inclui conversão de dados legados, constraints, sessões opacas 
 - 404 cross-tenant;
 - arquivo/restauração para cadastros com histórico;
 - relações nomeadas nas listas.
+- categorias com cor opcional, busca por nome e filtro de estado `active`, `archived` ou `all`;
+- busca por descrição de transações aplicada no banco antes da paginação.
 
 ### Dashboard e cartões
 
@@ -97,10 +100,14 @@ A migration V1 inclui conversão de dados legados, constraints, sessões opacas 
 
 - modelos mensais com origem conta/cartão;
 - snapshots por competência;
-- job idempotente com backfill;
+- criação e reativação geram a ocorrência do mês vigente na mesma transação de banco, sem esperar o cron;
+- criação concorrente usa a chave única modelo/competência e preserva ocorrências já existentes, inclusive confirmadas e ignoradas;
+- job idempotente às 03:00 em `APP_TIMEZONE`, responsável pelos períodos seguintes e pelo backfill limitado;
 - estados `pending`, `confirmed`, `skipped`;
 - confirmação transacional e claim concorrente;
 - archive/restore sem apagar ocorrências finais.
+
+O botão “Nova recorrência” fica disponível na tela principal. A ocorrência nasce pendente; somente a confirmação cria o lançamento financeiro. Iniciar o backend ou abrir a tela ainda não executa a geração dos períodos seguintes.
 
 ### Importação
 
@@ -121,6 +128,7 @@ A migration V1 inclui conversão de dados legados, constraints, sessões opacas 
 - credenciais e previews excluídos;
 - `replace` e `merge`;
 - validação e operação transacional.
+- cor da categoria preservada na exportação e na criação/restauração de categorias; backups anteriores sem `color` continuam válidos, normalizados para `null`.
 
 ## Testes presentes
 
@@ -138,17 +146,25 @@ Arquivos `apps/backend/test/*.e2e-spec.ts`, executados com Nest completo e Prism
 - `database-safety.int-spec.ts`;
 - `ledger.int-spec.ts`;
 - `import-backup.int-spec.ts`;
+- `category-presentation.int-spec.ts`: cor, filtros/busca antes da paginação e isolamento entre usuários;
+- `recurrence-creation.int-spec.ts`: ocorrência imediata e concorrência de restauração com o job;
 - migration upgrade check.
 
 ### Frontend
 
 Specs de filtros/helpers/formulário, QueryClient, sessão, diálogo, paginação e estados de query.
 
+Os testes da interface nova incluem resumo de contas/cartões, formulário de cor de categoria, fila de categorização, retomada de importação por batch e sessão, série de aportes, confirmação de recorrência, atualização manual de meta e resumo com mais de 100 metas. Os arquivos estão junto aos componentes e features correspondentes.
+
 ### Browser
 
 - `e2e/core-flow.spec.ts`;
 - `e2e/import-backup.spec.ts`;
 - `e2e/session-layout.spec.ts`.
+- `e2e/tutorial.spec.ts`;
+- `e2e/rebranch-ui.spec.ts`.
+
+O fluxo principal exercita criação, confirmação e restauração de recorrências sem duplicar o lançamento, além de atualização e persistência do progresso manual de metas. A presença desses testes não registra sua aprovação para um commit candidato.
 
 ## Infraestrutura presente
 

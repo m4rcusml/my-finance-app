@@ -92,7 +92,7 @@ export class FixedTransactionsService {
         type: dto.type,
       });
 
-      return tx.fixedTransaction.create({
+      const row = await tx.fixedTransaction.create({
         data: {
           userId,
           type: dto.type,
@@ -105,6 +105,8 @@ export class FixedTransactionsService {
           description: dto.description ?? null,
         },
       });
+      await this.ensureCurrentOccurrence(tx, row, this.currentPeriod());
+      return row;
     });
 
     return toFixedTransaction(created);
@@ -169,6 +171,7 @@ export class FixedTransactionsService {
 
       if (final.isActive) {
         await this.propagateToFutureOccurrences(tx, userId, id, final, period);
+        if (reactivating) await this.ensureCurrentOccurrence(tx, row, period);
       } else {
         await this.dropFutureOccurrences(tx, userId, id, period);
       }
@@ -212,10 +215,12 @@ export class FixedTransactionsService {
         categoryId: current.categoryId,
         type: current.type,
       });
-      return tx.fixedTransaction.update({
+      const row = await tx.fixedTransaction.update({
         where: { id },
         data: { isActive: true, archivedAt: null },
       });
+      await this.ensureCurrentOccurrence(tx, row, this.currentPeriod());
+      return row;
     });
 
     return toFixedTransaction(updated);
@@ -233,6 +238,36 @@ export class FixedTransactionsService {
   private currentPeriod(): Period {
     const timeZone = this.config.get('APP_TIMEZONE', { infer: true }) ?? DEFAULT_TIME_ZONE;
     return currentPeriod(timeZone);
+  }
+
+  /** Make the current month usable immediately, independently of the daily job.
+   * The unique template/period key makes restore and cron races idempotent;
+   * existing pending or final occurrences retain their original snapshot.
+   */
+  private async ensureCurrentOccurrence(
+    tx: Prisma.TransactionClient,
+    row: FixedTransactionRow,
+    period: Period,
+  ): Promise<void> {
+    await tx.fixedTransactionOccurrence.createMany({
+      data: [
+        {
+          userId: row.userId,
+          fixedTransactionId: row.id,
+          periodYear: period.year,
+          periodMonth: period.month,
+          dueDate: fromCivilDate(dueDateFor(period, row.referenceDay)),
+          type: row.type,
+          value: toMoney(row.value),
+          description: row.description,
+          categoryId: row.categoryId,
+          accountId: row.accountId,
+          creditCardId: row.creditCardId,
+          status: 'pending',
+        },
+      ],
+      skipDuplicates: true,
+    });
   }
 
   private async loadOwned(userId: string, id: string): Promise<FixedTransactionRow> {

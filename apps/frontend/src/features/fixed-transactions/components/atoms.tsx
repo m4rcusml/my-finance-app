@@ -9,9 +9,9 @@ import { OCCURRENCE_STATUS_STYLES } from '../helpers';
 export function OccurrenceStatusBadge({ status }: { status: OccurrenceStatus }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ${OCCURRENCE_STATUS_STYLES[status]}`}
+      className={`inline-flex min-h-9 min-w-28 items-center justify-center rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap ${OCCURRENCE_STATUS_STYLES[status]}`}
     >
-      {OCCURRENCE_STATUS_LABELS[status] ?? status}
+      {status === 'skipped' ? 'Ignorada' : OCCURRENCE_STATUS_LABELS[status]}
     </span>
   );
 }

@@ -48,14 +48,18 @@ export async function logoutUser(page: Page) {
 }
 
 export async function navigate(page: Page, label: string) {
-  const consolidatedRoutes: Record<string, string> = {
-    Backup: '/settings?view=data',
-    Categorias: '/transactions?view=categories',
-    'Sem categoria': '/transactions?view=uncategorized',
+  const consolidatedRoutes: Record<string, { section: string; navigation: string; tab: string }> = {
+    Backup: { section: 'Configurações', navigation: 'Seções de configurações', tab: 'Dados e backup' },
+    Categorias: { section: 'Movimentações', navigation: 'Seções de movimentações', tab: 'Categorias' },
+    'Sem categoria': { section: 'Movimentações', navigation: 'Seções de movimentações', tab: 'Sem categoria' },
   };
-  const directRoute = consolidatedRoutes[label];
-  if (directRoute) {
-    await page.goto(directRoute);
+  const consolidated = consolidatedRoutes[label];
+  if (consolidated) {
+    await navigate(page, consolidated.section);
+    await page
+      .getByRole('navigation', { name: consolidated.navigation })
+      .getByRole('link', { name: consolidated.tab, exact: true })
+      .click();
     return;
   }
   const visibleLabel = label === 'Painel' ? 'Dashboard' : label === 'Transações' ? 'Movimentações' : label;
@@ -69,7 +73,11 @@ export async function navigate(page: Page, label: string) {
 export async function createAccount(page: Page, name: string) {
   await navigate(page, 'Contas');
   await expect(page.getByRole('heading', { name: 'Contas e cartões' })).toBeVisible();
-  await page.getByRole('button', { name: 'Nova conta' }).first().click();
+  await page.getByRole('button', { name: 'Adicionar conta ou cartão' }).click();
+  await page
+    .getByRole('dialog', { name: 'Adicionar conta ou cartão' })
+    .getByRole('button', { name: /^Nova conta/ })
+    .click();
   const dialog = page.getByRole('dialog', { name: 'Nova conta' });
   await dialog.getByLabel('Nome').fill(name);
   await dialog.getByLabel('Instituição').fill('Banco E2E');
@@ -81,13 +89,11 @@ export async function createAccount(page: Page, name: string) {
 
 export async function createCategory(page: Page, name: string) {
   await navigate(page, 'Categorias');
-  await expect(page.getByRole('heading', { name: 'Categorias' })).toBeVisible();
-  await page.getByRole('button', { name: 'Nova categoria' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Nova categoria' });
-  await dialog.getByLabel('Nome').fill(name);
-  await dialog.getByLabel('Tipo').selectOption('expense');
-  await dialog.getByRole('button', { name: 'Criar categoria' }).click();
-  await expect(dialog).toBeHidden();
+  const form = page.getByRole('region', { name: 'Nova categoria' });
+  await expect(form).toBeVisible();
+  await form.getByLabel('Nome').fill(name);
+  await form.getByLabel('Tipo').selectOption('expense');
+  await form.getByRole('button', { name: 'Criar categoria' }).click();
   await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
 }
 
@@ -105,7 +111,7 @@ export async function createTransaction(
     await dialog.getByLabel('Categoria').selectOption({ label: input.category });
   }
   await dialog.getByLabel('Descrição').fill(input.description);
-  await dialog.getByRole('button', { name: 'Criar transação' }).click();
+  await dialog.getByRole('button', { name: 'Salvar transação' }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByText(input.description, { exact: true }).first()).toBeVisible();
 }

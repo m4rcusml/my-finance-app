@@ -37,11 +37,11 @@ export function AnnualBalanceChart({ entries }: { entries: MonthlyNet[] }) {
       <figure className="m-0">
         <figcaption className="mb-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-2">
-            <span aria-hidden="true" className="inline-block size-3 rounded-sm bg-success" />
+            <span aria-hidden="true" className="inline-block size-3 rounded-sm bg-primary" />
             Receitas
           </span>
           <span className="inline-flex items-center gap-2">
-            <span aria-hidden="true" className="inline-block size-3 rounded-sm bg-danger" />
+            <span aria-hidden="true" className="inline-block size-3 rounded-sm bg-muted-primary" />
             Despesas
           </span>
           {hasMovement ? (
@@ -51,16 +51,28 @@ export function AnnualBalanceChart({ entries }: { entries: MonthlyNet[] }) {
           )}
         </figcaption>
 
-        {/* Scrolls horizontally instead of squashing twelve columns at 320px. */}
-        <div className="overflow-x-auto pb-2">
-          <div aria-hidden="true" className="flex min-w-[34rem] items-end gap-2">
-            {entries.map((entry) => (
-              <div key={entry.month} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                <div className="flex h-40 w-full items-end justify-center gap-1 rounded-md bg-layer02/60 p-1">
-                  <div className="w-1/3 rounded-t-sm bg-success" style={{ height: heightOf(entry.income) }} />
-                  <div className="w-1/3 rounded-t-sm bg-danger" style={{ height: heightOf(entry.expense) }} />
+        {/* All twelve months fit the card. Narrow cards show fewer axis labels,
+            while the full month names and every amount remain in the table. */}
+        <div className="@container min-w-0 pb-2">
+          <div aria-hidden="true" className="grid grid-cols-12 items-end gap-1">
+            {entries.map((entry, index) => (
+              <div key={entry.month} className="flex min-w-0 flex-col gap-2">
+                <div className="flex h-40 min-w-0 items-end gap-px border-b border-border @min-[30rem]:gap-1">
+                  <div className="min-w-0 flex-1 rounded-t-sm bg-primary" style={{ height: heightOf(entry.income) }} />
+                  <div
+                    className="min-w-0 flex-1 rounded-t-sm bg-muted-primary"
+                    style={{ height: heightOf(entry.expense) }}
+                  />
                 </div>
-                <span className="whitespace-nowrap text-xs text-muted-foreground">{formatMonthShort(entry.month)}</span>
+                <div className="relative h-4 min-w-0">
+                  <span
+                    className={`absolute top-0 whitespace-nowrap text-[10px] text-muted-foreground @min-[30rem]:text-xs ${
+                      index === 0 ? 'left-0' : index === entries.length - 1 ? 'right-0' : 'left-1/2 -translate-x-1/2'
+                    } ${index % 3 === 0 || index === entries.length - 1 ? '' : 'hidden @min-[30rem]:inline'}`}
+                  >
+                    {formatMonthShort(entry.month).split('/')[0]}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

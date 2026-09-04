@@ -1,19 +1,21 @@
 'use client';
 
 import { type Category, CATEGORY_TYPES, type CategoryType, type CreateCategoryRequest } from '@finance/contracts';
-import { useEffect, useId, useRef, useState } from 'react';
-import { errorDetails, errorMessage } from '@/shared/lib/api';
+import { useId, useState } from 'react';
+import { errorMessage } from '@/shared/lib/api';
 import { CATEGORY_TYPE_LABELS } from '@/shared/lib/format';
 import { Dialog } from '@/shared/ui/dialog';
 import { ActionButton, Field, Select, TextInput } from '@/shared/ui/form';
 import { useCreateCategoryMutation, useUpdateCategoryMutation } from './mutations';
 
-interface CategoryFormState {
-  name: string;
-  type: CategoryType;
-}
-
-const EMPTY_FORM: CategoryFormState = { name: '', type: 'expense' };
+export const CATEGORY_COLORS = [
+  { name: 'Violeta', value: '#a78bfa' },
+  { name: 'Verde', value: '#34d399' },
+  { name: 'Azul', value: '#60a5fa' },
+  { name: 'Amarelo', value: '#fbbf24' },
+  { name: 'Vermelho', value: '#f87171' },
+  { name: 'Cinza', value: '#94a3b8' },
+] as const;
 
 export function CategoryFormDialog({
   open,
@@ -24,115 +26,129 @@ export function CategoryFormDialog({
   category: Category | null;
   onClose: () => void;
 }) {
-  const formId = useId();
-  const formRef = useRef<HTMLFormElement>(null);
-  const [form, setForm] = useState<CategoryFormState>(EMPTY_FORM);
+  if (!open) return null;
+  return (
+    <Dialog open onClose={onClose} title={category ? 'Editar categoria' : 'Nova categoria'}>
+      <CategoryForm key={category?.id ?? 'new'} category={category} onSaved={onClose} onCancel={onClose} />
+    </Dialog>
+  );
+}
+
+export function CategoryForm({
+  category = null,
+  onSaved,
+  onCancel,
+}: {
+  category?: Category | null;
+  onSaved?: () => void;
+  onCancel?: () => void;
+}) {
+  const colorGroup = useId();
+  const [name, setName] = useState(category?.name ?? '');
+  const [type, setType] = useState<CategoryType>(category?.type ?? 'expense');
+  const [color, setColor] = useState<string | null>(category?.color ?? CATEGORY_COLORS[0].value);
   const [nameError, setNameError] = useState<string>();
-
-  const createMutation = useCreateCategoryMutation();
-  const updateMutation = useUpdateCategoryMutation();
-  const mutation = category ? updateMutation : createMutation;
-  const resetCreate = createMutation.reset;
-  const resetUpdate = updateMutation.reset;
-
-  useEffect(() => {
-    if (!open) return;
-
-    setForm(category ? { name: category.name, type: category.type } : EMPTY_FORM);
-    setNameError(undefined);
-    resetCreate();
-    resetUpdate();
-
-    const frame = requestAnimationFrame(() => {
-      formRef.current?.querySelector<HTMLInputElement>('input')?.focus();
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [open, category, resetCreate, resetUpdate]);
-
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const create = useCreateCategoryMutation();
+  const update = useUpdateCategoryMutation();
+  const mutation = category ? update : create;
+  async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const name = form.name.trim();
-    if (!name) {
+    if (!name.trim()) {
       setNameError('Informe o nome da categoria.');
       return;
     }
-
-    const body: CreateCategoryRequest = { name, type: form.type };
-    if (category) {
-      updateMutation.mutate({ id: category.id, body }, { onSuccess: onClose });
-    } else {
-      createMutation.mutate(body, { onSuccess: onClose });
+    const body: CreateCategoryRequest = { name: name.trim(), type, color };
+    try {
+      if (category) await update.mutateAsync({ id: category.id, body });
+      else {
+        await create.mutateAsync(body);
+        setName('');
+      }
+      onSaved?.();
+    } catch {
+      /* Mutation keeps the entered values and renders the error below. */
     }
   }
-
-  const details = errorDetails(mutation.error);
-
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      title={category ? 'Editar categoria' : 'Nova categoria'}
-      description="Categorias do tipo “Ambos” podem ser usadas em receitas e despesas."
-      footer={
-        <>
-          <ActionButton variant="secondary" onClick={onClose} disabled={mutation.isPending}>
+    <form onSubmit={save} noValidate className="space-y-6">
+      {mutation.isError ? (
+        <p role="alert" className="rounded-xl border border-danger/60 bg-layer02 p-3 text-sm text-danger-text">
+          {errorMessage(mutation.error)}
+        </p>
+      ) : null}
+      <Field label="Nome" required error={nameError}>
+        {({ id, describedBy, invalid }) => (
+          <TextInput
+            id={id}
+            aria-describedby={describedBy}
+            invalid={invalid}
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              setNameError(undefined);
+            }}
+            maxLength={80}
+            placeholder="Ex.: Educação"
+            autoComplete="off"
+            className="bg-layer00"
+          />
+        )}
+      </Field>
+      <Field label="Tipo" required>
+        {({ id }) => (
+          <Select
+            id={id}
+            value={type}
+            className="bg-layer00"
+            onChange={(event) => setType(event.target.value as CategoryType)}
+          >
+            {CATEGORY_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {CATEGORY_TYPE_LABELS[value]}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <fieldset>
+        <legend className="mb-3 text-xs font-medium uppercase text-muted-foreground">Cor</legend>
+        <div className="flex flex-wrap gap-3">
+          {CATEGORY_COLORS.map((option) => (
+            <label key={option.value} className="relative cursor-pointer" title={option.name}>
+              <input
+                type="radio"
+                name={colorGroup}
+                aria-label={option.name}
+                checked={color === option.value}
+                onChange={() => setColor(option.value)}
+                className="peer sr-only"
+              />
+              <span
+                className="block size-8 rounded-full border-2 border-transparent peer-checked:border-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-muted-primary"
+                style={{ backgroundColor: option.value }}
+              />
+            </label>
+          ))}
+        </div>
+        {category ? (
+          <button type="button" className="mt-3 text-xs text-muted-primary" onClick={() => setColor(null)}>
+            Usar cor padrão
+          </button>
+        ) : null}
+      </fieldset>
+      <div className="flex gap-2">
+        {onCancel ? (
+          <ActionButton variant="secondary" onClick={onCancel} disabled={mutation.isPending}>
             Cancelar
           </ActionButton>
-          <ActionButton type="submit" form={formId} loading={mutation.isPending}>
-            {category ? 'Salvar alterações' : 'Criar categoria'}
-          </ActionButton>
-        </>
-      }
-    >
-      <form ref={formRef} id={formId} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-        {mutation.isError ? (
-          <div role="alert" className="rounded-lg border border-danger/60 bg-layer02 p-3">
-            <p className="text-sm font-medium text-danger-text">{errorMessage(mutation.error)}</p>
-            {details.length > 0 ? (
-              <ul className="mt-1 list-inside list-disc text-sm text-muted-foreground">
-                {details.map((detail) => (
-                  <li key={detail}>{detail}</li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
         ) : null}
-
-        <Field label="Nome" required error={nameError}>
-          {({ id, describedBy, invalid }) => (
-            <TextInput
-              id={id}
-              aria-describedby={describedBy}
-              invalid={invalid}
-              value={form.name}
-              maxLength={120}
-              autoComplete="off"
-              placeholder="Alimentação"
-              onChange={(event) => {
-                setForm((current) => ({ ...current, name: event.target.value }));
-                setNameError(undefined);
-              }}
-            />
-          )}
-        </Field>
-
-        <Field label="Tipo" required>
-          {({ id, describedBy }) => (
-            <Select
-              id={id}
-              aria-describedby={describedBy}
-              value={form.type}
-              onChange={(event) => setForm((current) => ({ ...current, type: event.target.value as CategoryType }))}
-            >
-              {CATEGORY_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {CATEGORY_TYPE_LABELS[type]}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-      </form>
-    </Dialog>
+        <ActionButton type="submit" loading={mutation.isPending} className="min-h-12 flex-1">
+          {category ? 'Salvar alterações' : 'Criar categoria'}
+        </ActionButton>
+      </div>
+      {!category ? (
+        <p className="text-xs text-muted-foreground">Use um nome único para cada tipo de categoria.</p>
+      ) : null}
+    </form>
   );
 }

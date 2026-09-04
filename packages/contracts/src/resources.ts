@@ -161,6 +161,8 @@ export interface Category {
   id: string;
   name: string;
   type: CategoryType;
+  /** Optional display color; older backups omit it. */
+  color?: string | null;
   isActive: boolean;
   archivedAt: IsoTimestamp | null;
   createdAt: IsoTimestamp;
@@ -170,6 +172,16 @@ export interface Category {
 export interface CreateCategoryRequest {
   name: string;
   type: CategoryType;
+  color?: string | null;
+}
+
+export interface ListCategoriesQuery {
+  page?: number;
+  limit?: number;
+  includeArchived?: boolean;
+  status?: 'active' | 'archived' | 'all';
+  type?: CategoryType;
+  search?: string;
 }
 
 export type UpdateCategoryRequest = Partial<CreateCategoryRequest>;
@@ -223,6 +235,8 @@ export interface CreateTransactionRequest {
 export type UpdateTransactionRequest = Partial<CreateTransactionRequest>;
 
 export interface ListTransactionsQuery {
+  /** Case-insensitive description search, applied before pagination. */
+  search?: string;
   type?: TransactionType;
   source?: TransactionSource;
   /** Inclusive lower bound, civil date. */

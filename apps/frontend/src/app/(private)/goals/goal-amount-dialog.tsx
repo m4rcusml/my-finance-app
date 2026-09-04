@@ -5,6 +5,7 @@ import { useEffect, useId, useState } from 'react';
 import { parseDecimal, toDecimalInput } from '@/features/goals/decimal';
 import { useUpdateGoalAmountMutation } from '@/features/goals/mutations';
 import { errorDetails, errorMessage } from '@/shared/lib/api';
+import { formatCivilDate, formatMoney, formatPercent, todayCivil } from '@/shared/lib/format';
 import { Dialog } from '@/shared/ui/dialog';
 import { ActionButton, Field, TextInput } from '@/shared/ui/form';
 import { useToast } from '@/shared/ui/toast';
@@ -56,15 +57,14 @@ export function GoalAmountDialog({ goal, onClose }: { goal: Goal | null; onClose
       open={goal !== null}
       onClose={updateAmount.isPending ? () => undefined : onClose}
       title="Atualizar progresso"
-      description={goal ? `Informe manualmente quanto já foi realizado em “${goal.name}”.` : undefined}
-      size="sm"
+      size="lg"
       footer={
         <>
           <ActionButton variant="secondary" onClick={onClose} disabled={updateAmount.isPending}>
             Cancelar
           </ActionButton>
           <ActionButton type="submit" form={formId} loading={updateAmount.isPending} disabled={updateAmount.isPending}>
-            Salvar valor
+            Atualizar
           </ActionButton>
         </>
       }
@@ -83,26 +83,40 @@ export function GoalAmountDialog({ goal, onClose }: { goal: Goal | null; onClose
           </div>
         ) : null}
 
-        <Field
-          label="Valor atual (R$)"
-          required
-          hint="O app não altera este valor automaticamente a partir de contas ou transações."
-          error={fieldError}
-        >
-          {({ id, describedBy, invalid }) => (
-            <TextInput
-              id={id}
-              aria-describedby={describedBy}
-              invalid={invalid}
-              inputMode="decimal"
-              value={value}
-              onChange={(event) => setValue(event.target.value)}
-              disabled={updateAmount.isPending}
-              autoComplete="off"
-              placeholder="0,00"
-            />
-          )}
-        </Field>
+        {goal ? (
+          <div className="rounded-xl border border-border bg-primary/10 p-4 text-sm">
+            <p className="font-semibold">{goal.name}</p>
+            <p className="mt-2 text-muted-primary">
+              Atual: {formatPercent(goal.progress)} · {formatMoney(goal.currentAmount)}
+            </p>
+          </div>
+        ) : null}
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Novo valor guardado (R$)" required error={fieldError}>
+            {({ id, describedBy, invalid }) => (
+              <TextInput
+                id={id}
+                aria-describedby={describedBy}
+                invalid={invalid}
+                inputMode="decimal"
+                value={value}
+                onChange={(event) => setValue(event.target.value)}
+                disabled={updateAmount.isPending}
+                autoComplete="off"
+                placeholder="0,00"
+              />
+            )}
+          </Field>
+          <div>
+            <p className="text-sm font-medium">Data da atualização</p>
+            <p className="mt-1.5 min-h-11 rounded-xl border border-border bg-layer02 px-3.5 py-2.5 text-sm">
+              {formatCivilDate(todayCivil())}
+            </p>
+          </div>
+        </div>
+        <p className="rounded-xl border border-border bg-primary/10 p-4 text-sm text-muted-primary">
+          Registro manual: esta ação não altera contas ou transações.
+        </p>
       </form>
     </Dialog>
   );

@@ -200,6 +200,12 @@ export class UpdateTransactionDto implements UpdateTransactionRequest {
 
 /** Filtros de `GET /transactions` e de `GET /transactions/uncategorized`. */
 export class ListTransactionsQueryDto extends PaginationQueryDto implements ListTransactionsQuery {
+  @ApiPropertyOptional({ maxLength: MAX_DESCRIPTION, description: 'Busca por descrição, antes da paginação.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_DESCRIPTION)
+  search?: string;
+
   @ApiPropertyOptional({ enum: [...TRANSACTION_TYPES] })
   @IsOptional()
   @IsIn(TRANSACTION_TYPES, { message: 'type deve ser income ou expense.' })

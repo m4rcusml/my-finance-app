@@ -10,9 +10,9 @@
 export type ImportStep = 'upload' | 'preview' | 'result';
 
 const STEPS: { id: ImportStep; label: string; hint: string }[] = [
-  { id: 'upload', label: 'Enviar arquivo', hint: 'Escolha o extrato e a origem' },
-  { id: 'preview', label: 'Pré-visualizar', hint: 'Confira as linhas e o destino' },
-  { id: 'result', label: 'Confirmar', hint: 'Veja o que foi importado' },
+  { id: 'upload', label: 'Arquivo', hint: 'Escolha o extrato e a origem' },
+  { id: 'preview', label: 'Prévia', hint: 'Confira as linhas e o destino' },
+  { id: 'result', label: 'Resultado', hint: 'Veja o que foi importado' },
 ];
 
 const ORDER: Record<ImportStep, number> = { upload: 0, preview: 1, result: 2 };
@@ -21,19 +21,19 @@ export function ImportStepper({ current }: { current: ImportStep }) {
   const currentIndex = ORDER[current];
 
   return (
-    <ol className="mb-6 flex flex-col gap-2 sm:flex-row sm:gap-3">
+    <ol className="mb-6 grid grid-cols-3 gap-2 rounded-2xl border border-border bg-layer01 p-3 sm:p-4">
       {STEPS.map((step, index) => {
         const state = index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'todo';
         return (
           <li
             key={step.id}
             aria-current={state === 'current' ? 'step' : undefined}
-            className={`flex flex-1 items-start gap-3 rounded-xl border p-3 ${
-              state === 'current' ? 'border-border-strong bg-layer02' : 'border-border bg-layer01'
+            className={`flex flex-1 flex-col items-center gap-2 rounded-xl p-2 sm:flex-row sm:gap-3 ${
+              state === 'current' ? 'bg-layer02' : 'bg-layer01'
             }`}
           >
             <span
-              className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+              className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                 state === 'todo' ? 'bg-layer03 text-muted-foreground' : 'bg-primary text-foreground'
               }`}
               aria-hidden="true"
@@ -47,7 +47,7 @@ export function ImportStepper({ current }: { current: ImportStep }) {
                 {state === 'done' ? <span className="sr-only"> (concluída)</span> : null}
                 {state === 'current' ? <span className="sr-only"> (etapa atual)</span> : null}
               </span>
-              <span className="block text-xs text-muted-foreground">{step.hint}</span>
+              <span className="hidden text-xs text-muted-foreground sm:block">{step.hint}</span>
             </span>
           </li>
         );

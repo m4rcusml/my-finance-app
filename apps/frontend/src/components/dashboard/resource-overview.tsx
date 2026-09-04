@@ -1,92 +1,74 @@
 'use client';
-
-import type { Account, CreditCard } from '@finance/contracts';
+import type { Account, DashboardOverview } from '@finance/contracts';
 import Link from 'next/link';
-import { ACCOUNT_TYPE_LABELS, formatCivilDate, formatMoney } from '@/shared/lib/format';
-import { EmptyState } from '@/shared/ui/query-state';
+import { ACCOUNT_TYPE_LABELS, formatMoney } from '@/shared/lib/format';
 import { DashboardSection } from './dashboard-section';
 
-export function ResourceOverview({ accounts, creditCards }: { accounts: Account[]; creditCards: CreditCard[] }) {
+export function ResourceOverview({ accounts, totals }: { accounts: Account[]; totals: DashboardOverview['totals'] }) {
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
-      <DashboardSection
-        title="Contas ativas"
-        description="Saldos calculados pelo saldo inicial e pelos lançamentos vinculados."
-        action={<DashboardLink href="/accounts">Gerenciar</DashboardLink>}
-      >
-        {accounts.length === 0 ? (
-          <EmptyState title="Nenhuma conta ativa" message="Cadastre uma conta para registrar lançamentos." />
-        ) : (
-          <ul className="divide-y divide-border">
-            {accounts.map((account) => (
-              <li key={account.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{account.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {account.institution} · {ACCOUNT_TYPE_LABELS[account.type] ?? account.type}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 text-sm font-semibold tabular-nums ${account.balance < 0 ? 'text-danger-text' : 'text-foreground'}`}
-                >
-                  {formatMoney(account.balance)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </DashboardSection>
-
-      <DashboardSection
-        title="Cartões ativos"
-        description="Uso calculado individualmente para o ciclo aberto de cada cartão."
-        action={<DashboardLink href="/accounts?view=cards">Gerenciar</DashboardLink>}
-      >
-        {creditCards.length === 0 ? (
-          <EmptyState title="Nenhum cartão ativo" message="Cadastre um cartão para acompanhar o ciclo atual." />
-        ) : (
-          <ul className="divide-y divide-border">
-            {creditCards.map((card) => (
-              <li key={card.id} className="py-3 first:pt-0 last:pb-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">{card.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{card.institution}</p>
-                  </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
-                    {formatMoney(card.cycleUsedAmount)}
-                  </span>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-layer02" aria-hidden="true">
-                  <div
-                    className={`h-full rounded-full ${card.cycleUsedAmount > card.limitTotal ? 'bg-danger' : 'bg-primary'}`}
-                    style={{ width: `${cardUsagePercent(card)}%` }}
-                  />
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {formatMoney(card.availableAmount)} disponível · ciclo até {formatCivilDate(card.currentCycle.end)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </DashboardSection>
-    </div>
-  );
-}
-
-function DashboardLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-lg border border-border-strong bg-layer02 px-3 py-2 text-sm font-medium text-foreground transition hover:bg-layer03"
+    <DashboardSection
+      title="Contas e patrimônio"
+      action={
+        <Link className="text-xs font-semibold text-muted-primary hover:underline" href="/accounts">
+          Gerenciar
+        </Link>
+      }
     >
-      {children}
-    </Link>
+      <ul className="max-h-52 space-y-3 overflow-y-auto pr-1">
+        {accounts
+          .filter((a) => a.type !== 'investment')
+          .map((account) => (
+            <li key={account.id} className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-layer03 text-sm font-semibold"
+              >
+                {account.institution.slice(0, 2).toUpperCase()}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">{account.name}</span>
+                <span className="text-xs text-muted-foreground">{ACCOUNT_TYPE_LABELS[account.type]}</span>
+              </span>
+              <span className="text-sm font-semibold tabular-nums">{formatMoney(account.balance)}</span>
+            </li>
+          ))}
+        {accounts.filter((account) => account.type !== 'investment').length === 0 ? (
+          <li className="text-sm text-muted-foreground">
+            Nenhuma conta disponível para o caixa.{' '}
+            <Link href="/accounts" className="text-muted-primary underline">
+              Adicionar conta
+            </Link>
+          </li>
+        ) : null}
+      </ul>
+      <dl className="mt-4 space-y-3 border-t border-border pt-4 text-sm">
+        <div className="flex justify-between gap-2">
+          <dt className="text-muted-foreground">Contas de investimento</dt>
+          <dd className="font-semibold tabular-nums">{formatMoney(totals.investedAccountBalance)}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt>
+            <Link className="text-muted-foreground hover:underline" href="/investments">
+              Carteira manual · custo
+            </Link>
+          </dt>
+          <dd className="font-semibold tabular-nums">{formatMoney(totals.portfolioInvested)}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt>
+            <Link className="text-muted-foreground hover:underline" href="/accounts?view=cards">
+              Cartões · ciclo vigente
+            </Link>
+          </dt>
+          <dd className="font-semibold tabular-nums">{formatMoney(totals.totalCreditUsedThisCycle)}</dd>
+        </div>
+        <div className="flex justify-between gap-2 text-xs text-muted-foreground">
+          <dt>Crédito disponível</dt>
+          <dd>
+            {formatMoney(totals.totalCreditAvailable)} de {formatMoney(totals.totalCreditLimit)}
+          </dd>
+        </div>
+      </dl>
+    </DashboardSection>
   );
-}
-
-function cardUsagePercent(card: CreditCard): number {
-  if (card.limitTotal <= 0) return card.cycleUsedAmount > 0 ? 100 : 0;
-  return Math.max(0, Math.min((card.cycleUsedAmount / card.limitTotal) * 100, 100));
 }

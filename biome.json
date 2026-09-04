@@ -39,7 +39,7 @@
       }
     },
     {
-      "includes": ["apps/frontend/public/*.svg"],
+      "includes": ["apps/frontend/public/*.svg", "apps/frontend/public/assets/figma/**/*.svg"],
       "linter": {
         "rules": {
           "a11y": {

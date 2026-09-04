@@ -165,7 +165,7 @@ O workflow em `.github/workflows/ci.yml` separa análise estática, testes unit�
 
 ## Banco e migrations
 
-Há duas migrations históricas e a migration V1 `20260903120000_v1_invariants`. Em instalações novas, use sempre `pnpm db:migrate`. O caminho de upgrade pré-V1 pode ser exercitado de forma autocontida com:
+Há duas migrations históricas, a migration V1 `20260903120000_v1_invariants` e a adição de cores `20260904183000_category_color`. Use `pnpm db:migrate` antes de iniciar a API atualizada. O caminho de upgrade pré-V1 pode ser exercitado de forma autocontida com:
 
 ```bash
 pnpm test:migration:upgrade
@@ -200,7 +200,7 @@ Para produção, use HTTPS ponta a ponta, `NODE_ENV=production`, `COOKIE_SECURE=
 - acesso a recurso de outro usuário responde 404, evitando enumeração;
 - erros usam `{ statusCode, error, message, details?, timestamp, path, requestId }`.
 
-Mais detalhes: [arquitetura](docs/architecture.md), [convenções da API](docs/api-conventions.md), [endpoints](docs/api-v1-endpoints.md) e [modelo de dados](docs/data-model.md).
+Mais detalhes: [arquitetura](docs/architecture.md), [deploy em produção](docs/production-deployment.md), [convenções da API](docs/api-conventions.md), [endpoints](docs/api-v1-endpoints.md) e [modelo de dados](docs/data-model.md).
 
 ## Sessão e segurança
 
@@ -222,6 +222,8 @@ Antes de `POST /auth/refresh`, o frontend chama `GET /auth/csrf` e envia o valor
 - não faça push ou deploy a partir de uma máquina com mudanças locais não revisadas.
 
 ## Documentação
+
+- [`docs/ui-rebranch.md`](docs/ui-rebranch.md): telas consolidadas do Figma, decisões de interface e atualização local;
 
 - [`docs/architecture.md`](docs/architecture.md): componentes e fluxos;
 - [`docs/api-conventions.md`](docs/api-conventions.md): formatos transversais;

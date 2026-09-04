@@ -10,7 +10,7 @@ export interface SegmentedTab {
 export function SegmentedTabs({ label, active, tabs }: { label: string; active: string; tabs: SegmentedTab[] }) {
   return (
     <nav aria-label={label} className="mb-6 overflow-x-auto" data-tour="section-tabs">
-      <ul className="flex min-w-max gap-1 rounded-xl border border-border bg-layer01 p-1">
+      <ul className="flex min-w-max gap-2 py-1">
         {tabs.map((tab) => {
           const selected = tab.value === active;
           return (
@@ -18,10 +18,10 @@ export function SegmentedTabs({ label, active, tabs }: { label: string; active: 
               <Link
                 href={tab.href}
                 aria-current={selected ? 'page' : undefined}
-                className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-5 py-2 text-sm font-semibold transition ${
                   selected
-                    ? 'bg-layer03 text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-layer02 hover:text-foreground'
+                    ? 'border-primary bg-primary text-foreground'
+                    : 'border-border bg-layer02 text-muted-foreground hover:bg-layer03 hover:text-foreground'
                 }`}
               >
                 {tab.label}
