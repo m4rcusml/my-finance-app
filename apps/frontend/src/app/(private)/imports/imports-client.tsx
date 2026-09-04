@@ -8,8 +8,9 @@ export function ImportsClient() {
   return (
     <>
       <PageHeader
+        eyebrow="Organização"
         title="Importações"
-        description="Traga o extrato do seu banco em CSV, OFX ou XLSX. Você confere linha a linha antes de qualquer coisa ser gravada."
+        description="Traga seu extrato em CSV, OFX ou XLSX e revise cada linha antes de salvar."
       />
       <ImportWizard />
       <ImportHistory />

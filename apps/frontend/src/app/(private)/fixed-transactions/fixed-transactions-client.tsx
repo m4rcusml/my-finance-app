@@ -29,8 +29,9 @@ export function FixedTransactionsClient() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Transações recorrentes"
-        description="Confirme o que realmente aconteceu em cada período e mantenha os modelos mensais sem reescrever o histórico."
+        eyebrow="Organização"
+        title="Recorrentes"
+        description="Confirme o que aconteceu no período e mantenha os próximos compromissos sob controle."
         actions={
           <div
             role="tablist"

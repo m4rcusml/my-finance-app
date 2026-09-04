@@ -2,7 +2,9 @@
 
 import type { TransactionSource, TransactionType, TransactionWithRelations } from '@finance/contracts';
 import { useState } from 'react';
+import { CategoriesClient } from '@/app/(private)/categories/categories-client';
 import { TransactionList } from '@/app/(private)/transactions/transaction-list';
+import { UncategorizedClient } from '@/app/(private)/transactions/uncategorized/uncategorized-client';
 import { useTransactionMutations } from '@/features/transactions/mutations';
 import {
   useExpenseProjectionQuery,
@@ -18,13 +20,42 @@ import { ConfirmDialog } from '@/shared/ui/dialog';
 import { ActionButton, Field, Select, TextInput } from '@/shared/ui/form';
 import { Pagination } from '@/shared/ui/pagination';
 import { PaginatedBoundary, QueryBoundary } from '@/shared/ui/query-state';
+import { SegmentedTabs } from '@/shared/ui/segmented-tabs';
+
+export type TransactionsView = 'all' | 'uncategorized' | 'categories';
+
+export function TransactionsClient({ view = 'all' }: { view?: TransactionsView }) {
+  return (
+    <section>
+      <PageHeader
+        eyebrow="Organização"
+        title="Movimentações"
+        description="Registre, encontre e organize tudo o que entrou ou saiu das suas contas."
+      />
+      <SegmentedTabs
+        label="Seções de movimentações"
+        active={view}
+        tabs={[
+          { value: 'all', label: 'Todas', href: '/transactions' },
+          { value: 'uncategorized', label: 'Sem categoria', href: '/transactions?view=uncategorized' },
+          { value: 'categories', label: 'Categorias', href: '/transactions?view=categories' },
+        ]}
+      />
+      <div data-tour="movements-workspace">
+        {view === 'uncategorized' ? <UncategorizedClient embedded /> : null}
+        {view === 'categories' ? <CategoriesClient embedded /> : null}
+        {view === 'all' ? <AllTransactionsClient /> : null}
+      </div>
+    </section>
+  );
+}
 
 function initialFilters(): TransactionFilters {
   const today = todayCivil();
   return { fromDate: `${today.slice(0, 7)}-01`, toDate: today };
 }
 
-export function TransactionsClient() {
+function AllTransactionsClient() {
   const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
@@ -78,11 +109,13 @@ export function TransactionsClient() {
 
   return (
     <section>
-      <PageHeader
-        title="Transações"
-        description="Consulte, filtre e registre receitas e despesas. As datas são dias civis e não mudam com o fuso do navegador."
-        actions={<ActionButton onClick={openCreate}>Nova transação</ActionButton>}
-      />
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Todas as movimentações</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Consulte receitas e despesas usando filtros combináveis.</p>
+        </div>
+        <ActionButton onClick={openCreate}>Nova transação</ActionButton>
+      </div>
 
       <TransactionInsights summaryQuery={summaryQuery} projectionQuery={projectionQuery} />
 

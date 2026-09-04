@@ -56,12 +56,13 @@ export function GoalsClient() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        eyebrow="Patrimônio"
         title="Metas"
-        description="Planeje objetivos e registre o progresso manualmente, sem misturar projeções com os saldos reais."
+        description="Transforme planos em objetivos claros e atualize o progresso no seu ritmo."
         actions={<ActionButton onClick={openCreate}>Nova meta</ActionButton>}
       />
 
-      <aside className="rounded-xl border border-border bg-layer01 p-4 sm:p-5" aria-labelledby="progresso-manual">
+      <aside className="rounded-2xl border border-border bg-layer01 p-4 sm:p-5" aria-labelledby="progresso-manual">
         <h2 id="progresso-manual" className="text-sm font-semibold text-foreground">
           Progresso manual
         </h2>

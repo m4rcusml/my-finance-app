@@ -63,8 +63,9 @@ export function InvestmentsClient() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
+        eyebrow="Patrimônio"
         title="Investimentos"
-        description="Carteira manual: você registra cada compra e o app soma o que foi pago."
+        description="Registre sua carteira manualmente e acompanhe com clareza o custo de aquisição."
         actions={<ActionButton onClick={openCreate}>Novo investimento</ActionButton>}
       />
 

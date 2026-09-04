@@ -30,7 +30,11 @@ export function PeriodSelector({
   const isCustom = value.period === 'custom';
 
   return (
-    <section aria-label="Período exibido" className="rounded-2xl border border-border bg-layer01 p-4 sm:p-5">
+    <section
+      aria-label="Período exibido"
+      className="rounded-2xl border border-border bg-layer01 p-4 sm:p-5"
+      data-tour="period-filter"
+    >
       <div className="flex flex-col gap-4">
         <fieldset className="min-w-0 border-0 p-0">
           <legend className="text-sm font-medium text-foreground">Período</legend>

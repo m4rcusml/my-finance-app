@@ -40,7 +40,7 @@ export function ResourceOverview({ accounts, creditCards }: { accounts: Account[
       <DashboardSection
         title="Cartões ativos"
         description="Uso calculado individualmente para o ciclo aberto de cada cartão."
-        action={<DashboardLink href="/credit-cards">Gerenciar</DashboardLink>}
+        action={<DashboardLink href="/accounts?view=cards">Gerenciar</DashboardLink>}
       >
         {creditCards.length === 0 ? (
           <EmptyState title="Nenhum cartão ativo" message="Cadastre um cartão para acompanhar o ciclo atual." />

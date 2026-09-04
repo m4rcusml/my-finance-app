@@ -10,22 +10,36 @@ export function StatCard({
   value,
   hint,
   tone = 'neutral',
+  featured = false,
+  dataTour,
   children,
 }: {
   label: string;
   value: string;
   hint?: string;
   tone?: 'neutral' | 'positive' | 'negative';
+  featured?: boolean;
+  dataTour?: string;
   children?: React.ReactNode;
 }) {
-  const toneClass =
-    tone === 'positive' ? 'text-success-text' : tone === 'negative' ? 'text-danger-text' : 'text-foreground';
+  const toneClass = featured
+    ? 'text-white'
+    : tone === 'positive'
+      ? 'text-success-text'
+      : tone === 'negative'
+        ? 'text-danger-text'
+        : 'text-foreground';
 
   return (
-    <div className="rounded-xl border border-border bg-layer02 p-4">
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className={`mt-1 text-lg font-semibold tabular-nums ${toneClass}`}>{value}</dd>
-      {hint ? <dd className="mt-1 text-xs text-muted-foreground">{hint}</dd> : null}
+    <div
+      className={`rounded-2xl border p-4 ${
+        featured ? 'border-primary bg-primary shadow-[0_12px_32px_rgba(103,71,237,0.24)]' : 'border-border bg-layer02'
+      }`}
+      data-tour={dataTour}
+    >
+      <dt className={`text-xs font-medium ${featured ? 'text-white' : 'text-muted-foreground'}`}>{label}</dt>
+      <dd className={`mt-1 text-xl font-semibold tabular-nums ${toneClass}`}>{value}</dd>
+      {hint ? <dd className={`mt-1 text-xs ${featured ? 'text-white' : 'text-muted-foreground'}`}>{hint}</dd> : null}
       {children ? <dd>{children}</dd> : null}
     </div>
   );

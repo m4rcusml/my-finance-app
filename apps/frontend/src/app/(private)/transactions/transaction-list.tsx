@@ -1,6 +1,7 @@
 'use client';
 
 import type { PaginationMeta, TransactionWithRelations } from '@finance/contracts';
+import { Icon } from '@/components/ui/icon/icon';
 import { categoryLabel, transactionOrigin } from '@/features/transactions/helpers';
 import { formatCivilDate, formatMoney, TRANSACTION_SOURCE_LABELS, TRANSACTION_TYPE_LABELS } from '@/shared/lib/format';
 import { IconButton } from '@/shared/ui/form';
@@ -51,10 +52,10 @@ function RowActions({
   return (
     <div className="flex justify-end gap-1">
       <IconButton label={`Editar transação ${name}`} variant="secondary" onClick={() => onEdit(transaction)}>
-        ✎
+        <Icon name="Pencil1Outlined" size={17} />
       </IconButton>
       <IconButton label={`Excluir transação ${name}`} variant="secondary" onClick={() => onDelete(transaction)}>
-        🗑
+        <Icon name="Trash3Outlined" size={17} />
       </IconButton>
     </div>
   );
@@ -67,7 +68,7 @@ export function TransactionList({ items, meta, onEdit, onDelete }: TransactionLi
   return (
     <>
       {/* Table — sm and up */}
-      <div className="hidden overflow-x-auto rounded-lg border border-border bg-layer01 sm:block">
+      <div className="hidden overflow-x-auto rounded-2xl border border-border bg-layer01 sm:block">
         <table className="w-full min-w-[52rem] border-collapse text-left">
           <caption className="sr-only">
             Transações filtradas. Página {meta.page} de {Math.max(1, meta.totalPages)}, {meta.totalItems} no total.
@@ -137,7 +138,7 @@ export function TransactionList({ items, meta, onEdit, onDelete }: TransactionLi
         {items.map((transaction) => {
           const origin = transactionOrigin(transaction);
           return (
-            <li key={transaction.id} className="rounded-lg border border-border bg-layer01 p-3">
+            <li key={transaction.id} className="rounded-2xl border border-border bg-layer01 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{describe(transaction)}</p>

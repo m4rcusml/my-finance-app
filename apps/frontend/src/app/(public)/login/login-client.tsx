@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { errorMessage } from '@/shared/lib/api';
 import { useSession } from '@/shared/session/session-provider';
+import { AuthShell } from '@/shared/ui/auth-shell';
 import { ActionButton, Field, TextInput } from '@/shared/ui/form';
 
 export default function LoginClient() {
@@ -35,12 +35,13 @@ export default function LoginClient() {
   }
 
   return (
-    <main id="conteudo" className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-5 py-12">
-      <div>
-        <h1 className="text-xl font-semibold">Entrar</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Acesse sua conta para ver seu painel.</p>
-      </div>
-
+    <AuthShell
+      title="Entre na sua conta"
+      description="Acesse seu painel e continue de onde parou."
+      alternateLabel="Ainda não tem conta?"
+      alternateAction="Criar conta"
+      alternateHref="/register"
+    >
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {error ? (
           <div role="alert" className="rounded-lg border border-danger/60 bg-layer01 p-3 text-sm text-danger-text">
@@ -84,13 +85,6 @@ export default function LoginClient() {
           Entrar
         </ActionButton>
       </form>
-
-      <p className="text-sm text-muted-foreground">
-        Ainda não tem conta?{' '}
-        <Link href="/register" className="font-medium text-muted-primary underline underline-offset-2">
-          Criar conta
-        </Link>
-      </p>
-    </main>
+    </AuthShell>
   );
 }

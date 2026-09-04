@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
-import { SettingsClient } from './settings-client';
+import { SettingsClient, type SettingsView } from './settings-client';
 
 export const metadata: Metadata = {
   title: 'Configurações',
-  description: 'Perfil, senha e exclusão da conta.',
+  description: 'Perfil, segurança, tutorial e backup local dos seus dados.',
 };
 
-export default function SettingsPage() {
-  return <SettingsClient />;
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const requested = (await searchParams).view;
+  const view: SettingsView = requested === 'security' || requested === 'data' ? requested : 'profile';
+  return <SettingsClient view={view} />;
 }

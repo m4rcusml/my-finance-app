@@ -16,8 +16,10 @@ import { TransactionFormDialog } from '@/features/transactions/transaction-form-
 import { PageHeader } from '@/shared/ui/app-shell';
 import { ActionButton } from '@/shared/ui/form';
 import { QueryBoundary } from '@/shared/ui/query-state';
+import { useSession } from '@/shared/session/session-provider';
 
 export function DashboardClient() {
+  const { user } = useSession();
   const [filters, setFilters] = useState<DashboardFilters>(defaultDashboardFilters);
   const [newTransactionType, setNewTransactionType] = useState<TransactionType | null>(null);
   const built = useMemo(() => buildDashboardQuery(filters), [filters]);
@@ -25,18 +27,19 @@ export function DashboardClient() {
 
   return (
     <section>
-      <PageHeader
-        title="Painel"
-        description="Uma visão fiel do caixa, dos investimentos, dos cartões e do período que você escolher."
-        actions={
-          <>
-            <ActionButton variant="secondary" onClick={() => setNewTransactionType('income')}>
-              Nova receita
-            </ActionButton>
-            <ActionButton onClick={() => setNewTransactionType('expense')}>Nova despesa</ActionButton>
-          </>
-        }
-      />
+      <div>
+        <PageHeader
+          eyebrow="Visão geral"
+          title={
+            <>
+              Olá{user?.name?.trim() ? `, ${user.name.trim().split(/\s+/)[0]}` : ''}
+              <span className="sr-only"> — Dashboard, visão geral</span>
+            </>
+          }
+          description="Acompanhe o que mudou e decida seu próximo passo com números claros."
+          actions={<ActionButton onClick={() => setNewTransactionType('expense')}>Nova transação</ActionButton>}
+        />
+      </div>
 
       <div className="flex flex-col gap-4">
         <PeriodSelector
@@ -113,7 +116,7 @@ function UncategorizedCallout({ count }: { count: number }) {
         <p className="mt-1 text-xs text-muted-foreground">Categorizar mantém os resumos e comparações úteis.</p>
       </div>
       <Link
-        href="/transactions/uncategorized"
+        href="/transactions?view=uncategorized"
         className="shrink-0 rounded-lg border border-border-strong bg-layer02 px-3 py-2 text-center text-sm font-medium text-foreground transition hover:bg-layer03"
       >
         Categorizar agora

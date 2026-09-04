@@ -32,7 +32,7 @@ const COLLECTIONS: Array<{ key: keyof RestoreResultCounts; label: string }> = [
 
 const BACKUP_COLLECTION_KEYS = COLLECTIONS.map(({ key }) => key);
 
-export function BackupClient() {
+export function BackupClient({ embedded = false }: { embedded?: boolean }) {
   const toast = useToast();
   const sessionKey = useSessionKey();
   const queryClient = useQueryClient();
@@ -113,10 +113,19 @@ export function BackupClient() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Backup"
-        description="Baixe todo o seu grafo financeiro em JSON e restaure-o nesta conta quando precisar."
-      />
+      {embedded ? (
+        <div>
+          <h2 className="text-lg font-semibold">Backup dos seus dados</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Baixe todo o seu grafo financeiro em JSON ou restaure uma cópia local.
+          </p>
+        </div>
+      ) : (
+        <PageHeader
+          title="Backup"
+          description="Baixe todo o seu grafo financeiro em JSON e restaure-o nesta conta quando precisar."
+        />
+      )}
 
       <section aria-labelledby="exportar-backup" className="rounded-xl border border-border bg-layer01 p-4 sm:p-6">
         <h2 id="exportar-backup" className="font-semibold text-foreground">

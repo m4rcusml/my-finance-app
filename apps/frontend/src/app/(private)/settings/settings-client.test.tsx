@@ -49,7 +49,7 @@ describe('SettingsClient', () => {
     const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     render(
       <QueryClientProvider client={queryClient}>
-        <SettingsClient />
+        <SettingsClient view="security" />
       </QueryClientProvider>,
     );
 
@@ -66,7 +66,7 @@ describe('SettingsClient', () => {
     const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     render(
       <QueryClientProvider client={queryClient}>
-        <SettingsClient />
+        <SettingsClient view="security" />
       </QueryClientProvider>,
     );
 

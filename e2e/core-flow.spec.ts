@@ -23,7 +23,7 @@ test('cadastro, conta, categoria, transações, fila e painel', async ({ page })
   });
 
   await navigate(page, 'Sem categoria');
-  await expect(page.getByRole('heading', { name: 'Sem categoria' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Fila sem categoria' })).toBeVisible();
   await expect(page.getByText('Compra pendente E2E', { exact: true })).toBeVisible();
   await page.getByLabel('Categoria').selectOption({ label: category });
   await page.getByRole('button', { name: 'Salvar categoria' }).click();

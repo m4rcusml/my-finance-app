@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
-import { AccountsClient } from './accounts-client';
+import { AssetsClient, type AssetsView } from './assets-client';
 
 export const metadata: Metadata = {
-  title: 'Contas',
-  description: 'Cadastre contas bancárias, acompanhe saldos e arquive o que saiu de uso sem perder o histórico.',
+  title: 'Contas e cartões',
+  description: 'Acompanhe saldos, limites e ciclos de cartão em uma única área.',
 };
 
-export default function AccountsPage() {
-  return <AccountsClient />;
+export default async function AccountsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const view: AssetsView = (await searchParams).view === 'cards' ? 'cards' : 'accounts';
+  return <AssetsClient view={view} />;
 }

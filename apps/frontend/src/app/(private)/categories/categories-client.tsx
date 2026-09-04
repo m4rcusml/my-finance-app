@@ -18,7 +18,7 @@ import { PaginatedBoundary } from '@/shared/ui/query-state';
 
 type PendingAction = { kind: 'archive' | 'delete'; category: Category } | null;
 
-export function CategoriesClient() {
+export function CategoriesClient({ embedded = false }: { embedded?: boolean }) {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -61,11 +61,21 @@ export function CategoriesClient() {
 
   return (
     <section>
-      <PageHeader
-        title="Categorias"
-        description="Organize receitas e despesas. Categorias arquivadas continuam identificando lançamentos antigos, mas não aparecem em novos lançamentos."
-        actions={<ActionButton onClick={openCreate}>Nova categoria</ActionButton>}
-      />
+      {embedded ? (
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Categorias</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Organize receitas e despesas sem perder o histórico.</p>
+          </div>
+          <ActionButton onClick={openCreate}>Nova categoria</ActionButton>
+        </div>
+      ) : (
+        <PageHeader
+          title="Categorias"
+          description="Organize receitas e despesas. Categorias arquivadas continuam identificando lançamentos antigos, mas não aparecem em novos lançamentos."
+          actions={<ActionButton onClick={openCreate}>Nova categoria</ActionButton>}
+        />
+      )}
 
       <div className="mb-4 grid gap-4 rounded-xl border border-border bg-layer01 p-4 sm:grid-cols-2">
         <Field label="Tipo">

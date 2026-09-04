@@ -15,7 +15,7 @@ export function LoadingState({ label = 'Carregando…' }: { label?: string }) {
   return (
     <output
       aria-live="polite"
-      className="flex items-center gap-3 rounded-lg border border-border bg-layer01 p-6 text-muted-foreground"
+      className="flex items-center gap-3 rounded-2xl border border-border bg-layer01 p-6 text-muted-foreground"
     >
       <span
         aria-hidden="true"
@@ -37,7 +37,7 @@ export function ErrorState({
 }) {
   const details = errorDetails(error);
   return (
-    <div role="alert" className="rounded-lg border border-danger/60 bg-layer01 p-6">
+    <div role="alert" className="rounded-2xl border border-danger/60 bg-layer01 p-6">
       <h3 className="text-sm font-semibold text-danger-text">{title}</h3>
       <p className="mt-1 text-sm text-muted-foreground">{errorMessage(error)}</p>
       {details.length > 0 ? (
@@ -62,7 +62,7 @@ export function ErrorState({
 
 export function EmptyState({ title, message, action }: { title: string; message?: string; action?: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-dashed border-border-strong bg-layer01 p-8 text-center">
+    <div className="rounded-2xl border border-dashed border-border-strong bg-layer01 p-8 text-center">
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       {message ? <p className="mx-auto mt-1 max-w-prose text-sm text-muted-foreground">{message}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}

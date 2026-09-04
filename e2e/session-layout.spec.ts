@@ -10,13 +10,7 @@ test('troca de usuário não reaproveita cache financeiro privado', async ({ pag
   await createAccount(page, privateAccount);
   await logoutUser(page);
 
-  await page.getByRole('link', { name: 'Criar conta' }).click();
-  await page.getByLabel('Nome').fill(second.name);
-  await page.getByLabel('E-mail').fill(second.email);
-  await page.getByLabel(/^Senha/).fill(second.password);
-  await page.getByLabel(/^Confirmar senha/).fill(second.password);
-  await page.getByRole('button', { name: 'Criar conta' }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await registerUser(page, second);
   await navigate(page, 'Contas');
   await expect(page.getByText(privateAccount, { exact: true })).toHaveCount(0);
 
@@ -53,12 +47,14 @@ test('shell e diálogos permanecem operáveis nos cinco breakpoints', async ({ p
     if (viewport.width < 1024) {
       const toggle = page.getByRole('button', { name: 'Abrir menu' });
       await toggle.click();
-      const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
-      const close = page.getByRole('button', { name: 'Fechar menu' });
-      const mobileLogout = navigation.getByRole('button', { name: 'Sair' });
+      const drawer = page.getByRole('dialog', { name: 'Menu principal' });
+      const navigation = drawer.getByRole('navigation', { name: 'Navegação principal' });
+      const close = drawer.getByRole('button', { name: 'Fechar menu' });
+      const mobileLogout = drawer.getByRole('button', { name: 'Sair da conta' });
       await expect(navigation).toBeVisible();
       await expect(close).toBeFocused();
       await expect(page.locator('main')).toHaveAttribute('inert', '');
+      await expect(page.locator('nav[aria-label="Navegação rápida"]')).toHaveAttribute('inert', '');
       await page.keyboard.press('Shift+Tab');
       await expect(mobileLogout).toBeFocused();
       await page.keyboard.press('Tab');
@@ -71,7 +67,7 @@ test('shell e diálogos permanecem operáveis nos cinco breakpoints', async ({ p
   await page.setViewportSize({ width: 320, height: 720 });
   await page.getByRole('button', { name: 'Abrir menu' }).click();
   await navigate(page, 'Contas');
-  await expect(page.getByRole('heading', { name: 'Contas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Contas e cartões' })).toBeVisible();
   await expect(page.locator('main')).not.toHaveAttribute('inert', '');
   await expect(page.locator('main')).toBeFocused();
   const trigger = page.getByRole('button', { name: 'Nova conta' }).first();

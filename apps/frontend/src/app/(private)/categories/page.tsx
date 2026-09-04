@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { CategoriesClient } from './categories-client';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Categorias',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function CategoriesPage() {
-  return <CategoriesClient />;
+  redirect('/transactions?view=categories');
 }

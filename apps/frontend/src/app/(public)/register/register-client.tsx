@@ -6,11 +6,11 @@ import {
   MIN_PASSWORD_LENGTH,
   passwordPolicyViolation,
 } from '@finance/contracts';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ApiError, errorDetails, errorMessage } from '@/shared/lib/api';
 import { useSession } from '@/shared/session/session-provider';
+import { AuthShell } from '@/shared/ui/auth-shell';
 import { ActionButton, Field, TextInput } from '@/shared/ui/form';
 
 export default function RegisterClient() {
@@ -60,14 +60,13 @@ export default function RegisterClient() {
   }
 
   return (
-    <main id="conteudo" className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-5 py-12">
-      <div>
-        <h1 className="text-xl font-semibold">Criar conta</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Seus dados ficam no banco PostgreSQL configurado para esta instalação.
-        </p>
-      </div>
-
+    <AuthShell
+      title="Crie sua conta"
+      description="Comece com uma visão organizada e fiel do seu dinheiro."
+      alternateLabel="Já tem conta?"
+      alternateAction="Entrar"
+      alternateHref="/login"
+    >
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {error ? (
           <div role="alert" className="rounded-lg border border-danger/60 bg-layer01 p-3 text-sm text-danger-text">
@@ -155,13 +154,6 @@ export default function RegisterClient() {
           Criar conta
         </ActionButton>
       </form>
-
-      <p className="text-sm text-muted-foreground">
-        Já tem conta?{' '}
-        <Link href="/login" className="font-medium text-muted-primary underline underline-offset-2">
-          Entrar
-        </Link>
-      </p>
-    </main>
+    </AuthShell>
   );
 }

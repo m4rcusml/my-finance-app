@@ -19,7 +19,7 @@ import { PaginatedBoundary } from '@/shared/ui/query-state';
 
 type PendingAction = { kind: 'archive' | 'delete'; account: Account } | null;
 
-export function AccountsClient() {
+export function AccountsClient({ embedded = false }: { embedded?: boolean }) {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -61,11 +61,21 @@ export function AccountsClient() {
 
   return (
     <section>
-      <PageHeader
-        title="Contas"
-        description="Contas bancárias, carteiras e reservas. O saldo atual é o saldo inicial mais cada receita e menos cada despesa lançada na conta."
-        actions={<ActionButton onClick={openCreate}>Nova conta</ActionButton>}
-      />
+      {embedded ? (
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Suas contas</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Contas bancárias, carteiras e reservas disponíveis.</p>
+          </div>
+          <ActionButton onClick={openCreate}>Nova conta</ActionButton>
+        </div>
+      ) : (
+        <PageHeader
+          title="Contas"
+          description="Contas bancárias, carteiras e reservas. O saldo atual é o saldo inicial mais cada receita e menos cada despesa lançada na conta."
+          actions={<ActionButton onClick={openCreate}>Nova conta</ActionButton>}
+        />
+      )}
 
       <p className="mb-4 rounded-lg border border-border bg-layer01 p-3 text-sm text-muted-foreground">
         <strong className="font-medium text-foreground">Arquivar preserva o histórico</strong> e apenas remove a conta

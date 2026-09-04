@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { CreditCardsClient } from './credit-cards-client';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Cartões de crédito',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function CreditCardsPage() {
-  return <CreditCardsClient />;
+  redirect('/accounts?view=cards');
 }

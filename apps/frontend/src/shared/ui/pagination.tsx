@@ -36,7 +36,7 @@ export function Pagination({
             <select
               value={meta.limit}
               onChange={(e) => onLimitChange(Number(e.target.value))}
-              className="rounded-md border border-border-strong bg-layer02 px-2 py-1.5 text-sm text-foreground"
+              className="rounded-lg border border-border-strong bg-layer02 px-2.5 py-2 text-sm text-foreground"
             >
               {[10, 20, 50, 100].map((n) => (
                 <option key={n} value={n}>
@@ -51,7 +51,7 @@ export function Pagination({
           type="button"
           onClick={() => onPageChange(meta.page - 1)}
           disabled={!meta.hasPreviousPage}
-          className="rounded-md border border-border-strong bg-layer02 px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-layer03 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg border border-border-strong bg-layer02 px-3 py-2 text-sm font-medium text-foreground transition hover:bg-layer03 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Anterior
         </button>
@@ -62,7 +62,7 @@ export function Pagination({
           type="button"
           onClick={() => onPageChange(meta.page + 1)}
           disabled={!meta.hasNextPage}
-          className="rounded-md border border-border-strong bg-layer02 px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-layer03 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg border border-border-strong bg-layer02 px-3 py-2 text-sm font-medium text-foreground transition hover:bg-layer03 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Próxima
         </button>

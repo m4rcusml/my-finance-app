@@ -9,6 +9,7 @@ import {
 } from '@finance/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { BackupClient } from '@/app/(private)/backup/backup-client';
 import { errorDetails, errorMessage, usersApi } from '@/shared/lib/api';
 import { queryKeys } from '@/shared/lib/query/keys';
 import { useSession } from '@/shared/session/session-provider';
@@ -16,18 +17,70 @@ import { useAuthStore } from '@/shared/stores/auth-store';
 import { PageHeader } from '@/shared/ui/app-shell';
 import { ConfirmDialog } from '@/shared/ui/dialog';
 import { ActionButton, Field, TextInput } from '@/shared/ui/form';
+import { restartTour } from '@/shared/ui/onboarding';
+import { SegmentedTabs } from '@/shared/ui/segmented-tabs';
 import { useToast } from '@/shared/ui/toast';
 
 const DELETE_CONFIRMATION = 'EXCLUIR MINHA CONTA';
 
-export function SettingsClient() {
+export type SettingsView = 'profile' | 'security' | 'data';
+
+export function SettingsClient({ view = 'profile' }: { view?: SettingsView }) {
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Configurações" description="Atualize seus dados de acesso ou encerre sua conta." />
-      <ProfileSection />
-      <PasswordSection />
-      <DeleteAccountSection />
+      <PageHeader
+        eyebrow="Preferências"
+        title="Configurações"
+        description="Cuide do seu perfil, da segurança e das cópias dos seus dados."
+      />
+      <SegmentedTabs
+        label="Seções de configurações"
+        active={view}
+        tabs={[
+          { value: 'profile', label: 'Perfil', href: '/settings' },
+          { value: 'security', label: 'Segurança', href: '/settings?view=security' },
+          { value: 'data', label: 'Dados e backup', href: '/settings?view=data' },
+        ]}
+      />
+      {view === 'profile' ? (
+        <>
+          <ProfileSection />
+          <TutorialSection />
+        </>
+      ) : null}
+      {view === 'security' ? (
+        <>
+          <PasswordSection />
+          <DeleteAccountSection />
+        </>
+      ) : null}
+      {view === 'data' ? <BackupClient embedded /> : null}
     </div>
+  );
+}
+
+function TutorialSection() {
+  const { user } = useSession();
+
+  return (
+    <section aria-labelledby="tutorial-interface" className="rounded-2xl border border-border bg-layer01 p-4 sm:p-6">
+      <h2 id="tutorial-interface" className="font-semibold text-foreground">
+        Tutorial da interface
+      </h2>
+      <p className="mt-1 max-w-prose text-sm text-muted-foreground">
+        Reabra o guia passo a passo para rever o dashboard, as movimentações e as áreas do seu patrimônio.
+      </p>
+      <ActionButton
+        variant="secondary"
+        className="mt-4"
+        onClick={() => {
+          if (!user?.id) return;
+          restartTour(user.id);
+        }}
+      >
+        Refazer tutorial
+      </ActionButton>
+    </section>
   );
 }
 

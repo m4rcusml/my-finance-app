@@ -13,7 +13,7 @@ import { ActionButton, Field, Select } from '@/shared/ui/form';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/query-state';
 import { useToast } from '@/shared/ui/toast';
 
-export function UncategorizedClient() {
+export function UncategorizedClient({ embedded = false }: { embedded?: boolean }) {
   const toast = useToast();
   const [page, setPage] = useState(1);
   const transactionsQuery = useUncategorizedQuery({ page, limit: 1 });
@@ -35,18 +35,33 @@ export function UncategorizedClient() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Sem categoria"
-        description="Revise um lançamento por vez. Salvar remove o item desta fila sem alterar valor, data ou origem."
-        actions={
+      {embedded ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Fila sem categoria</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Revise um lançamento por vez e avance pela fila.</p>
+          </div>
           <Link
-            href="/transactions"
-            className="inline-flex items-center justify-center rounded-lg border border-border-strong bg-layer02 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-layer03"
+            href="/transactions?view=categories"
+            className="inline-flex items-center justify-center rounded-xl border border-border-strong bg-layer02 px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-layer03"
           >
-            Ver todas as transações
+            Gerenciar categorias
           </Link>
-        }
-      />
+        </div>
+      ) : (
+        <PageHeader
+          title="Sem categoria"
+          description="Revise um lançamento por vez. Salvar remove o item desta fila sem alterar valor, data ou origem."
+          actions={
+            <Link
+              href="/transactions"
+              className="inline-flex items-center justify-center rounded-lg border border-border-strong bg-layer02 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-layer03"
+            >
+              Ver todas as transações
+            </Link>
+          }
+        />
+      )}
 
       {transactionsQuery.isPending ? <LoadingState label="Carregando fila de categorização…" /> : null}
       {transactionsQuery.isError ? (
@@ -204,7 +219,10 @@ function UncategorizedCard({
       {!categoriesPending && !categoriesError && compatibleCategories.length === 0 ? (
         <p className="mt-3 rounded-lg border border-warning/60 bg-layer02 p-3 text-sm text-muted-foreground">
           Não há categoria ativa compatível.{' '}
-          <Link href="/categories" className="font-medium text-foreground underline underline-offset-2">
+          <Link
+            href="/transactions?view=categories"
+            className="font-medium text-foreground underline underline-offset-2"
+          >
             Criar ou reativar uma categoria
           </Link>
         </p>

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button/button';
 import { Icon } from '@/components/ui/icon/icon';
 
 export default function NotFound() {
@@ -11,12 +10,14 @@ export default function NotFound() {
 
       <h1 className="mb-2 text-4xl font-bold tracking-tight text-foreground">Página não encontrada</h1>
 
-      <p className="mb-8 max-w-md text-gray-500">A página que você está procurando não existe ou foi movida.</p>
+      <p className="mb-8 max-w-md text-muted-foreground">A página que você está procurando não existe ou foi movida.</p>
 
-      <Link href="/dashboard">
-        <Button size="large" tone="primary" leftIcon="DashboardSquare1Outlined">
-          Voltar ao Dashboard
-        </Button>
+      <Link
+        href="/dashboard"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-muted-primary"
+      >
+        <Icon name="DashboardSquare1Outlined" size={20} aria-hidden="true" />
+        Voltar ao Dashboard
       </Link>
     </main>
   );

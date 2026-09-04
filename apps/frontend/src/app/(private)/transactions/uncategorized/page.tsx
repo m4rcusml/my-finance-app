@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { UncategorizedClient } from './uncategorized-client';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Transações sem categoria',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function UncategorizedTransactionsPage() {
-  return <UncategorizedClient />;
+  redirect('/transactions?view=uncategorized');
 }

@@ -11,17 +11,23 @@ export function DashboardSection({
   title,
   description,
   action,
+  dataTour,
   children,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  dataTour?: string;
   children: React.ReactNode;
 }) {
   const headingId = useId();
 
   return (
-    <section aria-labelledby={headingId} className="rounded-2xl border border-border bg-layer01 p-4 sm:p-5">
+    <section
+      aria-labelledby={headingId}
+      className="rounded-2xl border border-border bg-layer01 p-4 sm:p-5"
+      data-tour={dataTour}
+    >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id={headingId} className="text-md font-semibold text-foreground">

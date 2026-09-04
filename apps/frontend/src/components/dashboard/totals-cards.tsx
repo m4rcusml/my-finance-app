@@ -28,6 +28,8 @@ export function TotalsCards({ totals }: { totals: Totals }) {
             value={formatMoney(totals.netBalance)}
             hint="Contas correntes, poupança e dinheiro. Disponível para gastar."
             tone={moneyTone(totals.netBalance)}
+            featured
+            dataTour="financial-overview"
           />
           <StatCard
             label="Em contas de investimento"

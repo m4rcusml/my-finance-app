@@ -19,7 +19,7 @@ import { PaginatedBoundary } from '@/shared/ui/query-state';
 
 type PendingAction = { kind: 'archive' | 'delete'; creditCard: CreditCard } | null;
 
-export function CreditCardsClient() {
+export function CreditCardsClient({ embedded = false }: { embedded?: boolean }) {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -56,11 +56,21 @@ export function CreditCardsClient() {
 
   return (
     <section>
-      <PageHeader
-        title="Cartões de crédito"
-        description="Acompanhe o limite e apenas os gastos do ciclo aberto de cada cartão."
-        actions={<ActionButton onClick={openCreate}>Novo cartão</ActionButton>}
-      />
+      {embedded ? (
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Seus cartões</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Limite, uso e datas do ciclo vigente.</p>
+          </div>
+          <ActionButton onClick={openCreate}>Novo cartão</ActionButton>
+        </div>
+      ) : (
+        <PageHeader
+          title="Cartões de crédito"
+          description="Acompanhe o limite e apenas os gastos do ciclo aberto de cada cartão."
+          actions={<ActionButton onClick={openCreate}>Novo cartão</ActionButton>}
+        />
+      )}
 
       <div className="mb-4 rounded-xl border border-border bg-layer01 p-4">
         <Field label="Incluir arquivados">

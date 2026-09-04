@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { BackupClient } from './backup-client';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Backup',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function BackupPage() {
-  return <BackupClient />;
+  redirect('/settings?view=data');
 }
